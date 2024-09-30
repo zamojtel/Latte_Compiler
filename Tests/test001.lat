@@ -1,0 +1,8 @@
+int main (int a,int b) {
+  int x;
+  int y;
+  int z=10;
+  x=13;
+  y=31;
+  return 0;
+}

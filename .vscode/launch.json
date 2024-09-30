@@ -1,0 +1,26 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "cppdbg",
+      "request": "launch",
+      "args": ["/home/bartlomiej-zamojtel/Programming/Zadanie_2_Latte_Compiler/Tests/test001.lat"],
+      "stopAtEntry": false,
+      "externalConsole": false,
+      "cwd": "/home/bartlomiej-zamojtel/Programming/Zadanie_2_Latte_Compiler",
+      // "program": "/home/bartlomiej-zamojtel/Programming/Zadanie_2_Latte_Compiler/build/Debug/outDebug",
+      "program": "/home/bartlomiej-zamojtel/Programming/Zadanie_2_Latte_Compiler/TestLatteCPP",
+      // /home/bartlomiej-zamojtel/Programming/Zadanie_1_No/TestInstant
+      "MIMode": "gdb",
+      "miDebuggerPath": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
+    }
+  ]
+}

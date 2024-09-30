@@ -1,0 +1,1 @@
+bnfc --cpp          -m LatteCPP.cf  &&  make
