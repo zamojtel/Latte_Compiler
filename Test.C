@@ -45,13 +45,6 @@ public:
   }
 };
 
-// {
-//   int x; // block A
-//   {
-//     int x; // block B
-//   }
-// }
-
 class MyVisitor:public Skeleton {
 private:
   IntermediateProgram * m_program;
@@ -64,6 +57,7 @@ private:
   std::string m_current_line;
   DataType m_last_visited_type;
   OperandCategory m_last_expr_cat;
+  Operation m_current_operation;
 public:
 
   MyVisitor(IntermediateProgram *prog):m_program{prog}{}
@@ -90,6 +84,10 @@ public:
     for(auto statement : *p->liststmt_){
       statement->accept(this);
     }
+  }
+
+  void visitNeg(Neg *p) override{
+    
   }
 
   void visitInt(Int *x) override{
@@ -135,7 +133,6 @@ public:
     m_current_fn->m_variables.push_back(variable);
   }
 
-
   std::string type_to_string(DataType dt){
     switch (dt)
     {
@@ -157,7 +154,6 @@ public:
   }
 
   Triple* push_triple(Operation operation,const Operand &op_1,const Operand &op_2){
-    
     Triple *triple = new Triple{m_current_fn->m_triples.size()+1,operation,op_1,op_2};
     m_current_fn->m_triples.push_back(triple);
     return triple;
@@ -165,16 +161,40 @@ public:
 
   void visitEAdd(EAdd *p) override {
     p->expr_1->accept(this);
+    p->addop_->accept(this); // here we want to figure the correct operation
     p->expr_2->accept(this);
     
-    m_nodes_to_operands[p]=push_triple(Operation::ADD,m_nodes_to_operands[p->expr_1],m_nodes_to_operands[p->expr_2]);
+    m_nodes_to_operands[p]=push_triple(m_current_operation,m_nodes_to_operands[p->expr_1],m_nodes_to_operands[p->expr_2]);
   }
 
   void visitEMul(EMul *p) override{
     p->expr_1->accept(this);
-    p->expr_2->accept(this);
 
-    m_nodes_to_operands[p] = push_triple(Operation::MUL,m_nodes_to_operands[p->expr_1],m_nodes_to_operands[p->expr_2]);
+    p->mulop_->accept(this);
+
+    p->expr_2->accept(this);
+    m_nodes_to_operands[p] = push_triple(m_current_operation,m_nodes_to_operands[p->expr_1],m_nodes_to_operands[p->expr_2]);
+  }
+
+  void visitPlus(Plus *p) override {
+    m_current_operation=Operation::ADD;
+  }
+
+  void visitDiv(Div *p) override{
+    std::cout<<"Entering DIV: "<<std::endl;
+    m_current_operation=Operation::DIV;
+  }
+
+  void visitMinus(Minus *p) override{
+    m_current_operation=Operation::SUB;
+  }
+
+  void visitTimes(Times *p) override {
+    m_current_operation=Operation::MUL;
+  }
+
+  void visitMod(Mod *mod) override {
+    m_current_operation=Operation::MOD;
   }
 
   void print_functions(){
@@ -190,9 +210,10 @@ public:
   void print_constant(const Constant &constant){
     switch (constant.m_type)
     {
-    case DataType::INT:
+    case DataType::INT:{
       std::cout<<"INT("<<constant.u.integer<<") ";
       break;
+    }
     case DataType::BOOL:
       std::cout<<"BOOL : "<<constant.u.boolean;
       break;
@@ -226,6 +247,23 @@ public:
     }
   }
 
+  // void visitPlus(Plus *p)
+  // {
+
+  // }
+  // void visitMinus(Minus *p)
+  // {
+    
+  // }
+
+  // void visitTimes(Times *p)
+  // {
+
+  // }
+
+  // void visitDiv(Div *p)
+  // {
+  // }
     // MUL,ADD,SUB,DIV,AND,OR,NEG,NOT,ASSIGN,
     // MOD,LTH,LE,GTH,GE,EQU,NE
   std::string return_operation(Operation operation){
@@ -251,6 +289,7 @@ public:
   void print_triples(){
     for(auto *triple: m_current_fn->m_triples){
       std::cout<<"t"<<triple->m_index<<return_operation(triple->m_operation);
+
       print_operand(triple->m_op_1);
       print_operand(triple->m_op_2);
       std::cout<<std::endl;
@@ -320,7 +359,6 @@ int main(int argc, char ** argv)
     delete(parse_tree);
     return 0;
   }
-  // DataType t;
 
   return 1;
 }
