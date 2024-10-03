@@ -43,7 +43,6 @@ public:
     for(auto *fn: m_functions)
       delete fn;
   }
-
 };
 
 // {
@@ -58,12 +57,15 @@ private:
   IntermediateProgram * m_program;
   std::vector<Function*> m_functions;
   std::vector<std::string> m_generated_code;
-  std::map<std::string,Variable*> m_symbol_table; 
+  std::map<std::string,Variable*> m_symbol_table;
+  std::map<Visitable*,Operand> m_nodes_to_operands;
   Function * m_current_fn;
   Argument * m_current_arg;
   std::string m_current_line;
   DataType m_last_visited_type;
+  OperandCategory m_last_expr_cat;
 public:
+
   MyVisitor(IntermediateProgram *prog):m_program{prog}{}
   void visitProg(Prog *p) override {
     std::cout<<"Begin Program"<<std::endl;
@@ -76,7 +78,6 @@ public:
     std::cout<<"Begin function definition"<<std::endl;
     std::cout<<"Function name : "<<p->ident_<<std::endl;
     m_current_fn->m_name=p->ident_;
-    // m_type_processing_state=TypeProcessingState::RETURN_TYPE;
     p->type_->accept(this);
     m_current_fn->m_return_type=m_last_visited_type;
     p->listarg_->accept(this);
@@ -110,22 +111,31 @@ public:
     p->type_->accept(this);
     m_current_arg->m_type=m_last_visited_type;
   }
-  // int x,y,z;
+
   void visitDecl(Decl *p) override{
+    p->type_->accept(this);
     for(auto item : *p->listitem_)
       item->accept(this);
   }
   
-  void visitInit(Init *p) override{
-    // p->expr_->accept
-    // Variable *variable = new Variable();
-    // m_symbol_table.insert(p->ident_,{});
+  void visitInit(Init *p) override {
+    Variable *variable = new Variable{p->ident_,m_last_visited_type};
+    m_symbol_table[p->ident_]=variable; // if insert then iterator has to be passed 
+    p->expr_->accept(this);
     std::cout<<"Initialized Identifier: "<<p->ident_<<std::endl;
+    push_triple(Operation::ASSIGN,variable,m_nodes_to_operands[p->expr_]);
+    m_current_fn->m_variables.push_back(variable);
+
   }
 
   void visitNoInit(NoInit *p) override {
     std::cout<<"NoInit: "<<p->ident_<<std::endl;
+    Variable *variable = new Variable{p->ident_,m_last_visited_type};
+    m_symbol_table[p->ident_]=variable; 
+    m_current_fn->m_variables.push_back(variable);
   }
+
+
   std::string type_to_string(DataType dt){
     switch (dt)
     {
@@ -142,15 +152,30 @@ public:
   }
   
   void visitELitInt(ELitInt *p) override{
+    Constant constant{p->integer_};
+    m_nodes_to_operands[p]=constant;
+  }
+
+  Triple* push_triple(Operation operation,const Operand &op_1,const Operand &op_2){
     
+    Triple *triple = new Triple{m_current_fn->m_triples.size()+1,operation,op_1,op_2};
+    m_current_fn->m_triples.push_back(triple);
+    return triple;
   }
 
   void visitEAdd(EAdd *p) override {
-    // p->
-    // p->expr_1->accept();
+    p->expr_1->accept(this);
     p->expr_2->accept(this);
+    
+    m_nodes_to_operands[p]=push_triple(Operation::ADD,m_nodes_to_operands[p->expr_1],m_nodes_to_operands[p->expr_2]);
   }
 
+  void visitEMul(EMul *p) override{
+    p->expr_1->accept(this);
+    p->expr_2->accept(this);
+
+    m_nodes_to_operands[p] = push_triple(Operation::MUL,m_nodes_to_operands[p->expr_1],m_nodes_to_operands[p->expr_2]);
+  }
 
   void print_functions(){
     for(auto *fn : m_functions){ //for readability
@@ -159,6 +184,76 @@ public:
       std::cout<<"Arguments: "<<std::endl;
       for(auto *arg : fn->m_arguments)
         std::cout<<" Indentifier: "<<arg->m_identifier<<"Type :"<<type_to_string(arg->m_type)<<std::endl;
+    }
+  }
+
+  void print_constant(const Constant &constant){
+    switch (constant.m_type)
+    {
+    case DataType::INT:
+      std::cout<<"INT("<<constant.u.integer<<") ";
+      break;
+    case DataType::BOOL:
+      std::cout<<"BOOL : "<<constant.u.boolean;
+      break;
+    case DataType::STRING:
+      std::cout<<"STRING : "<<constant.u.str;
+      break;
+    default:
+      break;
+    }
+  }
+
+  void print_operand(const Operand &operand){
+    //  CONSTANT,VARIABLE,TRIPLE,EMPTY
+    switch (operand.m_category)
+      {
+      case OperandCategory::CONSTANT:
+        print_constant(operand.m_constant);
+        break;
+      case OperandCategory::VARIABLE:
+        std::cout<<operand.m_var->m_ident<<" ";
+        break;
+      case OperandCategory::TRIPLE:
+        std::cout<<"t"<<operand.m_triple->m_index<<" ";
+        break;
+      case OperandCategory::EMPTY:
+        std::cout<<"- ";
+        break;
+      default:
+        throw 0; //it is yet to be changed
+        break;
+    }
+  }
+
+    // MUL,ADD,SUB,DIV,AND,OR,NEG,NOT,ASSIGN,
+    // MOD,LTH,LE,GTH,GE,EQU,NE
+  std::string return_operation(Operation operation){
+    
+    switch (operation)
+    {
+      case Operation::ADD:{
+        return " ADD: ";
+      case Operation::ASSIGN:
+        return " ASSIGN: ";
+      case Operation::MUL:
+        return " MUL: ";
+      case Operation::SUB:
+        return " SUB: ";
+      case Operation::DIV:
+        return " DIV: ";
+      default:
+        return " ";
+      }
+    }
+  }
+
+  void print_triples(){
+    for(auto *triple: m_current_fn->m_triples){
+      std::cout<<"t"<<triple->m_index<<return_operation(triple->m_operation);
+      print_operand(triple->m_op_1);
+      print_operand(triple->m_op_2);
+      std::cout<<std::endl;
     }
   }
 
@@ -207,6 +302,8 @@ int main(int argc, char ** argv)
 
   parse_tree->accept(&my_visitor);
   my_visitor.print_functions();
+  std::cout<<"Printing tripples : "<<std::endl;
+  my_visitor.print_triples();
 
   quiet=true;
   if (parse_tree)

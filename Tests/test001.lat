@@ -1,8 +1,4 @@
 int main (int a,int b) {
-  int x;
-  int y;
-  int z=10;
-  x=13;
-  y=31;
+  int z=10*2+30+10;
   return 0;
 }

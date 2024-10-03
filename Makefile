@@ -15,6 +15,9 @@ OBJS=Absyn.o Buffer.o Lexer.o Parser.o Printer.o
 
 all : TestLatteCPP
 
+run :
+	./TestLatteCPP < /home/bartlomiej-zamojtel/Programming/Zadanie_2_Latte_Compiler/Tests/test001.lat
+
 clean :
 	rm -f *.o TestLatteCPP LatteCPP.aux LatteCPP.log LatteCPP.pdf LatteCPP.dvi LatteCPP.ps LatteCPP
 

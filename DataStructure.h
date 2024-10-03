@@ -51,16 +51,20 @@ enum class OperandCategory{
 // internal   Fun. Type ::= Type "(" [Type] ")" ;
 
 // separator  Type "," ;
+
 class Constant{
 public:
     DataType m_type;
     //  INT,BOOL,STRING,
-    union 
+    union Value
     {
         int integer;
         bool boolean;
+        std::string str;
+        Value(){}
+        ~Value(){}
     }u;
-
+    
     Constant(int value):m_type{DataType::INT}{
         u.integer=value;
     }
@@ -68,6 +72,42 @@ public:
     Constant(bool value):m_type{DataType::INT}{
         u.boolean=value;
     }
+    
+    Constant(const Constant &constant){
+        m_type = constant.m_type;
+        switch (constant.m_type)
+        {
+        case DataType::INT:
+            u.integer = constant.u.integer;
+            break;
+        case DataType::BOOL:
+            u.boolean = constant.u.boolean;
+            break;
+        default:
+            break;
+        }
+    }
+
+    Constant& operator=(const Constant &other){
+        // INT,BOOL,STRING,
+        m_type=other.m_type;
+        switch (other.m_type)
+        {
+        case DataType::INT:
+            this->u.integer=other.u.integer;
+            break;
+        case DataType::BOOL:
+            this->u.boolean=other.u.boolean;
+            break;
+        case DataType::STRING:
+            this->u.str=other.u.str;
+            break;
+        default:
+            break;
+        }
+        return *this;
+    }
+    ~Constant(){}
 };
 
 // struct Exp_
@@ -87,30 +127,63 @@ public:
 class Operand{
 public:
     OperandCategory m_category;
-    union 
+    union
     {
-        Constant constant;
-        Variable *var=nullptr;
-        std::list<Triple>::iterator triple;
+        Constant m_constant;
+        Variable *m_var=nullptr;
+        Triple* m_triple;
     };
     
-    Operand(const Constant &c):constant{c}{}
-    Operand(Variable *v):var{v}{}
-    Operand(const std::list<Triple>::iterator &t):triple{t}{}
+    Operand(const Constant &c):m_category{OperandCategory::CONSTANT},m_constant{c}{}
+    Operand(Variable *v):m_category{OperandCategory::VARIABLE},m_var{v}{}
+    Operand(Triple *t):m_category{OperandCategory::TRIPLE},m_triple{t}{}
     Operand():m_category{OperandCategory::EMPTY}{}
+    //   CONSTANT,VARIABLE,TRIPLE,EMPTY
+    Operand(const Operand &other){
+        m_category=other.m_category;
+        switch (other.m_category)
+        {
+        case OperandCategory::CONSTANT:
+            m_constant=other.m_constant;
+            break;
+        case OperandCategory::VARIABLE:
+            m_var=other.m_var;
+            break;
+        case OperandCategory::TRIPLE:
+            m_triple = other.m_triple; 
+            break;
+        case OperandCategory::EMPTY:
+            // empty
+            break;
+        default:
+            break;
+        }
+    }
+
+    Operand& operator=(const Operand &other){
+        m_category=other.m_category;
+        switch (other.m_category)
+        {
+        case OperandCategory::CONSTANT:
+            this->m_constant=other.m_constant;
+            break;
+        case OperandCategory::VARIABLE:
+            this->m_var=other.m_var;
+            break;
+        case OperandCategory::TRIPLE:
+            this->m_triple=other.m_triple;
+            break;
+        default:
+            break;
+        }
+        return *this;
+    }
+
+    ~Operand(){}
 };
 
-//   union
-//   {
-//     struct { Exp exp_1, exp_2; } expadd_;
-//     struct { Exp exp_1, exp_2; } expsub_;
-//     struct { Exp exp_1, exp_2; } expmul_;
-//     struct { Exp exp_1, exp_2; } expdiv_;
-//     struct { Integer integer_; } explit_;
-//     struct { Ident ident_; } expvar_;
-//   } u;
-
 class Variable{
+public:
     std::string m_ident;     
     DataType m_type;
 
@@ -118,11 +191,12 @@ class Variable{
 };
 
 class Triple{
+public:
+    size_t m_index;
+    Operation m_operation;
     Operand m_op_1;
     Operand m_op_2;
-    Operation m_operation;
-
-    Triple(Operation operation,const Operand &op_1,const Operand &op_2={}):m_op_1{}{}
+    Triple(size_t index,Operation operation,const Operand &op_1,const Operand &op_2={}):m_index{index},m_operation{operation},m_op_1{op_1},m_op_2{op_2}{}
 };
 
 class Argument{
@@ -136,6 +210,8 @@ private:
 public:
     std::string m_name;
     DataType m_return_type;
+    std::vector<Variable*> m_variables;
+    std::vector<Triple*> m_triples;
     std::vector<Argument*> m_arguments;
     ~Function(){
         for(auto *arg: m_arguments)
