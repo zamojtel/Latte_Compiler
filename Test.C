@@ -86,10 +86,6 @@ public:
     }
   }
 
-  void visitNeg(Neg *p) override{
-    
-  }
-
   void visitInt(Int *x) override{
     m_last_visited_type=DataType::INT;
   }
@@ -123,13 +119,17 @@ public:
     std::cout<<"Initialized Identifier: "<<p->ident_<<std::endl;
     push_triple(Operation::ASSIGN,variable,m_nodes_to_operands[p->expr_]);
     m_current_fn->m_variables.push_back(variable);
+  }
 
+  void visitAss(Ass *ass) override {;
+    ass->expr_->accept(this);
+    push_triple(Operation::ASSIGN,m_symbol_table[ass->ident_],m_nodes_to_operands[ass->expr_]);
   }
 
   void visitNoInit(NoInit *p) override {
     std::cout<<"NoInit: "<<p->ident_<<std::endl;
     Variable *variable = new Variable{p->ident_,m_last_visited_type};
-    m_symbol_table[p->ident_]=variable; 
+    m_symbol_table[p->ident_]=variable;
     m_current_fn->m_variables.push_back(variable);
   }
 
@@ -196,7 +196,7 @@ public:
   void visitMod(Mod *mod) override {
     m_current_operation=Operation::MOD;
   }
-
+  
   void print_functions(){
     for(auto *fn : m_functions){ //for readability
       std::cout<<"Function name: "<<fn->m_name<<std::endl;
@@ -246,28 +246,9 @@ public:
         break;
     }
   }
-
-  // void visitPlus(Plus *p)
-  // {
-
-  // }
-  // void visitMinus(Minus *p)
-  // {
-    
-  // }
-
-  // void visitTimes(Times *p)
-  // {
-
-  // }
-
-  // void visitDiv(Div *p)
-  // {
-  // }
-    // MUL,ADD,SUB,DIV,AND,OR,NEG,NOT,ASSIGN,
-    // MOD,LTH,LE,GTH,GE,EQU,NE
+  // MUL,ADD,SUB,DIV,AND,OR,NEG,NOT,ASSIGN,
+  // MOD,LTH,LE,GTH,GE,EQU,NE
   std::string return_operation(Operation operation){
-    
     switch (operation)
     {
       case Operation::ADD:{
