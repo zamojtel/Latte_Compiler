@@ -33,11 +33,14 @@ enum class DataType{
 
 enum class Operation{
     MUL,ADD,SUB,DIV,AND,OR,NEG,NOT,ASSIGN,
-    MOD,LTH,LE,GTH,GE,EQU,NE
+    MOD,LTH,LE,GTH,GE,EQU,NE,
+    //Special Operations
+    JT,JF, // jump if true ,jump if false
+    MARKER // It will indicate a special triple
 };
 
 enum class OperandCategory{
-    CONSTANT,VARIABLE,TRIPLE,EMPTY
+    CONSTANT,VARIABLE,TRIPLE,EMPTY,LABEL
 };
 
 // Int.       Type ::= "int" ;
@@ -110,19 +113,13 @@ public:
     ~Constant(){}
 };
 
-// struct Exp_
-// {
-//   int line_number, char_number;
-//   enum { is_ExpAdd, is_ExpSub, is_ExpMul, is_ExpDiv, is_ExpLit, is_ExpVar } kind;
-//   union
-//   {
-//     struct { Exp exp_1, exp_2; } expadd_;
-//     struct { Exp exp_1, exp_2; } expsub_;
-//     struct { Exp exp_1, exp_2; } expmul_;
-//     struct { Exp exp_1, exp_2; } expdiv_;
-//     struct { Integer integer_; } explit_;
-//     struct { Ident ident_; } expvar_;
-//   } u;
+class Label{
+public:
+    size_t m_index;
+    Triple *m_jump_to;
+
+    Label(size_t index,Triple* jump_to=nullptr):m_index{index},m_jump_to{jump_to}{}
+};
 
 class Operand{
 public:
@@ -132,11 +129,13 @@ public:
         Constant m_constant;
         Variable *m_var=nullptr;
         Triple* m_triple;
+        Label* m_label;
     };
     
     Operand(const Constant &c):m_category{OperandCategory::CONSTANT},m_constant{c}{}
     Operand(Variable *v):m_category{OperandCategory::VARIABLE},m_var{v}{}
     Operand(Triple *t):m_category{OperandCategory::TRIPLE},m_triple{t}{}
+    Operand(Label *l):m_category{OperandCategory::LABEL},m_label{l}{}
     Operand():m_category{OperandCategory::EMPTY}{}
     //   CONSTANT,VARIABLE,TRIPLE,EMPTY
     Operand(const Operand &other){
@@ -152,10 +151,13 @@ public:
         case OperandCategory::TRIPLE:
             m_triple = other.m_triple; 
             break;
+        case OperandCategory::LABEL:
+            m_label=other.m_label;
+            break;
         case OperandCategory::EMPTY:
-            // empty
             break;
         default:
+            throw("No Operand Category");
             break;
         }
     }
@@ -196,7 +198,8 @@ public:
     Operation m_operation;
     Operand m_op_1;
     Operand m_op_2;
-    Triple(size_t index,Operation operation,const Operand &op_1,const Operand &op_2={}):m_index{index},m_operation{operation},m_op_1{op_1},m_op_2{op_2}{}
+    Triple(size_t index,Operation operation,const Operand &op_1={},const Operand &op_2={}):m_index{index},m_operation{operation},m_op_1{op_1},m_op_2{op_2}{}
+
 };
 
 class Argument{

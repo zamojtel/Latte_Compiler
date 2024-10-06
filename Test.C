@@ -48,6 +48,7 @@ public:
 class MyVisitor:public Skeleton {
 private:
   IntermediateProgram * m_program;
+  std::vector<Label*> m_labels;
   std::vector<Function*> m_functions;
   std::vector<std::string> m_generated_code;
   std::map<std::string,Variable*> m_symbol_table;
@@ -58,6 +59,7 @@ private:
   DataType m_last_visited_type;
   OperandCategory m_last_expr_cat;
   Operation m_current_operation;
+
 public:
 
   MyVisitor(IntermediateProgram *prog):m_program{prog}{}
@@ -121,9 +123,19 @@ public:
     m_current_fn->m_variables.push_back(variable);
   }
 
-  void visitAss(Ass *ass) override {;
+  // Przemyslec jak ma dzialc mylabel
+  void visitCond(Cond *p) override {
+    p->expr_->accept(this);
+    Label *jump_to=new Label{m_labels.size()};
+    Triple *jf_triple = push_triple(Operation::JF,m_nodes_to_operands.at(p->expr_),{jump_to});
+    p->stmt_->accept(this);
+    Triple *special_triple=push_triple(Operation::MARKER);
+    jf_triple->m_op_2.m_label->m_jump_to = special_triple;
+  }
+
+  void visitAss(Ass *ass) override {
     ass->expr_->accept(this);
-    push_triple(Operation::ASSIGN,m_symbol_table[ass->ident_],m_nodes_to_operands[ass->expr_]);
+    m_nodes_to_operands[ass->expr_]=push_triple(Operation::ASSIGN,m_symbol_table[ass->ident_],m_nodes_to_operands[ass->expr_]);
   }
 
   void visitNoInit(NoInit *p) override {
@@ -150,21 +162,24 @@ public:
   
   void visitELitInt(ELitInt *p) override{
     Constant constant{p->integer_};
+  
     m_nodes_to_operands[p]=constant;
   }
 
-  Triple* push_triple(Operation operation,const Operand &op_1,const Operand &op_2){
+  Triple* push_triple(Operation operation,const Operand &op_1={},const Operand &op_2={}){
     Triple *triple = new Triple{m_current_fn->m_triples.size()+1,operation,op_1,op_2};
     m_current_fn->m_triples.push_back(triple);
     return triple;
   }
-
+  void visitEVar(EVar *p)override{
+    m_nodes_to_operands[p] = m_symbol_table[p->ident_]; //lokalnie tymczasowo tworzony jest operand
+  }
   void visitEAdd(EAdd *p) override {
     p->expr_1->accept(this);
     p->addop_->accept(this); // here we want to figure the correct operation
     p->expr_2->accept(this);
     
-    m_nodes_to_operands[p]=push_triple(m_current_operation,m_nodes_to_operands[p->expr_1],m_nodes_to_operands[p->expr_2]);
+    m_nodes_to_operands[p] = push_triple(m_current_operation,m_nodes_to_operands.at(p->expr_1),m_nodes_to_operands.at(p->expr_2));
   }
 
   void visitEMul(EMul *p) override{
@@ -173,7 +188,55 @@ public:
     p->mulop_->accept(this);
 
     p->expr_2->accept(this);
-    m_nodes_to_operands[p] = push_triple(m_current_operation,m_nodes_to_operands[p->expr_1],m_nodes_to_operands[p->expr_2]);
+    m_nodes_to_operands[p] = push_triple(m_current_operation,m_nodes_to_operands.at(p->expr_1),m_nodes_to_operands.at(p->expr_2));
+  }
+
+  void visitLTH(LTH *p) override {
+    m_current_operation = Operation::LTH;
+  }
+
+  void visitLE(LE *p) override {
+    m_current_operation = Operation::LE;
+  }
+
+  void visitGTH(GTH *p) override {
+    m_current_operation = Operation::GTH;
+  }
+
+  void visitGE(GE *p) override {
+    m_current_operation = Operation::GE;
+  }
+
+  void visitEQU(EQU *p) override{
+    m_current_operation = Operation::EQU;
+  }
+
+  void visitNE(NE *p) override{
+    m_current_operation=Operation::NE;
+  }
+
+  void visitERel(ERel *p) override {
+    p->relop_->accept(this);
+    p->expr_1->accept(this);
+    p->expr_2->accept(this);
+    Operand op_1 = m_nodes_to_operands.at(p->expr_1);
+    Operand op_2 = m_nodes_to_operands.at(p->expr_2);
+    
+    m_nodes_to_operands[p]=push_triple(m_current_operation,m_nodes_to_operands.at(p->expr_1),m_nodes_to_operands.at(p->expr_2));
+  }
+
+  void visitEAnd(EAnd *p) override{
+    p->expr_1->accept(this);
+    p->expr_2->accept(this);
+    
+    m_nodes_to_operands[p]=push_triple(Operation::AND,m_nodes_to_operands.at(p->expr_1),m_nodes_to_operands.at(p->expr_2));
+  }
+
+  void visitEOr(EOr *p){
+    p->expr_1->accept(this);
+    p->expr_2->accept(this);
+    
+    m_nodes_to_operands[p]=push_triple(Operation::OR,m_nodes_to_operands.at(p->expr_1),m_nodes_to_operands.at(p->expr_2));
   }
 
   void visitPlus(Plus *p) override {
@@ -224,7 +287,7 @@ public:
       break;
     }
   }
-
+  
   void print_operand(const Operand &operand){
     //  CONSTANT,VARIABLE,TRIPLE,EMPTY
     switch (operand.m_category)
@@ -241,13 +304,18 @@ public:
       case OperandCategory::EMPTY:
         std::cout<<"- ";
         break;
+      case OperandCategory::LABEL:
+        if(operand.m_label->m_jump_to!=nullptr)
+          std::cout<<"t"<<operand.m_label->m_jump_to->m_index<<" ";
+        else
+          std::cout<<"No label set ";
+        break;
       default:
         throw 0; //it is yet to be changed
         break;
     }
   }
-  // MUL,ADD,SUB,DIV,AND,OR,NEG,NOT,ASSIGN,
-  // MOD,LTH,LE,GTH,GE,EQU,NE
+
   std::string return_operation(Operation operation){
     switch (operation)
     {
@@ -261,6 +329,28 @@ public:
         return " SUB: ";
       case Operation::DIV:
         return " DIV: ";
+      case Operation::AND:
+        return " AND: ";
+      case Operation::OR:
+        return " OR: ";
+      case Operation::LTH:
+        return " LTH: ";
+      case Operation::LE:
+        return " LE: ";
+      case Operation::GTH:
+        return " GTH: ";
+      case Operation::GE:
+        return " GE: ";
+      case Operation::EQU:
+        return " EQU: ";
+      case Operation::NE:
+        return " NE: ";
+      case Operation::JT:
+        return " JT: ";
+      case Operation::JF:
+        return " JF: ";
+      case Operation::MARKER:
+        return " MARKER: ";
       default:
         return " ";
       }
@@ -270,7 +360,7 @@ public:
   void print_triples(){
     for(auto *triple: m_current_fn->m_triples){
       std::cout<<"t"<<triple->m_index<<return_operation(triple->m_operation);
-
+      
       print_operand(triple->m_op_1);
       print_operand(triple->m_op_2);
       std::cout<<std::endl;
