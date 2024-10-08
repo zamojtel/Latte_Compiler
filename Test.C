@@ -123,7 +123,22 @@ public:
     m_current_fn->m_variables.push_back(variable);
   }
 
-  // Przemyslec jak ma dzialc mylabel
+  void visitWhile(While *p) override {
+    Label * cond_label = create_label();
+    Triple * cond_marker = push_triple(Operation::MARKER);
+    cond_label->m_jump_to=cond_marker;
+
+    p->expr_->accept(this);
+    Label *end_label = create_label();
+    push_triple(Operation::JF,m_nodes_to_operands.at(p->expr_),{end_label});
+
+    p->stmt_->accept(this);
+    push_triple(Operation::JMP,{cond_label});
+    Triple *end_marker = push_triple(Operation::MARKER);
+    end_label->m_jump_to = end_marker;
+
+  }
+
   void visitCond(Cond *p) override {
     p->expr_->accept(this);
     Label *jump_to=new Label{m_labels.size()};
@@ -131,6 +146,22 @@ public:
     p->stmt_->accept(this);
     Triple *special_triple=push_triple(Operation::MARKER);
     jf_triple->m_op_2.m_label->m_jump_to = special_triple;
+  }
+
+  void visitCondElse(CondElse *p) override{
+    p->expr_->accept(this);
+    Label *jump_to_else = create_label();
+    Label *jump_out_if = create_label();
+
+    Triple *jf_triple = push_triple(Operation::JF,m_nodes_to_operands.at(p->expr_),{jump_to_else});
+    p->stmt_1->accept(this);
+    Triple *jmp_triple = push_triple(Operation::JMP,m_nodes_to_operands.at(p->expr_),{jump_out_if});
+    Triple* special_marker_before_else =push_triple(Operation::MARKER);
+    p->stmt_2->accept(this);
+    Triple* special_marker_end_of_if =push_triple(Operation::MARKER);
+
+    jf_triple->m_op_2.m_label->m_jump_to=special_marker_before_else;
+    jmp_triple->m_op_2.m_label->m_jump_to=special_marker_end_of_if;
   }
 
   void visitAss(Ass *ass) override {
@@ -165,11 +196,18 @@ public:
   
     m_nodes_to_operands[p]=constant;
   }
+  
+ 
 
   Triple* push_triple(Operation operation,const Operand &op_1={},const Operand &op_2={}){
     Triple *triple = new Triple{m_current_fn->m_triples.size()+1,operation,op_1,op_2};
     m_current_fn->m_triples.push_back(triple);
     return triple;
+  }
+  Label* create_label(){
+    Label *label = new Label{m_labels.size()};
+    m_labels.push_back(label);
+    return label;
   }
   void visitEVar(EVar *p)override{
     m_nodes_to_operands[p] = m_symbol_table[p->ident_]; //lokalnie tymczasowo tworzony jest operand
@@ -351,6 +389,8 @@ public:
         return " JF: ";
       case Operation::MARKER:
         return " MARKER: ";
+      case Operation::JMP:
+        return " JUMP: ";
       default:
         return " ";
       }

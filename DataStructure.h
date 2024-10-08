@@ -36,7 +36,8 @@ enum class Operation{
     MOD,LTH,LE,GTH,GE,EQU,NE,
     //Special Operations
     JT,JF, // jump if true ,jump if false
-    MARKER // It will indicate a special triple
+    MARKER, // It will indicate a special triple
+    JMP
 };
 
 enum class OperandCategory{
