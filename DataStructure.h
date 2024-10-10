@@ -3,33 +3,11 @@
 
 class Variable;
 class Triple;
-std::list<Triple> m_triples;
+class Function;
 
 enum class DataType{
     INT,BOOL,STRING,
 };
-
-// EVar.      Expr6 ::= Ident ;
-// ELitInt.   Expr6 ::= Integer ;
-// ELitTrue.  Expr6 ::= "true" ;
-// ELitFalse. Expr6 ::= "false" ;
-// EApp.      Expr6 ::= Ident "(" [Expr] ")" ;
-// EString.   Expr6 ::= String ;
-// Neg.       Expr5 ::= "-" Expr6 ;
-// Not.       Expr5 ::= "!" Expr6 ;
-// EMul.      Expr4 ::= Expr4 MulOp Expr5 ;
-// EAdd.      Expr3 ::= Expr3 AddOp Expr4 ;
-// ERel.      Expr2 ::= Expr2 RelOp Expr3 ;
-// EAnd.      Expr1 ::= Expr2 "&&" Expr1 ;
-// EOr.       Expr ::= Expr1 "||" Expr ;
-
-// Mod.       MulOp ::= "%" ;
-// LTH.       RelOp ::= "<" ;
-// LE.        RelOp ::= "<=" ;
-// GTH.       RelOp ::= ">" ;
-// GE.        RelOp ::= ">=" ;
-// EQU.       RelOp ::= "==" ;
-// NE.        RelOp ::= "!=" ;
 
 enum class Operation{
     MUL,ADD,SUB,DIV,AND,OR,NEG,NOT,ASSIGN,
@@ -37,24 +15,14 @@ enum class Operation{
     //Special Operations
     JT,JF, // jump if true ,jump if false
     MARKER, // It will indicate a special triple
-    JMP
+    JMP, 
+    CALL, // Function Invocation
+    PARAM
 };
 
 enum class OperandCategory{
-    CONSTANT,VARIABLE,TRIPLE,EMPTY,LABEL
+    CONSTANT,VARIABLE,TRIPLE,EMPTY,LABEL,FUNCTION
 };
-
-// Int.       Type ::= "int" ;
-
-// Str.       Type ::= "string" ;
-
-// Bool.      Type ::= "boolean" ;
-
-// Void.      Type ::= "void" ;
-
-// internal   Fun. Type ::= Type "(" [Type] ")" ;
-
-// separator  Type "," ;
 
 class Constant{
 public:
@@ -131,12 +99,14 @@ public:
         Variable *m_var=nullptr;
         Triple* m_triple;
         Label* m_label;
+        Function* m_function;
     };
     
     Operand(const Constant &c):m_category{OperandCategory::CONSTANT},m_constant{c}{}
     Operand(Variable *v):m_category{OperandCategory::VARIABLE},m_var{v}{}
     Operand(Triple *t):m_category{OperandCategory::TRIPLE},m_triple{t}{}
     Operand(Label *l):m_category{OperandCategory::LABEL},m_label{l}{}
+    Operand(Function *f):m_category{OperandCategory::FUNCTION},m_function{f}{}
     Operand():m_category{OperandCategory::EMPTY}{}
     //   CONSTANT,VARIABLE,TRIPLE,EMPTY
     Operand(const Operand &other){
@@ -157,6 +127,9 @@ public:
             break;
         case OperandCategory::EMPTY:
             break;
+        case OperandCategory::FUNCTION:
+            m_function=other.m_function;
+            break;
         default:
             throw("No Operand Category");
             break;
@@ -176,6 +149,8 @@ public:
         case OperandCategory::TRIPLE:
             this->m_triple=other.m_triple;
             break;
+        case OperandCategory::FUNCTION:
+            this->m_function=other.m_function;
         default:
             break;
         }
@@ -221,4 +196,76 @@ public:
         for(auto *arg: m_arguments)
             delete arg;
     }
+};
+
+enum class SymbolTableCategory{
+    VARIABLE,FUNCTION,EMPTY
+};
+
+class SymbolTableEntry{
+public:
+    SymbolTableCategory m_category;
+    union{
+        Variable *m_variable;
+        Function *m_function;
+    };
+    SymbolTableEntry(Variable *var):m_category{SymbolTableCategory::VARIABLE},m_variable{var}{}
+    SymbolTableEntry(Function *fun):m_category{SymbolTableCategory::FUNCTION},m_function{fun}{}
+    SymbolTableEntry():m_category{SymbolTableCategory::EMPTY}{}
+};
+
+class SymbolTable{
+public:
+    std::vector<std::map<std::string,SymbolTableEntry>> m_entries;
+    
+    void push(){
+        m_entries.push_back({});
+    }
+
+    void pop(){
+        m_entries.pop_back();
+    }
+
+    void add(const std::string &entry_name,const SymbolTableEntry &entry){
+        m_entries.back()[entry_name]=entry;
+    }
+
+    // to-do
+    // std::optional 
+    const SymbolTableEntry* get_entry(const std::string &name){
+        // we go level by level 
+        for(size_t i=m_entries.size();i-->0;){
+            if(m_entries[i].count(name))
+                return &m_entries[i].at(name);
+        }
+        return nullptr;
+    }
+    
+  
+    Variable* get_variable(const std::string &name){
+        for(size_t i=m_entries.size();i-->0;){
+            if(m_entries[i].count(name)){
+                if(m_entries[i].at(name).m_category==SymbolTableCategory::VARIABLE)
+                    return m_entries[i].at(name).m_variable;
+                else
+                    return nullptr;
+            }
+        }
+        return nullptr;
+    }
+
+    
+    Function * get_function(const std::string &name){
+        for(size_t i=m_entries.size();i-->0;){
+            if(m_entries[i].count(name)){
+                if(m_entries[i].at(name).m_category==SymbolTableCategory::FUNCTION)
+                    return m_entries[i].at(name).m_function;
+                else
+                    return nullptr;
+            }
+        }
+        return nullptr;
+    }
+
+    SymbolTable(){}
 };

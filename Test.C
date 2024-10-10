@@ -51,7 +51,8 @@ private:
   std::vector<Label*> m_labels;
   std::vector<Function*> m_functions;
   std::vector<std::string> m_generated_code;
-  std::map<std::string,Variable*> m_symbol_table;
+  // std::map<std::string,Variable*> m_symbol_table;
+  SymbolTable m_symbol_table;
   std::map<Visitable*,Operand> m_nodes_to_operands;
   Function * m_current_fn;
   Argument * m_current_arg;
@@ -64,13 +65,17 @@ public:
 
   MyVisitor(IntermediateProgram *prog):m_program{prog}{}
   void visitProg(Prog *p) override {
+    m_symbol_table.push();
     std::cout<<"Begin Program"<<std::endl;
     p->listtopdef_->accept(this);
     std::cout<<"End Program"<<std::endl;
+    m_symbol_table.pop();
   }
   
   void visitFnDef(FnDef *p) override {
     m_current_fn = new Function;
+    m_symbol_table.add(p->ident_,m_current_fn);
+    m_symbol_table.push();
     std::cout<<"Begin function definition"<<std::endl;
     std::cout<<"Function name : "<<p->ident_<<std::endl;
     m_current_fn->m_name=p->ident_;
@@ -80,12 +85,27 @@ public:
     p->block_->accept(this);
     std::cout<<"End function definition"<<std::endl;
     m_functions.push_back(m_current_fn);
+    m_symbol_table.pop();
   }
 
+  void visitEApp(EApp *p) override{
+    if(p->listexpr_!=nullptr)
+      p->listexpr_->accept(this);
+
+    for(auto *expr: *p->listexpr_){
+      expr->accept(this);
+      push_triple(Operation::PARAM,m_nodes_to_operands[expr]);
+    }
+
+    m_nodes_to_operands[p] = push_triple(Operation::CALL,m_symbol_table.get_function(p->ident_),Constant{(int)p->listexpr_->size()});
+  }
+ 
   void visitBlk(Blk *p){
+    m_symbol_table.push();
     for(auto statement : *p->liststmt_){
       statement->accept(this);
     }
+    m_symbol_table.pop();
   }
 
   void visitInt(Int *x) override{
@@ -101,7 +121,7 @@ public:
     }
   }
 
-  virtual void visitAr(Ar *p) override{
+  void visitAr(Ar *p) override{
     std::cout<<"Argument Identifier: "<<p->ident_<<std::endl;
     m_current_arg->m_identifier=p->ident_;
     p->type_->accept(this);
@@ -116,7 +136,8 @@ public:
   
   void visitInit(Init *p) override {
     Variable *variable = new Variable{p->ident_,m_last_visited_type};
-    m_symbol_table[p->ident_]=variable; // if insert then iterator has to be passed 
+    m_symbol_table.add(p->ident_,variable);
+    // m_symbol_table[p->ident_]=variable; // if insert then iterator has to be passed 
     p->expr_->accept(this);
     std::cout<<"Initialized Identifier: "<<p->ident_<<std::endl;
     push_triple(Operation::ASSIGN,variable,m_nodes_to_operands[p->expr_]);
@@ -166,13 +187,14 @@ public:
 
   void visitAss(Ass *ass) override {
     ass->expr_->accept(this);
-    m_nodes_to_operands[ass->expr_]=push_triple(Operation::ASSIGN,m_symbol_table[ass->ident_],m_nodes_to_operands[ass->expr_]);
+    // m_symbol_table
+    m_nodes_to_operands[ass->expr_]=push_triple(Operation::ASSIGN,m_symbol_table.get_variable(ass->ident_),m_nodes_to_operands[ass->expr_]);
   }
 
   void visitNoInit(NoInit *p) override {
     std::cout<<"NoInit: "<<p->ident_<<std::endl;
     Variable *variable = new Variable{p->ident_,m_last_visited_type};
-    m_symbol_table[p->ident_]=variable;
+    m_symbol_table.add(p->ident_,variable);
     m_current_fn->m_variables.push_back(variable);
   }
 
@@ -193,7 +215,6 @@ public:
   
   void visitELitInt(ELitInt *p) override{
     Constant constant{p->integer_};
-  
     m_nodes_to_operands[p]=constant;
   }
   
@@ -204,14 +225,17 @@ public:
     m_current_fn->m_triples.push_back(triple);
     return triple;
   }
+
   Label* create_label(){
     Label *label = new Label{m_labels.size()};
     m_labels.push_back(label);
     return label;
   }
+
   void visitEVar(EVar *p)override{
-    m_nodes_to_operands[p] = m_symbol_table[p->ident_]; //lokalnie tymczasowo tworzony jest operand
+    m_nodes_to_operands[p] = m_symbol_table.get_variable(p->ident_); //lokalnie tymczasowo tworzony jest operand
   }
+
   void visitEAdd(EAdd *p) override {
     p->expr_1->accept(this);
     p->addop_->accept(this); // here we want to figure the correct operation
@@ -348,6 +372,9 @@ public:
         else
           std::cout<<"No label set ";
         break;
+      case OperandCategory::FUNCTION:
+          std::cout<<operand.m_function->m_name<<" ";
+          break;
       default:
         throw 0; //it is yet to be changed
         break;
@@ -391,6 +418,10 @@ public:
         return " MARKER: ";
       case Operation::JMP:
         return " JUMP: ";
+      case Operation::CALL:
+        return " CALL: ";
+      case Operation::PARAM:
+        return " PARAM: ";
       default:
         return " ";
       }
