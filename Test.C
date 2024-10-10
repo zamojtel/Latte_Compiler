@@ -63,9 +63,46 @@ private:
 
 public:
 
+  void add_predefined_functions(){
+    // void printInt(int)
+    Function * print_int = new Function{PredefinedFunction::PRINTINT};
+    print_int->m_name = "printInt";
+    print_int->m_return_type = DataType::VOID;
+    print_int->m_arguments.push_back(new Argument{DataType::INT,"value"});
+
+    Function * print_string = new Function{PredefinedFunction::PRINTSTRING};
+    print_string->m_name = "printString";
+    print_string->m_return_type=DataType::VOID;
+    print_string->m_arguments.push_back(new Argument{DataType::STRING,"value"});
+
+    // void error()
+    Function * error = new Function{PredefinedFunction::ERROR};
+    error->m_name = "error";
+    error->m_return_type=DataType::VOID;
+
+    // int readInt()
+    Function * read_int = new Function{PredefinedFunction::READINT};
+    read_int->m_name = "readInt";
+    read_int->m_return_type = DataType::INT;
+
+    // string readString()
+    Function * read_string = new Function{PredefinedFunction::PRINTSTRING};
+    read_string->m_name="readString";
+    read_string->m_return_type=DataType::STRING;
+
+    m_symbol_table.add(print_int->m_name,print_int);
+    m_symbol_table.add(print_string->m_name,print_string);
+    m_symbol_table.add(error->m_name,error);
+    m_symbol_table.add(read_int->m_name,read_int);
+    m_symbol_table.add(read_string->m_name,read_string);
+
+  }
+
   MyVisitor(IntermediateProgram *prog):m_program{prog}{}
   void visitProg(Prog *p) override {
     m_symbol_table.push();
+    // load predefined functions
+    add_predefined_functions();
     std::cout<<"Begin Program"<<std::endl;
     p->listtopdef_->accept(this);
     std::cout<<"End Program"<<std::endl;
@@ -94,7 +131,8 @@ public:
 
     for(auto *expr: *p->listexpr_){
       expr->accept(this);
-      push_triple(Operation::PARAM,m_nodes_to_operands[expr]);
+
+      push_triple(Operation::PARAM,m_nodes_to_operands.at(expr));
     }
 
     m_nodes_to_operands[p] = push_triple(Operation::CALL,m_symbol_table.get_function(p->ident_),Constant{(int)p->listexpr_->size()});
@@ -110,6 +148,10 @@ public:
 
   void visitInt(Int *x) override{
     m_last_visited_type=DataType::INT;
+  }
+
+  void visitBool(Bool *p) override{
+    m_last_visited_type=DataType::BOOL;
   }
 
   void visitListArg(ListArg *p) override{
@@ -206,7 +248,7 @@ public:
     case DataType::BOOL:
       return "bool";
     case DataType::STRING:
-      return "STRING";
+      return "string";
     default:
       return "";
       break;
@@ -217,8 +259,18 @@ public:
     Constant constant{p->integer_};
     m_nodes_to_operands[p]=constant;
   }
+
+  void visitELitTrue(ELitTrue *p) override {
+    m_nodes_to_operands[p]= {true};
+  }
+
+  void visitELitFalse(ELitFalse *p) override{
+    m_nodes_to_operands[p]= {false};
+  }
   
- 
+  void visitEString(EString *p) override {
+    m_nodes_to_operands[p]= {p->string_};
+  }
 
   Triple* push_triple(Operation operation,const Operand &op_1={},const Operand &op_2={}){
     Triple *triple = new Triple{m_current_fn->m_triples.size()+1,operation,op_1,op_2};
@@ -335,15 +387,14 @@ public:
   void print_constant(const Constant &constant){
     switch (constant.m_type)
     {
-    case DataType::INT:{
+    case DataType::INT:
       std::cout<<"INT("<<constant.u.integer<<") ";
       break;
-    }
     case DataType::BOOL:
-      std::cout<<"BOOL : "<<constant.u.boolean;
+      std::cout<<"BOOL("<<constant.u.boolean<<")";
       break;
     case DataType::STRING:
-      std::cout<<"STRING : "<<constant.u.str;
+      std::cout<<"STRING("<<constant.u.str<<")";
       break;
     default:
       break;

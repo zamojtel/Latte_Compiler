@@ -6,7 +6,7 @@ class Triple;
 class Function;
 
 enum class DataType{
-    INT,BOOL,STRING,
+    INT,BOOL,STRING,VOID
 };
 
 enum class Operation{
@@ -23,6 +23,11 @@ enum class Operation{
 enum class OperandCategory{
     CONSTANT,VARIABLE,TRIPLE,EMPTY,LABEL,FUNCTION
 };
+
+template<class T>
+void call_destructor(T* arg){
+    arg->~T();
+}
 
 class Constant{
 public:
@@ -41,8 +46,13 @@ public:
         u.integer=value;
     }
 
-    Constant(bool value):m_type{DataType::INT}{
+    Constant(bool value):m_type{DataType::BOOL}{
         u.boolean=value;
+    }
+
+    Constant(std::string &s):m_type{DataType::STRING}{
+        new (&u.str) std::string(s); // where and what  
+        u.str=s;
     }
     
     Constant(const Constant &constant){
@@ -55,13 +65,24 @@ public:
         case DataType::BOOL:
             u.boolean = constant.u.boolean;
             break;
+        case DataType::STRING:{
+            new (&u.str) std::string(constant.u.str);
+            // u.str = constant.u.str;
+        }
         default:
             break;
         }
     }
 
+
     Constant& operator=(const Constant &other){
         // INT,BOOL,STRING,
+        if(this == &other)
+            return *this;
+
+        if(this->m_type==DataType::STRING)
+            call_destructor(&this->u.str);
+        
         m_type=other.m_type;
         switch (other.m_type)
         {
@@ -71,15 +92,23 @@ public:
         case DataType::BOOL:
             this->u.boolean=other.u.boolean;
             break;
-        case DataType::STRING:
+        case DataType::STRING:{
+            new (&u.str) std::string;
             this->u.str=other.u.str;
             break;
+        }
         default:
             break;
         }
         return *this;
     }
-    ~Constant(){}
+
+    ~Constant(){
+        if(m_type==DataType::STRING){
+            call_destructor(&u.str);
+            // u.str.~string();
+        }
+    }
 };
 
 class Label{
@@ -182,16 +211,36 @@ class Argument{
 public:
     DataType m_type;
     std::string m_identifier;
+    Argument(){}
+    Argument(DataType type,std::string id):m_type{type},m_identifier{id}{}
+};
+
+    // void printInt(int)
+    // void printString(string)
+    // void error()
+    // int readInt()
+    // string readString()
+
+enum PredefinedFunction{
+    PRINTINT,
+    PRINTSTRING,
+    ERROR,
+    READINT,
+    READSTRING,
+    USERDEFINED
 };
 
 class Function{
 private:
 public:
+    PredefinedFunction m_type;
     std::string m_name;
     DataType m_return_type;
     std::vector<Variable*> m_variables;
     std::vector<Triple*> m_triples;
     std::vector<Argument*> m_arguments;
+    Function(PredefinedFunction p=PredefinedFunction::USERDEFINED):m_type{p}{}
+
     ~Function(){
         for(auto *arg: m_arguments)
             delete arg;
