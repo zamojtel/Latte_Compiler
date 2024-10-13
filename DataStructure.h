@@ -6,8 +6,24 @@ class Triple;
 class Function;
 
 enum class DataType{
-    INT,BOOL,STRING,VOID
+    INT,BOOL,STRING,VOID,ERROR
 };
+
+std::string data_type_to_string(const DataType &type){
+    switch (type)
+    {
+    case DataType::INT:
+        return "int";
+    case DataType::BOOL:
+        return "bool";
+    case DataType::STRING:
+        return "string";
+    case DataType::VOID:
+        return "void";
+    default:
+        return "UNDEFINED_TYPE";
+    }
+}
 
 enum class Operation{
     MUL,ADD,SUB,DIV,AND,OR,NEG,NOT,ASSIGN,
@@ -74,12 +90,10 @@ public:
         }
     }
 
-
     Constant& operator=(const Constant &other){
         // INT,BOOL,STRING,
         if(this == &other)
             return *this;
-
         if(this->m_type==DataType::STRING)
             call_destructor(&this->u.str);
         
@@ -117,6 +131,14 @@ public:
     Triple *m_jump_to;
 
     Label(size_t index,Triple* jump_to=nullptr):m_index{index},m_jump_to{jump_to}{}
+};
+
+class Variable{
+public:
+    std::string m_ident;     
+    DataType m_type;
+
+    Variable(const std::string &ident,DataType type):m_ident{ident},m_type{type}{}
 };
 
 class Operand{
@@ -185,20 +207,13 @@ public:
         }
         return *this;
     }
-
+    DataType get_type() const;
     ~Operand(){}
-};
-
-class Variable{
-public:
-    std::string m_ident;     
-    DataType m_type;
-
-    Variable(const std::string &ident,DataType type):m_ident{ident},m_type{type}{}
 };
 
 class Triple{
 public:
+    DataType m_type;
     size_t m_index;
     Operation m_operation;
     Operand m_op_1;
@@ -206,6 +221,22 @@ public:
     Triple(size_t index,Operation operation,const Operand &op_1={},const Operand &op_2={}):m_index{index},m_operation{operation},m_op_1{op_1},m_op_2{op_2}{}
 
 };
+
+DataType Operand::get_type() const{
+       
+        switch (m_category)
+        {
+        case OperandCategory::CONSTANT:
+            return m_constant.m_type;
+        case OperandCategory::VARIABLE:
+            return m_var->m_type;
+        case OperandCategory::TRIPLE:
+            return m_triple->m_type;
+        default:
+            throw 0;
+            break;
+        }
+}
 
 class Argument{
 public:
@@ -215,11 +246,13 @@ public:
     Argument(DataType type,std::string id):m_type{type},m_identifier{id}{}
 };
 
-    // void printInt(int)
-    // void printString(string)
-    // void error()
-    // int readInt()
-    // string readString()
+class Error{
+public:
+    size_t m_code=0;
+    size_t m_line;
+    std::string m_msg;
+    Error(size_t l,const std::string &msg):m_line{l},m_msg{msg}{}
+};
 
 enum PredefinedFunction{
     PRINTINT,

@@ -19,6 +19,7 @@
 #include "DataStructure.cpp"
 #include "Skeleton.H"
 #include "Skeleton.C"
+#include <format>
 
 void usage() {
   printf("usage: Call with one of the following argument combinations:\n");
@@ -45,13 +46,34 @@ public:
   }
 };
 
+class ErrorList {
+public:
+  std::vector<Error*> m_errors;
+  void add_error(size_t l,std::string &msg){
+    m_errors.push_back(new Error{l,msg});
+  }
+
+  void print_errors(){
+    for(auto *err : m_errors){
+      std::string error = std::format("Error in line {}: {} ",err->m_line,err->m_msg);
+      std::cout<<error<<std::endl;
+    }
+  }
+  bool errors_occured(){return m_errors.size()>0;}
+
+  ~ErrorList(){
+    for(auto *err : m_errors)
+      delete err;
+  }
+};
+
 class MyVisitor:public Skeleton {
 private:
   IntermediateProgram * m_program;
   std::vector<Label*> m_labels;
   std::vector<Function*> m_functions;
   std::vector<std::string> m_generated_code;
-  // std::map<std::string,Variable*> m_symbol_table;
+  ErrorList m_error_list;
   SymbolTable m_symbol_table;
   std::map<Visitable*,Operand> m_nodes_to_operands;
   Function * m_current_fn;
@@ -60,8 +82,14 @@ private:
   DataType m_last_visited_type;
   OperandCategory m_last_expr_cat;
   Operation m_current_operation;
-
 public:
+  
+  bool errors_occured(){
+    return m_error_list.errors_occured();
+  }
+  void print_errors(){
+    m_error_list.print_errors();
+  }
 
   void add_predefined_functions(){
     // void printInt(int)
@@ -126,12 +154,37 @@ public:
   }
 
   void visitEApp(EApp *p) override{
+    
+    Function * fn = m_symbol_table.get_function(p->ident_);
+    if(fn==nullptr){
+      std::string msg=std::format("Undefined function {}",p->ident_); 
+      m_error_list.add_error(0,msg);
+      return;
+    }
+      
+    if(fn->m_arguments.size() != p->listexpr_->size()){
+      std::string msg=std::format("Incorrect number of arguments, expected: {}, passed {}",fn->m_arguments.size(),p->listexpr_->size()); 
+      m_error_list.add_error(0,msg);
+      return;
+    }
+  
     if(p->listexpr_!=nullptr)
       p->listexpr_->accept(this);
+    
+    for(size_t i=0;i<fn->m_arguments.size();i++){
+      DataType fn_argument_type = fn->m_arguments[i]->m_type;
+      DataType current_argument_type = m_nodes_to_operands[p->listexpr_->at(i)].get_type();
+      // to-do implicit conversion
+
+      // we assume that as for now they will have the same type
+      if(fn_argument_type!=current_argument_type){
+        std::string msg=std::format("Mismatched argument type {}, expected type {}, provided {}",i+1,data_type_to_string(fn_argument_type),data_type_to_string(current_argument_type));
+        m_error_list.add_error(0,msg);
+      }
+      
+    }
 
     for(auto *expr: *p->listexpr_){
-      expr->accept(this);
-
       push_triple(Operation::PARAM,m_nodes_to_operands.at(expr));
     }
 
@@ -271,9 +324,96 @@ public:
   void visitEString(EString *p) override {
     m_nodes_to_operands[p]= {p->string_};
   }
+  //   MUL,ADD,SUB,DIV,AND,OR,NEG,NOT,ASSIGN,
+  //   MOD,LTH,LE,GTH,GE,EQU,NE,
+  //   //Special Operations
+  //   JT,JF, // jump if true ,jump if false
+  //   MARKER, // It will indicate a special triple
+  //   JMP, 
+  //   CALL, // Function Invocation
+  //   PARAM
 
+  DataType deduce_type(Triple *triple){
+    // triple->m_operation;
+    DataType op_1_type=triple->m_op_1.get_type();
+    DataType op_2_type=triple->m_op_1.get_type();
+    switch (triple->m_operation)
+    {
+    case Operation::MUL:{
+        if(op_1_type==DataType::INT && op_2_type==DataType::INT)
+          return DataType::INT;
+        else if(op_1_type==DataType::INT && op_2_type==DataType::BOOL)
+          return DataType::ERROR;
+      break;
+    }
+    case Operation::ADD:
+    
+      break;
+    case Operation::SUB:
+    
+      break;
+    case Operation::DIV:
+    
+      break;
+    case Operation::AND:
+    
+      break;
+    case Operation::OR:
+    
+      break;
+    case Operation::NEG:
+    
+      break;
+    case Operation::NOT:
+    
+      break;
+    case Operation::ASSIGN:
+    
+      break;
+    case Operation::MOD:
+    
+      break;
+    case Operation::LTH:
+    
+      break;
+    case Operation::LE:
+    
+      break;
+    case Operation::GTH:
+    
+      break;
+    case Operation::GE:
+    
+      break;
+    case Operation::EQU:
+    
+      break;
+    case Operation::NE:
+    
+      break;
+    case Operation::JT:
+    
+      break;
+    case Operation::JF:
+    
+      break;
+    case Operation::JMP:
+    
+      break;
+    case Operation::CALL:
+
+      break;
+    case Operation::PARAM:
+
+      break;
+    default:
+      break;
+    }
+  }
+  
   Triple* push_triple(Operation operation,const Operand &op_1={},const Operand &op_2={}){
     Triple *triple = new Triple{m_current_fn->m_triples.size()+1,operation,op_1,op_2};
+    
     m_current_fn->m_triples.push_back(triple);
     return triple;
   }
@@ -380,7 +520,7 @@ public:
       std::cout<<"Function return type: "<<type_to_string(fn->m_return_type)<<std::endl;
       std::cout<<"Arguments: "<<std::endl;
       for(auto *arg : fn->m_arguments)
-        std::cout<<" Indentifier: "<<arg->m_identifier<<"Type :"<<type_to_string(arg->m_type)<<std::endl;
+        std::cout<<" Identifier: "<<arg->m_identifier<<"\n Type :"<<type_to_string(arg->m_type)<<std::endl;
     }
   }
 
@@ -536,6 +676,9 @@ int main(int argc, char ** argv)
   my_visitor.print_functions();
   std::cout<<"Printing tripples : "<<std::endl;
   my_visitor.print_triples();
+  if(my_visitor.errors_occured()){
+    my_visitor.print_errors();
+  }
 
   quiet=true;
   if (parse_tree)
