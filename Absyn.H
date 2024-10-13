@@ -181,77 +181,77 @@ class Program : public Visitable
 {
 public:
   virtual Program *clone() const = 0;
-
+  int line_number, char_number;
 };
 
 class TopDef : public Visitable
 {
 public:
   virtual TopDef *clone() const = 0;
-
+  int line_number, char_number;
 };
 
 class Arg : public Visitable
 {
 public:
   virtual Arg *clone() const = 0;
-
+  int line_number, char_number;
 };
 
 class Block : public Visitable
 {
 public:
   virtual Block *clone() const = 0;
-
+  int line_number, char_number;
 };
 
 class Stmt : public Visitable
 {
 public:
   virtual Stmt *clone() const = 0;
-
+  int line_number, char_number;
 };
 
 class Item : public Visitable
 {
 public:
   virtual Item *clone() const = 0;
-
+  int line_number, char_number;
 };
 
 class Type : public Visitable
 {
 public:
   virtual Type *clone() const = 0;
-
+  int line_number, char_number;
 };
 
 class Expr : public Visitable
 {
 public:
   virtual Expr *clone() const = 0;
-
+  int line_number, char_number;
 };
 
 class AddOp : public Visitable
 {
 public:
   virtual AddOp *clone() const = 0;
-
+  int line_number, char_number;
 };
 
 class MulOp : public Visitable
 {
 public:
   virtual MulOp *clone() const = 0;
-
+  int line_number, char_number;
 };
 
 class RelOp : public Visitable
 {
 public:
   virtual RelOp *clone() const = 0;
-
+  int line_number, char_number;
 };
 
 

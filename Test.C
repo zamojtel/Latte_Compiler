@@ -55,7 +55,7 @@ public:
 
   void print_errors(){
     for(auto *err : m_errors){
-      std::string error = std::format("Error in line {}: {} ",err->m_line,err->m_msg);
+      std::string error = std::format("Error {}",err->m_msg);
       std::cout<<error<<std::endl;
     }
   }
@@ -157,13 +157,13 @@ public:
     
     Function * fn = m_symbol_table.get_function(p->ident_);
     if(fn==nullptr){
-      std::string msg=std::format("Undefined function {}",p->ident_); 
+      std::string msg=std::format("Line: {} | Undefined function {}",p->line_number,p->ident_); 
       m_error_list.add_error(0,msg);
       return;
     }
       
     if(fn->m_arguments.size() != p->listexpr_->size()){
-      std::string msg=std::format("Incorrect number of arguments, expected: {}, passed {}",fn->m_arguments.size(),p->listexpr_->size()); 
+      std::string msg=std::format("Line: {} | Incorrect number of arguments, expected: {}, passed {}",p->line_number,fn->m_arguments.size(),p->listexpr_->size());
       m_error_list.add_error(0,msg);
       return;
     }
@@ -174,11 +174,12 @@ public:
     for(size_t i=0;i<fn->m_arguments.size();i++){
       DataType fn_argument_type = fn->m_arguments[i]->m_type;
       DataType current_argument_type = m_nodes_to_operands[p->listexpr_->at(i)].get_type();
+      int line_number = p->listexpr_->at(i)->line_number;
       // to-do implicit conversion
 
       // we assume that as for now they will have the same type
       if(fn_argument_type!=current_argument_type){
-        std::string msg=std::format("Mismatched argument type {}, expected type {}, provided {}",i+1,data_type_to_string(fn_argument_type),data_type_to_string(current_argument_type));
+        std::string msg=std::format("Line: {} | Mismatched argument type {}, expected type {}, provided {}",line_number,i+1,data_type_to_string(fn_argument_type),data_type_to_string(current_argument_type));
         m_error_list.add_error(0,msg);
       }
       
@@ -324,88 +325,90 @@ public:
   void visitEString(EString *p) override {
     m_nodes_to_operands[p]= {p->string_};
   }
-  //   MUL,ADD,SUB,DIV,AND,OR,NEG,NOT,ASSIGN,
-  //   MOD,LTH,LE,GTH,GE,EQU,NE,
-  //   //Special Operations
-  //   JT,JF, // jump if true ,jump if false
-  //   MARKER, // It will indicate a special triple
-  //   JMP, 
-  //   CALL, // Function Invocation
-  //   PARAM
+
+  DataType deduce_bool_type_one_argument(DataType op_1_type){
+    if(op_1_type==DataType::BOOL)
+      return DataType::BOOL;
+    else
+      return DataType::ERROR;
+  }
+
+  DataType deduce_bool_type(DataType op_1_type,DataType op_2_type){
+    if(op_1_type==DataType::INT && op_2_type==DataType::INT)
+      return DataType::BOOL;
+    else if(op_1_type==DataType::BOOL && op_2_type==DataType::BOOL)
+      return DataType::BOOL;
+    else
+      return DataType::ERROR;
+  }
+
+  DataType deduce_arithmetic_type(DataType op_1_type,DataType op_2_type){
+    if(op_1_type!=op_2_type)
+      return DataType::ERROR;
+
+    if(op_1_type==DataType::BOOL)
+      return DataType::ERROR;
+    else if(op_1_type==DataType::INT)
+      return DataType::INT;
+    else if(op_1_type==DataType::STRING)
+      return DataType::ERROR;
+  }
+
+  DataType deduce_arithmetic_type_add(DataType op_1_type,DataType op_2_type){
+    if(op_1_type!=op_2_type)
+      return DataType::ERROR;
+    
+    if(op_1_type==DataType::INT)
+      return DataType::INT;
+    else if(op_1_type==DataType::BOOL)
+      return DataType::ERROR;
+    else if(op_1_type==DataType::STRING)
+      return DataType::STRING;
+  }
+
+  DataType deduce_arithmetical_neg(DataType op_1_type){
+    if(op_1_type==DataType::INT)
+      return DataType::INT;
+    else
+      return DataType::ERROR;
+  }
 
   DataType deduce_type(Triple *triple){
-    // triple->m_operation;
     DataType op_1_type=triple->m_op_1.get_type();
     DataType op_2_type=triple->m_op_1.get_type();
+
     switch (triple->m_operation)
     {
-    case Operation::MUL:{
-        if(op_1_type==DataType::INT && op_2_type==DataType::INT)
-          return DataType::INT;
-        else if(op_1_type==DataType::INT && op_2_type==DataType::BOOL)
-          return DataType::ERROR;
-      break;
-    }
     case Operation::ADD:
-    
-      break;
-    case Operation::SUB:
-    
-      break;
-    case Operation::DIV:
-    
-      break;
-    case Operation::AND:
-    
-      break;
-    case Operation::OR:
-    
-      break;
-    case Operation::NEG:
-    
-      break;
-    case Operation::NOT:
-    
-      break;
-    case Operation::ASSIGN:
-    
-      break;
+      return deduce_arithmetic_type_add(op_1_type,op_2_type);
+    case Operation::MUL:
     case Operation::MOD:
-    
-      break;
+    case Operation::SUB:
+    case Operation::DIV:
+      return deduce_arithmetic_type(op_1_type,op_2_type);
+    case Operation::NOT: //logical negation
+      return deduce_bool_type_one_argument(op_1_type);
+    case Operation::ASSIGN:
+      return op_1_type;
+    case Operation::NEG:
+      return deduce_arithmetical_neg(op_1_type);
+    case Operation::AND:
+    case Operation::OR:
     case Operation::LTH:
-    
-      break;
     case Operation::LE:
-    
-      break;
     case Operation::GTH:
-    
-      break;
     case Operation::GE:
-    
-      break;
     case Operation::EQU:
-    
-      break;
     case Operation::NE:
-    
-      break;
+      return deduce_bool_type(op_1_type,op_2_type);
     case Operation::JT:
-    
-      break;
     case Operation::JF:
-    
-      break;
     case Operation::JMP:
-    
-      break;
+      return DataType::VOID;
     case Operation::CALL:
-
-      break;
+      return op_1_type;
     case Operation::PARAM:
-
-      break;
+      return DataType::VOID;
     default:
       break;
     }

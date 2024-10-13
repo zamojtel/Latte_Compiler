@@ -202,7 +202,9 @@ public:
             break;
         case OperandCategory::FUNCTION:
             this->m_function=other.m_function;
+            break;
         default:
+            throw 0;
             break;
         }
         return *this;
@@ -221,22 +223,6 @@ public:
     Triple(size_t index,Operation operation,const Operand &op_1={},const Operand &op_2={}):m_index{index},m_operation{operation},m_op_1{op_1},m_op_2{op_2}{}
 
 };
-
-DataType Operand::get_type() const{
-       
-        switch (m_category)
-        {
-        case OperandCategory::CONSTANT:
-            return m_constant.m_type;
-        case OperandCategory::VARIABLE:
-            return m_var->m_type;
-        case OperandCategory::TRIPLE:
-            return m_triple->m_type;
-        default:
-            throw 0;
-            break;
-        }
-}
 
 class Argument{
 public:
@@ -263,6 +249,12 @@ enum PredefinedFunction{
     USERDEFINED
 };
 
+enum class SymbolTableCategory{
+    VARIABLE,FUNCTION,EMPTY
+};
+
+
+
 class Function{
 private:
 public:
@@ -280,9 +272,28 @@ public:
     }
 };
 
-enum class SymbolTableCategory{
-    VARIABLE,FUNCTION,EMPTY
-};
+
+DataType Operand::get_type() const{
+       //    CONSTANT,VARIABLE,TRIPLE,EMPTY,LABEL,FUNCTION
+        switch (m_category)
+        {
+        case OperandCategory::CONSTANT:
+            return m_constant.m_type;
+        case OperandCategory::VARIABLE:
+            return m_var->m_type;
+        case OperandCategory::TRIPLE:
+            return m_triple->m_type;
+        case OperandCategory::FUNCTION:
+            return m_function->m_return_type;
+        case OperandCategory::LABEL:
+            return DataType::VOID;
+        case OperandCategory::EMPTY:
+            return DataType::VOID;
+        default:
+            throw 0;
+            break;
+        }
+}
 
 class SymbolTableEntry{
 public:
