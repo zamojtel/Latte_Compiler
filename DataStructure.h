@@ -215,7 +215,7 @@ public:
 
 class Triple{
 public:
-    DataType m_type;
+    DataType m_data_type;
     size_t m_index;
     Operation m_operation;
     Operand m_op_1;
@@ -253,8 +253,6 @@ enum class SymbolTableCategory{
     VARIABLE,FUNCTION,EMPTY
 };
 
-
-
 class Function{
 private:
 public:
@@ -272,27 +270,25 @@ public:
     }
 };
 
-
 DataType Operand::get_type() const{
-       //    CONSTANT,VARIABLE,TRIPLE,EMPTY,LABEL,FUNCTION
-        switch (m_category)
-        {
-        case OperandCategory::CONSTANT:
-            return m_constant.m_type;
-        case OperandCategory::VARIABLE:
-            return m_var->m_type;
-        case OperandCategory::TRIPLE:
-            return m_triple->m_type;
-        case OperandCategory::FUNCTION:
-            return m_function->m_return_type;
-        case OperandCategory::LABEL:
-            return DataType::VOID;
-        case OperandCategory::EMPTY:
-            return DataType::VOID;
-        default:
-            throw 0;
-            break;
-        }
+    switch (m_category)
+    {
+    case OperandCategory::CONSTANT:
+        return m_constant.m_type;
+    case OperandCategory::VARIABLE:
+        return m_var->m_type;
+    case OperandCategory::TRIPLE:
+        return m_triple->m_data_type;
+    case OperandCategory::FUNCTION:
+        return m_function->m_return_type;
+    case OperandCategory::LABEL:
+        return DataType::VOID;
+    case OperandCategory::EMPTY:
+        return DataType::VOID;
+    default:
+        throw 0;
+        break;
+    }
 }
 
 class SymbolTableEntry{
@@ -319,8 +315,12 @@ public:
         m_entries.pop_back();
     }
 
-    void add(const std::string &entry_name,const SymbolTableEntry &entry){
+    bool add(const std::string &entry_name,const SymbolTableEntry &entry){
+        if(m_entries.back().count(entry_name)>0)
+            return false;
+
         m_entries.back()[entry_name]=entry;
+        return true;
     }
 
     // to-do

@@ -29,14 +29,8 @@ void usage() {
   printf("\t-s (files)\tSilent mode. Parse content of files silently.\n");
 }
 
-// section for processing the tree
-void rec_tree(){
-
-}
-
 class IntermediateProgram{
 private:
-
 public:
   std::vector<Function*>m_functions;
   IntermediateProgram(){}
@@ -49,16 +43,17 @@ public:
 class ErrorList {
 public:
   std::vector<Error*> m_errors;
-  void add_error(size_t l,std::string &msg){
-    m_errors.push_back(new Error{l,msg});
+  void add_error(int l,std::string &msg){
+    m_errors.push_back(new Error{(size_t)l,msg});
   }
 
   void print_errors(){
     for(auto *err : m_errors){
-      std::string error = std::format("Error {}",err->m_msg);
+      std::string error = std::format("Line: {} | Message: {}",err->m_line,err->m_msg);
       std::cout<<error<<std::endl;
     }
   }
+
   bool errors_occured(){return m_errors.size()>0;}
 
   ~ErrorList(){
@@ -103,17 +98,14 @@ public:
     print_string->m_return_type=DataType::VOID;
     print_string->m_arguments.push_back(new Argument{DataType::STRING,"value"});
 
-    // void error()
     Function * error = new Function{PredefinedFunction::ERROR};
     error->m_name = "error";
     error->m_return_type=DataType::VOID;
 
-    // int readInt()
     Function * read_int = new Function{PredefinedFunction::READINT};
     read_int->m_name = "readInt";
     read_int->m_return_type = DataType::INT;
 
-    // string readString()
     Function * read_string = new Function{PredefinedFunction::PRINTSTRING};
     read_string->m_name="readString";
     read_string->m_return_type=DataType::STRING;
@@ -157,14 +149,14 @@ public:
     
     Function * fn = m_symbol_table.get_function(p->ident_);
     if(fn==nullptr){
-      std::string msg=std::format("Line: {} | Undefined function {}",p->line_number,p->ident_); 
-      m_error_list.add_error(0,msg);
+      std::string msg=std::format("Undefined function {}",p->ident_); 
+      m_error_list.add_error(p->line_number,msg);
       return;
     }
       
     if(fn->m_arguments.size() != p->listexpr_->size()){
-      std::string msg=std::format("Line: {} | Incorrect number of arguments, expected: {}, passed {}",p->line_number,fn->m_arguments.size(),p->listexpr_->size());
-      m_error_list.add_error(0,msg);
+      std::string msg=std::format("Incorrect number of arguments, expected: {}, passed {}",fn->m_arguments.size(),p->listexpr_->size());
+      m_error_list.add_error(p->line_number,msg);
       return;
     }
   
@@ -179,10 +171,9 @@ public:
 
       // we assume that as for now they will have the same type
       if(fn_argument_type!=current_argument_type){
-        std::string msg=std::format("Line: {} | Mismatched argument type {}, expected type {}, provided {}",line_number,i+1,data_type_to_string(fn_argument_type),data_type_to_string(current_argument_type));
-        m_error_list.add_error(0,msg);
+        std::string msg=std::format("Mismatched argument type {}, expected type {}, provided {}",i+1,data_type_to_string(fn_argument_type),data_type_to_string(current_argument_type));
+        m_error_list.add_error(line_number,msg);
       }
-      
     }
 
     for(auto *expr: *p->listexpr_){
@@ -201,13 +192,17 @@ public:
   }
 
   void visitInt(Int *x) override{
-    m_last_visited_type=DataType::INT;
+    m_last_visited_type = DataType::INT;
+  }
+
+  void visitVoid(Void *p) override{
+    m_last_visited_type = DataType::VOID;
   }
 
   void visitBool(Bool *p) override{
     m_last_visited_type=DataType::BOOL;
   }
-
+  
   void visitListArg(ListArg *p) override{
     std::cout<<"List of arguments"<<std::endl;
     for(auto item : *p){
@@ -232,9 +227,16 @@ public:
   
   void visitInit(Init *p) override {
     Variable *variable = new Variable{p->ident_,m_last_visited_type};
-    m_symbol_table.add(p->ident_,variable);
-    // m_symbol_table[p->ident_]=variable; // if insert then iterator has to be passed 
+    bool result = m_symbol_table.add(p->ident_,variable);
+    if(!result){
+      std::string msg=std::format("Redefinition of variable: {}",p->ident_); 
+      m_error_list.add_error(p->line_number,msg);
+      return;
+    }
+      
     p->expr_->accept(this);
+    if(!result)
+      return;
     std::cout<<"Initialized Identifier: "<<p->ident_<<std::endl;
     push_triple(Operation::ASSIGN,variable,m_nodes_to_operands[p->expr_]);
     m_current_fn->m_variables.push_back(variable);
@@ -303,6 +305,10 @@ public:
       return "bool";
     case DataType::STRING:
       return "string";
+    case DataType::VOID:
+      return "void";
+    case DataType::ERROR:
+      return "error";
     default:
       return "";
       break;
@@ -346,11 +352,9 @@ public:
     if(op_1_type!=op_2_type)
       return DataType::ERROR;
 
-    if(op_1_type==DataType::BOOL)
-      return DataType::ERROR;
-    else if(op_1_type==DataType::INT)
+    if(op_1_type==DataType::INT)
       return DataType::INT;
-    else if(op_1_type==DataType::STRING)
+    else 
       return DataType::ERROR;
   }
 
@@ -360,10 +364,10 @@ public:
     
     if(op_1_type==DataType::INT)
       return DataType::INT;
-    else if(op_1_type==DataType::BOOL)
-      return DataType::ERROR;
     else if(op_1_type==DataType::STRING)
       return DataType::STRING;
+    else
+      return DataType::ERROR;
   }
 
   DataType deduce_arithmetical_neg(DataType op_1_type){
@@ -410,13 +414,15 @@ public:
     case Operation::PARAM:
       return DataType::VOID;
     default:
-      break;
+      throw 0;
     }
   }
   
   Triple* push_triple(Operation operation,const Operand &op_1={},const Operand &op_2={}){
     Triple *triple = new Triple{m_current_fn->m_triples.size()+1,operation,op_1,op_2};
-    
+    DataType deduced_type = deduce_type(triple);
+    triple->m_data_type=deduced_type;
+
     m_current_fn->m_triples.push_back(triple);
     return triple;
   }
@@ -545,7 +551,6 @@ public:
   }
   
   void print_operand(const Operand &operand){
-    //  CONSTANT,VARIABLE,TRIPLE,EMPTY
     switch (operand.m_category)
       {
       case OperandCategory::CONSTANT:
@@ -628,6 +633,8 @@ public:
       
       print_operand(triple->m_op_1);
       print_operand(triple->m_op_2);
+      // return_
+      std::cout<<"Type: "<<data_type_to_string(triple->m_data_type)<<" ";
       std::cout<<std::endl;
     }
   }
