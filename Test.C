@@ -62,6 +62,14 @@ public:
   }
 };
 
+class TrueFalseLabel{
+public:
+  Label *m_false_label;
+  Label *m_true_label;
+  TrueFalseLabel(Label *f_label,Label * t_label):m_false_label{f_label},m_true_label{t_label}{}
+  TrueFalseLabel():m_false_label{nullptr},m_true_label{nullptr}{}
+};
+
 class MyVisitor:public Skeleton {
 private:
   IntermediateProgram * m_program;
@@ -71,6 +79,8 @@ private:
   ErrorList m_error_list;
   SymbolTable m_symbol_table;
   std::map<Visitable*,Operand> m_nodes_to_operands;
+  // std::map<Visitable*,TrueFalseLabel*> m_node_to_true_false_label; // these labels indicate where to go
+  std::vector<TrueFalseLabel> m_true_false_label_stack;
   Function * m_current_fn;
   Argument * m_current_arg;
   std::string m_current_line;
@@ -258,13 +268,31 @@ public:
 
   }
 
+
+  // S -> (B) S1 
+  // the data about True and Flase jumps will be stored on the stack
   void visitCond(Cond *p) override {
+    Label *if_false = create_label();
+    Label *if_true = create_label();
+    m_true_false_label_stack.push_back({if_false,if_true});
+
     p->expr_->accept(this);
-    Label *jump_to=new Label{m_labels.size()};
-    Triple *jf_triple = push_triple(Operation::JF,m_nodes_to_operands.at(p->expr_),{jump_to});
+    m_true_false_label_stack.pop_back();
+
+    //Jump True
+    if_true->m_jump_to = push_triple(Operation::MARKER);
     p->stmt_->accept(this);
     Triple *special_triple=push_triple(Operation::MARKER);
-    jf_triple->m_op_2.m_label->m_jump_to = special_triple;
+
+    //Jump False
+    if_false->m_jump_to = special_triple;
+  }
+  //  void visitNot(Not *p);
+  // we switch the order of jumps
+  void visitNot(Not *p) override {
+    m_true_false_label_stack.push_back({m_true_false_label_stack.back().m_true_label,m_true_false_label_stack.back().m_false_label});
+    p->expr_->accept(this);
+    m_true_false_label_stack.pop_back();
   }
 
   void visitCondElse(CondElse *p) override{
@@ -294,6 +322,15 @@ public:
     Variable *variable = new Variable{p->ident_,m_last_visited_type};
     m_symbol_table.add(p->ident_,variable);
     m_current_fn->m_variables.push_back(variable);
+  }
+
+  void visitRet(Ret *p) override{
+    p->expr_->accept(this);  
+    push_triple(Operation::RETURN,m_nodes_to_operands[p->expr_]);
+  }
+
+  void visitVRet(VRet *p) override{ 
+    push_triple(Operation::RETURN);
   }
 
   std::string type_to_string(DataType dt){
@@ -413,6 +450,10 @@ public:
       return op_1_type;
     case Operation::PARAM:
       return DataType::VOID;
+    case Operation::RETURN:
+      return DataType::VOID; // because it does not have a type
+    case Operation::MARKER:
+      return DataType::VOID;
     default:
       throw 0;
     }
@@ -486,22 +527,41 @@ public:
     Operand op_2 = m_nodes_to_operands.at(p->expr_2);
     
     m_nodes_to_operands[p]=push_triple(m_current_operation,m_nodes_to_operands.at(p->expr_1),m_nodes_to_operands.at(p->expr_2));
+    push_triple(Operation::JF,m_nodes_to_operands[p],m_true_false_label_stack.back().m_false_label);
+    push_triple(Operation::JT,m_nodes_to_operands[p],m_true_false_label_stack.back().m_true_label);
   }
 
   void visitEAnd(EAnd *p) override{
+    // m_true_false_label_stack.back()
+    Label *left_true = create_label();
+    // Label *and_false = create_label();
+    m_true_false_label_stack.push_back({m_true_false_label_stack.back().m_false_label,left_true});
     p->expr_1->accept(this);
-    p->expr_2->accept(this);
+    // if_true->m_jump_to = push_triple(Operation::MARKER);
+    left_true->m_jump_to = push_triple(Operation::MARKER);
+    m_true_false_label_stack.pop_back();
     
-    m_nodes_to_operands[p]=push_triple(Operation::AND,m_nodes_to_operands.at(p->expr_1),m_nodes_to_operands.at(p->expr_2));
+    //right expr
+    m_true_false_label_stack.push_back(m_true_false_label_stack.back());
+    p->expr_2->accept(this);
+    m_true_false_label_stack.pop_back();
   }
 
   void visitEOr(EOr *p){
+    //what if left expr is false 
+    Label *left_false = create_label();
+
+    m_true_false_label_stack.push_back({left_false,m_true_false_label_stack.back().m_true_label});
     p->expr_1->accept(this);
+    m_true_false_label_stack.pop_back();
+
+    left_false->m_jump_to = push_triple(Operation::MARKER);
+    m_true_false_label_stack.push_back(m_true_false_label_stack.back());
     p->expr_2->accept(this);
-    
-    m_nodes_to_operands[p]=push_triple(Operation::OR,m_nodes_to_operands.at(p->expr_1),m_nodes_to_operands.at(p->expr_2));
+    m_true_false_label_stack.pop_back();
   }
 
+  
   void visitPlus(Plus *p) override {
     m_current_operation=Operation::ADD;
   }
@@ -621,14 +681,23 @@ public:
         return " CALL: ";
       case Operation::PARAM:
         return " PARAM: ";
+      case Operation::RETURN:
+        return " RETURN: ";
       default:
         return " ";
       }
     }
   }
 
-  void print_triples(){
-    for(auto *triple: m_current_fn->m_triples){
+  void print_functions_triples(){
+    for(auto *fn : m_functions){
+      std::cout<<"Function: "<<fn->m_name<<std::endl;
+      print_triples(fn);
+    }
+    std::cout<<std::endl;
+  }
+  void print_triples(Function * fn){
+    for(auto *triple: fn->m_triples){
       std::cout<<"t"<<triple->m_index<<return_operation(triple->m_operation);
       
       print_operand(triple->m_op_1);
@@ -685,7 +754,7 @@ int main(int argc, char ** argv)
   parse_tree->accept(&my_visitor);
   my_visitor.print_functions();
   std::cout<<"Printing tripples : "<<std::endl;
-  my_visitor.print_triples();
+  my_visitor.print_functions_triples();
   if(my_visitor.errors_occured()){
     my_visitor.print_errors();
   }

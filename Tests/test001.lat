@@ -1,4 +1,13 @@
-int main (int a,int b) {
-  int z=10*2+30+10;
-  return 0;
+int ret10(int low){
+  return 10;
+}
+
+void rety(){
+  return;
+}
+
+int main () {
+  ret10(20);
+  rety();
+  return 21;
 }

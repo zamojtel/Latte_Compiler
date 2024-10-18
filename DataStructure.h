@@ -33,11 +33,12 @@ enum class Operation{
     MARKER, // It will indicate a special triple
     JMP, 
     CALL, // Function Invocation
-    PARAM
+    PARAM,
+    RETURN
 };
 
 enum class OperandCategory{
-    CONSTANT,VARIABLE,TRIPLE,EMPTY,LABEL,FUNCTION
+    CONSTANT,VARIABLE,TRIPLE,EMPTY,LABEL,FUNCTION,BOOL
 };
 
 template<class T>
@@ -83,7 +84,6 @@ public:
             break;
         case DataType::STRING:{
             new (&u.str) std::string(constant.u.str);
-            // u.str = constant.u.str;
         }
         default:
             break;
@@ -120,7 +120,6 @@ public:
     ~Constant(){
         if(m_type==DataType::STRING){
             call_destructor(&u.str);
-            // u.str.~string();
         }
     }
 };
@@ -181,6 +180,8 @@ public:
         case OperandCategory::FUNCTION:
             m_function=other.m_function;
             break;
+        case OperandCategory::BOOL:
+
         default:
             throw("No Operand Category");
             break;
