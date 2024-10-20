@@ -252,23 +252,6 @@ public:
     m_current_fn->m_variables.push_back(variable);
   }
 
-  void visitWhile(While *p) override {
-    Label * cond_label = create_label();
-    Triple * cond_marker = push_triple(Operation::MARKER);
-    cond_label->m_jump_to=cond_marker;
-
-    p->expr_->accept(this);
-    Label *end_label = create_label();
-    push_triple(Operation::JF,m_nodes_to_operands.at(p->expr_),{end_label});
-
-    p->stmt_->accept(this);
-    push_triple(Operation::JMP,{cond_label});
-    Triple *end_marker = push_triple(Operation::MARKER);
-    end_label->m_jump_to = end_marker;
-
-  }
-
-
   // S -> (B) S1 
   // the data about True and Flase jumps will be stored on the stack
   void visitCond(Cond *p) override {
@@ -286,13 +269,6 @@ public:
 
     //Jump False
     if_false->m_jump_to = special_triple;
-  }
-  //  void visitNot(Not *p);
-  // we switch the order of jumps
-  void visitNot(Not *p) override {
-    m_true_false_label_stack.push_back({m_true_false_label_stack.back().m_true_label,m_true_false_label_stack.back().m_false_label});
-    p->expr_->accept(this);
-    m_true_false_label_stack.pop_back();
   }
 
   void visitCondElse(CondElse *p) override{
@@ -312,6 +288,32 @@ public:
     p->stmt_2->accept(this);
     past_else->m_jump_to=push_triple(Operation::MARKER);
 
+  }
+
+  void visitWhile(While *p) override {
+    Label * cond_label = create_label();
+    Triple * cond_marker = push_triple(Operation::MARKER);
+    Label * while_true = create_label();
+    Label * while_false = create_label();
+
+    cond_label->m_jump_to=cond_marker;
+
+    m_true_false_label_stack.push_back({while_false,while_true});
+    p->expr_->accept(this);
+    m_true_false_label_stack.pop_back();
+    while_true->m_jump_to=push_triple(Operation::MARKER);
+
+    p->stmt_->accept(this);
+    push_triple(Operation::JMP,{cond_label});
+    while_false->m_jump_to = push_triple(Operation::MARKER);
+  }
+
+  //  void visitNot(Not *p);
+  // we switch the order of jumps
+  void visitNot(Not *p) override {
+    m_true_false_label_stack.push_back({m_true_false_label_stack.back().m_true_label,m_true_false_label_stack.back().m_false_label});
+    p->expr_->accept(this);
+    m_true_false_label_stack.pop_back();
   }
 
   void visitAss(Ass *ass) override {
