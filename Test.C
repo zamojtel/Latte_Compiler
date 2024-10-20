@@ -296,19 +296,22 @@ public:
   }
 
   void visitCondElse(CondElse *p) override{
+    Label *if_false = create_label();
+    Label *if_true = create_label();
+    Label *past_else = create_label();
+
+    m_true_false_label_stack.push_back({if_false,if_true});
     p->expr_->accept(this);
-    Label *jump_to_else = create_label();
-    Label *jump_out_if = create_label();
+    m_true_false_label_stack.pop_back();
 
-    Triple *jf_triple = push_triple(Operation::JF,m_nodes_to_operands.at(p->expr_),{jump_to_else});
+    if_true->m_jump_to = push_triple(Operation::MARKER);
     p->stmt_1->accept(this);
-    Triple *jmp_triple = push_triple(Operation::JMP,m_nodes_to_operands.at(p->expr_),{jump_out_if});
-    Triple* special_marker_before_else =push_triple(Operation::MARKER);
-    p->stmt_2->accept(this);
-    Triple* special_marker_end_of_if =push_triple(Operation::MARKER);
+    push_triple(Operation::JMP,past_else);
 
-    jf_triple->m_op_2.m_label->m_jump_to=special_marker_before_else;
-    jmp_triple->m_op_2.m_label->m_jump_to=special_marker_end_of_if;
+    if_false->m_jump_to = push_triple(Operation::MARKER);
+    p->stmt_2->accept(this);
+    past_else->m_jump_to=push_triple(Operation::MARKER);
+
   }
 
   void visitAss(Ass *ass) override {
