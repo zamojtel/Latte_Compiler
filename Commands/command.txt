@@ -1,3 +1,0 @@
-./TestLatteCPP < /home/bartlomiej-zamojtel/Programming/Zadanie_2_Latte_Compiler/Tests/core001.lat
-./TestLatteCPP < /home/bartlomiej-zamojtel/Programming/Zadanie_2_Latte_Compiler/Tests/test001.lat
-git restore --staged file-to-unstage.txt
