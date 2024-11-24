@@ -206,20 +206,15 @@ std::string LLVMCodeGenerator::process_program(const std::vector<Function*> &fun
         process_function(functions[i]);
     }
 
-    bool printf_fun=false;
-    bool scanf_fun=false;
-    // std::cout<<"Functions number: "<<functions.size();
     for(size_t j=0;j<functions.size();j++){
         if(functions[j]->m_used){
             switch (functions[j]->m_type)
             {
             case PredefinedFunction::PRINTINT:
             case PredefinedFunction::PRINTSTRING:
-                printf_fun = true;
                 break;
             case PredefinedFunction::READINT:
             case PredefinedFunction::READSTRING:
-                scanf_fun = true;
                 break;
             default:
                 break;

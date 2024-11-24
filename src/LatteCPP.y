@@ -74,8 +74,9 @@ extern yyscan_t latte_cpp__initialize_lexer(FILE * inp);
 %{
 void yyerror(YYLTYPE *loc, yyscan_t scanner, YYSTYPE *result, const char *msg)
 {
-  fprintf(stderr, "error: %d,%d: %s at %s\n",
-    loc->first_line, loc->first_column, msg, latte_cpp_get_text(scanner));
+  printf("ERROR\n");
+  printf("Line %d, Column %d: %s at %s\n",
+  loc->first_line, loc->first_column, msg, latte_cpp_get_text(scanner));
 }
 
 int yyparse(yyscan_t scanner, YYSTYPE *result);

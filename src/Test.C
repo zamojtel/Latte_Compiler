@@ -182,7 +182,7 @@ public:
 
   void print_errors(){
     for(auto *err : m_errors){
-      std::string error = std::format("Line: {} | Message: {}",err->m_line,err->m_msg);
+      std::string error =  err->m_line !=0 ? std::format("Line {}: {}",err->m_line,err->m_msg) : std::format("{}",err->m_msg);
       std::cout<<error<<std::endl;
     }
   }

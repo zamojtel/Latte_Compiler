@@ -99,7 +99,7 @@ extern int latte_cpp_debug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 50 "LatteCPP.y"
+#line 50 "./src/LatteCPP.y"
 
   int    _int;
   char   _char;
