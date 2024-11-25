@@ -1,6 +1,6 @@
 
 CC=g++ -g -O0
-CCFLAGS=--ansi -std=c++20 -Wall -Wsign-conversion -Wno-unused-parameter -Wno-unused-function -Wno-unneeded-internal-declaration
+CCFLAGS=--ansi ${INC} -std=c++20 -Wall ${DEP}
 
 FLEX=flex
 FLEX_OPTS=-Platte_cpp_
@@ -9,6 +9,9 @@ BISON=bison
 BISON_OPTS=-t -platte_cpp_
 OBJS= Absyn.o Buffer.o Lexer.o Parser.o Printer.o
 OBJS_FILES = ./build/Absyn.o ./build/Buffer.o ./build/Lexer.o ./build/Parser.o ./build/Printer.o
+
+INC = -I. -I./lib/fmt/include/
+DEP = -L./lib/fmt -lfmt 
 
 .PHONY : clean distclean
 

@@ -1,3 +1,4 @@
+#include "Libraries.h"
 #include <cstdio>
 #include <string>
 #include <map>
@@ -12,10 +13,8 @@
 #include "LLVMCodeGenerator.cpp"
 #include "Skeleton.H"
 #include "Skeleton.C"
-#include <format>
 #include "Logger.h"
 
-// Program
 void usage() {
   printf("usage: Call with one of the following argument combinations:\n");
   printf("\t--help\t\tDisplay this help message.\n");
@@ -182,7 +181,7 @@ public:
 
   void print_errors(){
     for(auto *err : m_errors){
-      std::string error =  err->m_line !=0 ? std::format("Line {}: {}",err->m_line,err->m_msg) : std::format("{}",err->m_msg);
+      std::string error =  err->m_line !=0 ? fmt::format("Line {}: {}",err->m_line,err->m_msg) : fmt::format("{}",err->m_msg);
       std::cout<<error<<std::endl;
     }
   }
@@ -224,7 +223,7 @@ public:
     const SymbolTableEntry * entry = m_symbol_table.get_entry_at_top(name);
     if(entry)
     {
-      std::string msg = std::format("Variable {} already defined",name);
+      std::string msg = fmt::format("Variable {} already defined",name);
       m_error_list.add_error(line,msg);
       return ;
     }
@@ -331,7 +330,7 @@ public:
   void visitEApp(EApp *p) override{
     Function * fn = m_symbol_table.get_function(p->ident_);
     if(fn==nullptr){
-      std::string msg=std::format("Undefined function {}",p->ident_); 
+      std::string msg=fmt::format("Undefined function {}",p->ident_); 
       m_error_list.add_error(p->line_number,msg);
 
       m_nodes_to_operands[p] = Operand::error();
@@ -339,7 +338,7 @@ public:
     }
       
     if(fn->m_arguments.size() != p->listexpr_->size()){
-      std::string msg=std::format("Incorrect number of arguments, expected: {}, passed {}",fn->m_arguments.size(),p->listexpr_->size());
+      std::string msg=fmt::format("Incorrect number of arguments, expected: {}, passed {}",fn->m_arguments.size(),p->listexpr_->size());
       m_error_list.add_error(p->line_number,msg);
 
       m_nodes_to_operands[p] = Operand::error();
@@ -358,7 +357,7 @@ public:
       if(fn_argument_type!=current_argument_type){
         if(current_argument_type!=DataType::ERROR)
         {
-          std::string msg=std::format("Mismatched argument type {}, expected type {}, provided {}",i+1,data_type_to_string(fn_argument_type),data_type_to_string(current_argument_type));
+          std::string msg=fmt::format("Mismatched argument type {}, expected type {}, provided {}",i+1,data_type_to_string(fn_argument_type),data_type_to_string(current_argument_type));
           m_error_list.add_error(line_number,msg);
         }
       }
@@ -408,7 +407,7 @@ public:
   void visitAr(Ar *p) override{
 
     if(m_current_fn->contains_argument(p->ident_)){
-      std::string msg = std::format("Argument with name {} already defined",p->ident_); 
+      std::string msg = fmt::format("Argument with name {} already defined",p->ident_); 
       m_error_list.add_error(p->line_number,msg);
       return;
     }
@@ -488,7 +487,7 @@ public:
     const SymbolTableEntry *table_entry = m_symbol_table.get_entry(ass->ident_);
 
     if(!table_entry){
-      std::string msg = std::format("Undefined variable | {}",ass->ident_);
+      std::string msg = fmt::format("Undefined variable | {}",ass->ident_);
       m_error_list.add_error(ass->line_number,msg);
       return;
     }
@@ -499,7 +498,7 @@ public:
     else if(table_entry->m_category==SymbolTableCategory::VARIABLE)
       op_1 = table_entry->m_variable;
     else{
-      std::string msg = std::format("Invalid assignment | {}",ass->ident_);
+      std::string msg = fmt::format("Invalid assignment | {}",ass->ident_);
       m_error_list.add_error(ass->line_number,msg);
       return;
     }
@@ -653,7 +652,7 @@ public:
 
       if(!equal_data_types_or_error(t1,t2)){
 
-        std::string msg = std::format("Incompatible type");
+        std::string msg = fmt::format("Incompatible type");
         m_error_list.add_error(triple->m_code_line_number,msg);
       }
       break;
@@ -662,11 +661,11 @@ public:
     {
       if(triple->m_op_1.m_category==OperandCategory::EMPTY){
         if(m_current_fn->m_return_type!=DataType::VOID){
-          std::string msg = std::format("Incompatible return type");
+          std::string msg = fmt::format("Incompatible return type");
           m_error_list.add_error(triple->m_code_line_number,msg);
         }
       }else if(m_current_fn->m_return_type!=triple->m_op_1.get_type()){
-        std::string msg = std::format("Incompatible return type");
+        std::string msg = fmt::format("Incompatible return type");
         m_error_list.add_error(triple->m_code_line_number,msg);
       }
       break;
@@ -678,7 +677,7 @@ public:
       DataType t2 = triple->m_op_2.get_type();
 
       if(!equal_data_types_or_error(t1,t2)){
-        std::string msg = std::format("Incompatible types");
+        std::string msg = fmt::format("Incompatible types");
         m_error_list.add_error(triple->m_code_line_number,msg);
       }
       break;
@@ -695,10 +694,10 @@ public:
       DataType t1 = triple->m_op_1.get_type();
       DataType t2 = triple->m_op_2.get_type();
       if(!equal_data_types_or_error(t1,t2)){
-        std::string msg = std::format("Incompatible types");
+        std::string msg = fmt::format("Incompatible types");
         m_error_list.add_error(triple->m_code_line_number,msg);
       }else if(triple->m_op_1.get_type()!=DataType::INT){
-        std::string msg = std::format("Can't perform operation {} on operands of type {}",operation_to_string(triple->m_operation),type_to_string(triple->m_op_1.get_type()));
+        std::string msg = fmt::format("Can't perform operation {} on operands of type {}",operation_to_string(triple->m_operation),type_to_string(triple->m_op_1.get_type()));
         m_error_list.add_error(triple->m_code_line_number,msg);
       }
       break;
@@ -708,7 +707,7 @@ public:
       DataType t1 = triple->m_op_1.get_type();
       if(t1!=DataType::BOOL)
       {
-        std::string msg = std::format("Can't negate non boolean types");
+        std::string msg = fmt::format("Can't negate non boolean types");
         m_error_list.add_error(triple->m_code_line_number,msg);
       }
       break;
@@ -718,7 +717,7 @@ public:
     { 
       DataType t1 = triple->m_op_1.get_type();
       if(t1 != DataType::BOOL && t1 != DataType::ERROR){
-        std::string msg = std::format("Expected boolean expression");
+        std::string msg = fmt::format("Expected boolean expression");
         m_error_list.add_error(triple->m_code_line_number,msg);
       }
       break;
@@ -731,12 +730,12 @@ public:
 
       if(t1!=DataType::BOOL && t1!=DataType::ERROR)
       {
-        std::string msg = std::format("Expected boolean expression");
+        std::string msg = fmt::format("Expected boolean expression");
         m_error_list.add_error(triple->m_code_line_number,msg);
       }
       if(t2!=DataType::BOOL && t2!=DataType::ERROR)
       {
-        std::string msg = std::format("Expected boolean expression");
+        std::string msg = fmt::format("Expected boolean expression");
         m_error_list.add_error(triple->m_code_line_number,msg);
       }
     }
@@ -768,7 +767,7 @@ public:
     const SymbolTableEntry *entry = m_symbol_table.get_entry(p->ident_);
 
     if(!entry){
-      std::string msg=std::format("Undefined identifier {}",p->ident_); 
+      std::string msg=fmt::format("Undefined identifier {}",p->ident_); 
       m_error_list.add_error(p->line_number,msg);
       return;
     }
@@ -1054,7 +1053,7 @@ int main(int argc, char ** argv)
       continue;
 
     if(fn->m_type==PredefinedFunction::USERDEFINED && int_program.find_path_without_return(fn,0)){
-        std::string msg = std::format("Not all possible paths return values in a function called: {}",fn->m_name);
+        std::string msg = fmt::format("Not all possible paths return values in a function called: {}",fn->m_name);
         my_visitor.m_error_list.add_error(0,msg);
     }
   }
@@ -1064,10 +1063,9 @@ int main(int argc, char ** argv)
     my_visitor.print_errors();
     delete(parse_tree);
     return 1;
-  }else{
+  }else
     std::cout<<"OK"<<std::endl;
-  }
-
+  
   quiet=true;
   if (parse_tree)
   {

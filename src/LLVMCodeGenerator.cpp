@@ -1,4 +1,4 @@
-
+#include "Libraries.h"
 #include "LLVMCodeGenerator.h"
 #include <iostream>
 
@@ -8,13 +8,13 @@ void LLVMCodeGenerator::alloc_variable(Variable *variable){
     switch (variable->m_type)
     {
     case DataType::INT:{
-        m_code_lines.push_back(std::format("%{} = alloca i32, align 4",m_llvm_line_index));
+        m_code_lines.push_back(fmt::format("%{} = alloca i32, align 4",m_llvm_line_index));
         m_variable_data[variable]=VariableData{m_llvm_line_index};
         increase();
         return;
     }
     case DataType::BOOL:{
-        m_code_lines.push_back(std::format("%{} = alloca i8, align 1",m_llvm_line_index));
+        m_code_lines.push_back(fmt::format("%{} = alloca i8, align 1",m_llvm_line_index));
         m_variable_data[variable]=VariableData{m_llvm_line_index};
         increase();
         return;
@@ -69,7 +69,7 @@ std::string LLVMCodeGenerator::get_operand_value_with_load(const Operand &op){
         return op.m_constant.get_value_as_string();
     case OperandCategory::VARIABLE:{
         DataType type = op.get_type();
-        std::string line = std::format("%{} = load i{}, ptr %{}, align {}",m_llvm_line_index,get_size_in_bits(type),m_variable_data[op.m_var].m_index,get_align(type));
+        std::string line = fmt::format("%{} = load i{}, ptr %{}, align {}",m_llvm_line_index,get_size_in_bits(type),m_variable_data[op.m_var].m_index,get_align(type));
         size_t loaded_variable_index = m_llvm_line_index;
         increase();
         m_code_lines.push_back(line);
@@ -108,7 +108,7 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
         DataType type_op_1 = triple->m_op_1.get_type();
         triple->m_op_2.get_type();
         triple->m_op_2.m_constant.get_value_as_string();
-        m_code_lines.push_back(std::format("store i{} {}, ptr %{}, align {}",get_size_in_bits(type_op_1),get_operand_value(triple->m_op_2),m_variable_data[triple->m_op_1.m_var].m_index,get_align(type_op_1)));
+        m_code_lines.push_back(fmt::format("store i{} {}, ptr %{}, align {}",get_size_in_bits(type_op_1),get_operand_value(triple->m_op_2),m_variable_data[triple->m_op_1.m_var].m_index,get_align(type_op_1)));
         break;
     }
     case Operation::ADD:
@@ -119,30 +119,22 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
         std::string op_2_val = get_operand_value_with_load(triple->m_op_2);
         m_triple_data[triple->m_index] = {m_llvm_line_index};
         std::string operation = ir_op_to_llvm_op(triple->m_operation);
-        std::string line = std::format("%{} = {} nsw i{} {}, {}",m_llvm_line_index,operation,get_size_in_bits(triple->m_op_1.get_type()),op_1_val,op_2_val);
+        std::string line = fmt::format("%{} = {} nsw i{} {}, {}",m_llvm_line_index,operation,get_size_in_bits(triple->m_op_1.get_type()),op_1_val,op_2_val);
         m_code_lines.push_back(line);
         increase();
         break;
     }
     case Operation::RETURN:{
         std::string ref = get_operand_value_with_load(triple->m_op_1);
-        m_code_lines.push_back(std::format("ret i{} {}",get_size_in_bits(triple->m_op_1.get_type()),ref));
+        m_code_lines.push_back(fmt::format("ret i{} {}",get_size_in_bits(triple->m_op_1.get_type()),ref));
         break;
     }
     case Operation::CALL:
     {
         switch (m_current_fn->m_type)
         {
-            // PRINTINT,
-            // PRINTSTRING,
-            // ERROR,
-            // READINT,
-            // READSTRING,
-            // USERDEFINED
         case PredefinedFunction::PRINTINT:
         {
-            // std::string printInt_str = "declare i32 @printInt(ptr noundef, ...) #1"
-            // %25 = call i32 (ptr, ...) @printf(ptr noundef @.str, i32 noundef %24)
         }
         default:
             break;
@@ -154,8 +146,7 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
 }
 
 std::string LLVMCodeGenerator::process_argument(Argument * arg,size_t index){
-    // i32 noundef %0, double noundef %1, i32 noundef %2, ptr noundef %3
-    // INT,BOOL,STRING,VOID,ERROR
+    
     std::string processed_arg = "";
     switch (arg->m_type)
     {
@@ -189,7 +180,7 @@ void LLVMCodeGenerator::process_function(Function *fn){
             argument_list+=", ";
         argument_list+=process_argument(fn->m_arguments[i],i);
     }
-    m_code_lines.push_back(std::format("define dso_local noundef i{} @{}({}) #0 {{",get_size_in_bits(fn->m_return_type),fn->m_name,argument_list));
+    m_code_lines.push_back(fmt::format("define dso_local noundef i{} @{}({}) #0 {{",get_size_in_bits(fn->m_return_type),fn->m_name,argument_list));
 
     for(size_t i=0;i<fn->m_variables.size();i++){
         alloc_variable(fn->m_variables[i]);

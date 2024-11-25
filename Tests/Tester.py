@@ -69,7 +69,7 @@ def check_good_tests(input_file_names : List[str],input_dir : str,output_dir : s
 def collect_all_files(path : str):
     all_files = os.listdir(path)
     all_files.sort()
-    print(all_files)
+
     input_file_names = []
     for j in range(len(all_files)):
         if all_files[j][-3:]=='lat':
