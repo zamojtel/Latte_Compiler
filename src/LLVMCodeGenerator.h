@@ -101,14 +101,23 @@ entry:  call i32 @puts(i8* %s)
 }
 )abc";
 
+// std::string readInt_dec = R"abc(
+// @d = internal constant [3 x i8] c"%d\00"
+// define i32 @readInt() {
+// entry:	%res = alloca i32
+//     %t1 = getelementptr [3 x i8], [3 x i8]* @d, i32 0, i32 0
+// 	call i32 (i8*, ...) @scanf(i8* %t1, i32* %res)
+// 	%t2 = load i32, i32* %res
+// 	ret i32 %t2
+// })abc";
+
 std::string readInt_dec = R"abc(
-@d = internal constant [3 x i8] c"%d\00"
-define i32 @readInt() {
-entry:	%res = alloca i32
-    %t1 = getelementptr [3 x i8], [3 x i8]* @d, i32 0, i32 0
-	call i32 (i8*, ...) @scanf(i8* %t1, i32* %res)
-	%t2 = load i32, i32* %res
-	ret i32 %t2
+@.format_readInt = private unnamed_addr constant [6 x i8] c"%d%*c\00", align 1
+define dso_local noundef i32 @readInt() {
+  %1 = alloca i32, align 4
+  %2 = call i32 (ptr, ...) @scanf(ptr noundef @.format_readInt, ptr noundef %1)
+  %3 = load i32, ptr %1, align 4
+  ret i32 %3
 })abc";
 
 std::string addString_dec = R"abc(
