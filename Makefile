@@ -7,8 +7,8 @@ FLEX_OPTS=-Platte_cpp_
 
 BISON=bison
 BISON_OPTS=-t -platte_cpp_
-OBJS= Absyn.o Buffer.o Lexer.o Parser.o Printer.o
-OBJS_FILES = ./build/Absyn.o ./build/Buffer.o ./build/Lexer.o ./build/Parser.o ./build/Printer.o
+OBJS = Absyn.o Buffer.o Lexer.o Parser.o Printer.o DataStructure.o IRCoder.o
+OBJS_FILES = ./build/Absyn.o ./build/Buffer.o ./build/Lexer.o ./build/Parser.o ./build/Printer.o ./build/DataStructure.o ./build/IRCoder.o
 
 INC = -I. -I./lib/fmt/include/
 DEP = -L./lib/fmt -lfmt 
@@ -20,8 +20,16 @@ all : CreateDirectory TestLatteCPP
 CreateDirectory:
 	@mkdir -p build
 
+testClean:
+	rm ./Tests/myTests/*.ll ./Tests/myTests/*.bc
+
 clean :
-	rm -rf ./build ./latc_llvm ./Tests/myBadOutputs ./Tests/myGoodOutputs ./Tests/goodOutputs ./Tests/badOutputs 
+	rm -rf ./build ./latc_llvm ./Tests/myBadOutputs ./Tests/myGoodOutputs ./Tests/goodOutputs ./Tests/badOutputs \
+	./Tests/myGood/*.bc ./Tests/myGood/*.ll \
+	./Tests/good/*.bc ./Tests/good/*.ll	\
+	./Ready/good/* \
+	./Tests/myTests/NewTestsOutputs
+
 
 cleanBison:
 	rm -f ./src/Parser.C ./src/Bison.H
@@ -61,3 +69,9 @@ Skeleton.o : ./src/Skeleton.C ./src/Skeleton.H ./src/Absyn.H
 
 Test.o : ./src/Test.C ./src/Parser.H ./src/Printer.H ./src/Absyn.H
 	${CC} ${CCFLAGS} -c ./src/Test.C -o ./build/Test.o
+
+IRCoder.o : ./src/IRCoder.cpp ./src/IRCoder.h
+	${CC} ${CCFLAGS} -c ./src/IRCoder.cpp -o ./build/IRCoder.o
+
+DataStructure.o : ./src/DataStructure.cpp ./src/DataStructure.h
+	${CC} ${CCFLAGS} -c ./src/DataStructure.cpp -o ./build/DataStructure.o

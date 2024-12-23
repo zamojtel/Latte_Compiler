@@ -8,12 +8,15 @@
 #include "Absyn.H"
 #include "ParserError.H"
 #include "DataStructure.h"
-#include "DataStructure.cpp"
+#include "IntermediateProgram.h"
+#include "IntermediateProgram.cpp"
 #include "LLVMCodeGenerator.h"
 #include "LLVMCodeGenerator.cpp"
 #include "Skeleton.H"
 #include "Skeleton.C"
 #include "Logger.h"
+#include "IRCoder.h"
+#include "IRCoderListener.h"
 
 void usage() {
   printf("usage: Call with one of the following argument combinations:\n");
@@ -23,159 +26,159 @@ void usage() {
   printf("\t-s (files)\tSilent mode. Parse content of files silently.\n");
 }
 
-class IntermediateProgram{
-private:
-public:
-  std::vector<Function*>m_functions;
-  IntermediateProgram(){}
-  bool check_all_returns(Function *fn,size_t start);
-  bool find_path_without_return(Function *fn,size_t start);
-  ~IntermediateProgram(){
-    for(auto *fn: m_functions)
-      delete fn;
-  }
-};
+// class IntermediateProgram{
+// private:
+// public:
+//   std::vector<Function*>m_functions;
+//   IntermediateProgram(){}
+//   bool check_all_returns(Function *fn,size_t start);
+//   bool find_path_without_return(Function *fn,size_t start);
+//   ~IntermediateProgram(){
+//     for(auto *fn: m_functions)
+//       delete fn;
+//   }
+// };
 
 
-// this function checks if we can reach the end of the function without finding any return on the way
-bool IntermediateProgram::check_all_returns(Function *fn,size_t start){
-  if(start >= fn->m_triples.size() || fn->m_triples[start]->m_visited){
-    return false;
-  }
+// // this function checks if we can reach the end of the function without finding any return on the way
+// bool IntermediateProgram::check_all_returns(Function *fn,size_t start){
+//   if(start >= fn->m_triples.size() || fn->m_triples[start]->m_visited){
+//     return false;
+//   }
 
-  fn->m_triples[start]->m_visited=true;
+//   fn->m_triples[start]->m_visited=true;
 
-  for(size_t i=start;i<fn->m_triples.size();i++){
-    if(fn->m_triples[i]->m_operation==Operation::RETURN){
-      return true;
-    }
+//   for(size_t i=start;i<fn->m_triples.size();i++){
+//     if(fn->m_triples[i]->m_operation==Operation::RETURN){
+//       return true;
+//     }
 
-    if(fn->m_triples[i]->m_operation==Operation::JF || fn->m_triples[i]->m_operation==Operation::JT || fn->m_triples[i]->m_operation==Operation::JMP){
-      bool jump_possible;
-      bool no_jump_possible;
+//     if(fn->m_triples[i]->m_operation==Operation::JF || fn->m_triples[i]->m_operation==Operation::JT || fn->m_triples[i]->m_operation==Operation::JMP){
+//       bool jump_possible;
+//       bool no_jump_possible;
       
-      if(fn->m_triples[i]->m_operation==Operation::JMP){
-        jump_possible=true;
-        no_jump_possible=false;
-      }else{
-        switch (fn->m_triples[i]->m_op_1.m_category)
-        {
-        case OperandCategory::CONSTANT:
-        {
-          jump_possible = (fn->m_triples[i]->m_op_1.m_constant.u.boolean == false && fn->m_triples[i]->m_operation==Operation::JF)
-          || (fn->m_triples[i]->m_op_1.m_constant.u.boolean && fn->m_triples[i]->m_operation==Operation::JT);
-          no_jump_possible = !jump_possible;
-          break;
-        }
-        case OperandCategory::VARIABLE:
-        case OperandCategory::ARGUMENT:
-        case OperandCategory::TRIPLE:
-        {
-          jump_possible=true;
-          no_jump_possible=true;
-          break;
-        }
-        default:
-          break;
-        }
-      }
+//       if(fn->m_triples[i]->m_operation==Operation::JMP){
+//         jump_possible=true;
+//         no_jump_possible=false;
+//       }else{
+//         switch (fn->m_triples[i]->m_op_1.m_category)
+//         {
+//         case OperandCategory::CONSTANT:
+//         {
+//           jump_possible = (fn->m_triples[i]->m_op_1.m_constant.u.boolean == false && fn->m_triples[i]->m_operation==Operation::JF)
+//           || (fn->m_triples[i]->m_op_1.m_constant.u.boolean && fn->m_triples[i]->m_operation==Operation::JT);
+//           no_jump_possible = !jump_possible;
+//           break;
+//         }
+//         case OperandCategory::VARIABLE:
+//         case OperandCategory::ARGUMENT:
+//         case OperandCategory::TRIPLE:
+//         {
+//           jump_possible=true;
+//           no_jump_possible=true;
+//           break;
+//         }
+//         default:
+//           break;
+//         }
+//       }
 
-      // here we'll jump or not
-      if(jump_possible){
-        // its enough if one path has return at the end
-        size_t index;
-        if(fn->m_triples[i]->m_operation==Operation::JMP)
-          index = fn->m_triples[i]->m_op_1.m_label->m_jump_to->m_index;
-        else
-          index = fn->m_triples[i]->m_op_2.m_label->m_jump_to->m_index;
+//       // here we'll jump or not
+//       if(jump_possible){
+//         // its enough if one path has return at the end
+//         size_t index;
+//         if(fn->m_triples[i]->m_operation==Operation::JMP)
+//           index = fn->m_triples[i]->m_op_1.m_label->m_jump_to->m_index;
+//         else
+//           index = fn->m_triples[i]->m_op_2.m_label->m_jump_to->m_index;
 
-        bool result = check_all_returns(fn,index);
-        if(result)
-          return true;
-      }
+//         bool result = check_all_returns(fn,index);
+//         if(result)
+//           return true;
+//       }
     
-      if(no_jump_possible)
-        continue;
-      else
-        break;
-    }
-  }
-  return false;
-}
+//       if(no_jump_possible)
+//         continue;
+//       else
+//         break;
+//     }
+//   }
+//   return false;
+// }
 
-bool IntermediateProgram::find_path_without_return(Function *fn,size_t start){
-  if(start >= fn->m_triples.size()){
-    return true;
-  }
+// bool IntermediateProgram::find_path_without_return(Function *fn,size_t start){
+//   if(start >= fn->m_triples.size()){
+//     return true;
+//   }
 
-  if(fn->m_triples[start]->m_visited){
-    return false;
-  }
+//   if(fn->m_triples[start]->m_visited){
+//     return false;
+//   }
   
-  for(size_t i=start;i<fn->m_triples.size();i++){
-    fn->m_triples[start]->m_visited=true;
+//   for(size_t i=start;i<fn->m_triples.size();i++){
+//     fn->m_triples[start]->m_visited=true;
 
-    if(fn->m_triples[i]->m_operation==Operation::RETURN)
-      return false;
+//     if(fn->m_triples[i]->m_operation==Operation::RETURN)
+//       return false;
 
-    if(fn->m_triples[i]->m_operation==Operation::JF || fn->m_triples[i]->m_operation==Operation::JT || fn->m_triples[i]->m_operation==Operation::JMP){
-      bool jump_possible;
-      bool no_jump_possible;
+//     if(fn->m_triples[i]->m_operation==Operation::JF || fn->m_triples[i]->m_operation==Operation::JT || fn->m_triples[i]->m_operation==Operation::JMP){
+//       bool jump_possible;
+//       bool no_jump_possible;
       
-      if(fn->m_triples[i]->m_operation==Operation::JMP){
-        jump_possible=true;
-        no_jump_possible=false;
-      }else{
-        switch (fn->m_triples[i]->m_op_1.m_category)
-        {
-        case OperandCategory::CONSTANT:
-        {
-          jump_possible = (fn->m_triples[i]->m_op_1.m_constant.u.boolean == false && fn->m_triples[i]->m_operation==Operation::JF)
-          || (fn->m_triples[i]->m_op_1.m_constant.u.boolean && fn->m_triples[i]->m_operation==Operation::JT);
-          no_jump_possible = !jump_possible;
-          break;
-        }
-        case OperandCategory::VARIABLE:
-        case OperandCategory::ARGUMENT:
-        case OperandCategory::TRIPLE:
-        {
-          jump_possible=true;
-          no_jump_possible=true;
-          break;
-        }
-        default:
-          break;
-        }
-      }
+//       if(fn->m_triples[i]->m_operation==Operation::JMP){
+//         jump_possible=true;
+//         no_jump_possible=false;
+//       }else{
+//         switch (fn->m_triples[i]->m_op_1.m_category)
+//         {
+//         case OperandCategory::CONSTANT:
+//         {
+//           jump_possible = (fn->m_triples[i]->m_op_1.m_constant.u.boolean == false && fn->m_triples[i]->m_operation==Operation::JF)
+//           || (fn->m_triples[i]->m_op_1.m_constant.u.boolean && fn->m_triples[i]->m_operation==Operation::JT);
+//           no_jump_possible = !jump_possible;
+//           break;
+//         }
+//         case OperandCategory::VARIABLE:
+//         case OperandCategory::ARGUMENT:
+//         case OperandCategory::TRIPLE:
+//         {
+//           jump_possible=true;
+//           no_jump_possible=true;
+//           break;
+//         }
+//         default:
+//           break;
+//         }
+//       }
 
-      if(jump_possible){
-        size_t index;
-        if(fn->m_triples[i]->m_operation==Operation::JMP)
-          index = fn->m_triples[i]->m_op_1.m_label->m_jump_to->m_index;
-        else
-          index = fn->m_triples[i]->m_op_2.m_label->m_jump_to->m_index;
+//       if(jump_possible){
+//         size_t index;
+//         if(fn->m_triples[i]->m_operation==Operation::JMP)
+//           index = fn->m_triples[i]->m_op_1.m_label->m_jump_to->m_index;
+//         else
+//           index = fn->m_triples[i]->m_op_2.m_label->m_jump_to->m_index;
 
-        bool result = find_path_without_return(fn,index);
-        if(result){
-          return true;
-        }
-      }
+//         bool result = find_path_without_return(fn,index);
+//         if(result){
+//           return true;
+//         }
+//       }
 
-      if(no_jump_possible){
-        continue;
-      }else{
-        return false;
-      }
-    }
-  }
+//       if(no_jump_possible){
+//         continue;
+//       }else{
+//         return false;
+//       }
+//     }
+//   }
 
-  return true;
-}
+//   return true;
+// }
 
 class ErrorList {
 public:
   std::vector<Error*> m_errors;
-  void add_error(int l,std::string &msg){
+  void add_error(int l,const std::string &msg){
     m_errors.push_back(new Error{(size_t)l,msg});
   }
 
@@ -202,7 +205,7 @@ public:
   TrueFalseLabel():m_false_label{nullptr},m_true_label{nullptr}{}
 };
 
-class MyVisitor:public Skeleton {
+class MyVisitor:public Skeleton,public IRCoderListener {
 private:
   size_t m_pass_number;
   IntermediateProgram * m_program;
@@ -210,13 +213,19 @@ private:
   SymbolTable m_symbol_table;
   std::map<Visitable*,Operand> m_nodes_to_operands;
   std::vector<TrueFalseLabel> m_true_false_label_stack;
+  std::vector<std::string> m_string_literals;
   Function * m_current_fn;
   Argument * m_current_arg;
   DataType m_last_visited_type;
   OperandCategory m_last_expr_cat;
   Operation m_current_operation;
+  IRCoder m_IRCoder;
 public:
   ErrorList m_error_list;
+
+  void ircoder_error(int line,const std::string &msg) override {
+    m_error_list.add_error(line,msg);
+  }
 
   void create_variable(const std::string &name , Expr *initializer,int line){
 
@@ -232,7 +241,8 @@ public:
     if(initializer!=nullptr){
       initializer->accept(this);
       LOG_DEBUG("Initialized Identifier: {}",name);
-      m_nodes_to_operands[initializer] = push_triple(line,Operation::ASSIGN,variable,m_nodes_to_operands.at(initializer));
+      
+      m_nodes_to_operands[initializer] = m_IRCoder.push(line,Operation::ASSIGN,variable,m_nodes_to_operands.at(initializer));
     }
 
     m_current_fn->m_variables.push_back(variable);
@@ -241,7 +251,8 @@ public:
 
   void pass(Program *parse_tree){
     m_pass_number=1;
-
+    
+    add_predefined_functions(); 
     parse_tree->accept(this);
     m_pass_number++;
 
@@ -280,7 +291,7 @@ public:
     read_int->m_name = "readInt";
     read_int->m_return_type = DataType::INT;
 
-    Function * read_string = new Function{PredefinedFunction::PRINTSTRING};
+    Function * read_string = new Function{PredefinedFunction::READSTRING};
     read_string->m_name="readString";
     read_string->m_return_type=DataType::STRING;
 
@@ -293,10 +304,11 @@ public:
 
   }
 
-  MyVisitor(IntermediateProgram *prog):m_program{prog}{}
+  MyVisitor(IntermediateProgram *prog):m_program{prog}{
+    m_IRCoder.set_listener(this);
+  }
 
   void visitProg(Prog *p) override {
-    add_predefined_functions();
     LOG_DEBUG("Begin Program");
     p->listtopdef_->accept(this);
     LOG_DEBUG("End Program");
@@ -317,6 +329,7 @@ public:
     }else if(m_pass_number==2){
      
       m_current_fn = m_symbol_table.get_function(p->ident_);
+      m_IRCoder.set_function(m_current_fn);
       m_symbol_table.push();
 
       for(size_t i=0;i<m_current_fn->m_arguments.size();i++)
@@ -344,7 +357,7 @@ public:
       m_nodes_to_operands[p] = Operand::error();
       return;
     }
-  
+    
     if(p->listexpr_!=nullptr)
       p->listexpr_->accept(this);
     
@@ -361,15 +374,13 @@ public:
           m_error_list.add_error(line_number,msg);
         }
       }
-
-    }
-
-    for(auto *expr: *p->listexpr_){
-      push_triple(Operation::PARAM,m_nodes_to_operands.at(expr));
     }
 
     m_current_fn->m_used=true;
-    m_nodes_to_operands[p] = push_triple(p->line_number,Operation::CALL,m_symbol_table.get_function(p->ident_),Constant{(int)p->listexpr_->size()});
+    m_nodes_to_operands[p] = m_IRCoder.push(p->line_number,Operation::CALL,m_symbol_table.get_function(p->ident_),Constant{(int)p->listexpr_->size()});
+
+    for(auto *expr: *p->listexpr_)
+      m_nodes_to_operands[p].m_triple->m_call_args.push_back(m_nodes_to_operands.at(expr));
   }
  
   void visitBlk(Blk *p){
@@ -429,57 +440,78 @@ public:
   void visitInit(Init *p) override {
     create_variable(p->ident_,p->expr_,p->line_number);
   }
+  
+  void bind_label(Label *label,Triple *triple){
+    label->m_jump_to=triple;
+    triple->m_pointing_labels.push_back(label);
+  }
 
-  // corrected
+  // corrected donzo
   void visitCond(Cond *p) override {
     p->expr_->accept(this);
     Label *jump_to = create_label();
-    Triple *jf_triple = push_triple(p->line_number,Operation::JF,m_nodes_to_operands.at(p->expr_),{jump_to});
+    Triple *jf_triple = m_IRCoder.push(p->line_number,Operation::JF,m_nodes_to_operands.at(p->expr_),{jump_to});
+    
     p->stmt_->accept(this);
-    Triple *special_triple=push_triple(p->line_number,Operation::MARKER);
-    jf_triple->m_op_2.m_label->m_jump_to = special_triple;
+    Triple *special_triple=m_IRCoder.push(p->line_number,Operation::MARKER);
+    // we bind label
+    // jf_triple->m_op_2.m_label->m_jump_to = special_triple;
+    bind_label(jf_triple->m_op_2.m_label,special_triple);
   }
 
   // corrected
   void visitCondElse(CondElse *p) override{
     p->expr_->accept(this);
+    // 2 labels
     Label *jump_to_else = create_label();
     Label *jump_out_if = create_label();
 
-    Triple *jf_triple = push_triple(Operation::JF,m_nodes_to_operands.at(p->expr_),{jump_to_else});
+    Triple *jf_triple = m_IRCoder.push(0,Operation::JF,m_nodes_to_operands.at(p->expr_),{jump_to_else});
     p->stmt_1->accept(this);
-    Triple *jmp_triple = push_triple(Operation::JMP,{jump_out_if});
-    Triple* special_marker_before_else =push_triple(Operation::MARKER);
+    Triple *jmp_triple = m_IRCoder.push(0,Operation::JMP,{jump_out_if});
+    Triple* special_marker_before_else =m_IRCoder.push(0,Operation::MARKER);
     p->stmt_2->accept(this);
-    Triple* special_marker_end_of_if =push_triple(Operation::MARKER);
 
-    jf_triple->m_op_2.m_label->m_jump_to=special_marker_before_else;
-    jmp_triple->m_op_1.m_label->m_jump_to=special_marker_end_of_if;
+    // Triple *jmp_out_of_else= m_IRCoder.push(0,Operation::JMP,{jump_out_if});
+    Triple* special_marker_end_of_if =m_IRCoder.push(0,Operation::MARKER);
+
+    // 2 binds to do
+    // jf_triple->m_op_2.m_label->m_jump_to=special_marker_before_else;
+    bind_label(jf_triple->m_op_2.m_label,special_marker_before_else);
+  
+    // bind_label(jmp_out_of_else->m_op_1.m_label,special_marker_end_of_if);
+    // jmp_triple->m_op_1.m_label->m_jump_to=special_marker_end_of_if;
+    bind_label(jmp_triple->m_op_1.m_label,special_marker_end_of_if);
   }
 
   void visitNot(Not *p) override {
     p->expr_->accept(this);
-    m_nodes_to_operands[p] = push_triple(p->line_number,Operation::NOT,m_nodes_to_operands.at(p->expr_));
+    m_nodes_to_operands[p] = m_IRCoder.push(p->line_number,Operation::NOT,m_nodes_to_operands.at(p->expr_));
   }
 
   void visitNeg(Neg *p) override {
     p->expr_->accept(this);
-    m_nodes_to_operands[p] = push_triple(p->line_number,Operation::NEG,m_nodes_to_operands.at(p->expr_));
+    m_nodes_to_operands[p] = m_IRCoder.push(p->line_number,Operation::NEG,m_nodes_to_operands.at(p->expr_));
   }
 
+  // while donzo
   void visitWhile(While *p) override {
     Label * cond_label = create_label();
-    Triple * cond_marker = push_triple(Operation::MARKER);
-    cond_label->m_jump_to=cond_marker;
+    Triple * cond_marker = m_IRCoder.push(0,Operation::MARKER);
+    // bind label
+    // cond_label->m_jump_to=cond_marker;
+    bind_label(cond_label,cond_marker);
 
     p->expr_->accept(this);
     Label *end_label = create_label();
-    push_triple(Operation::JF,m_nodes_to_operands.at(p->expr_),{end_label});
+    m_IRCoder.push(0,Operation::JF,m_nodes_to_operands.at(p->expr_),{end_label});
 
     p->stmt_->accept(this);
-    push_triple(Operation::JMP,{cond_label});
-    Triple *end_marker = push_triple(Operation::MARKER);
-    end_label->m_jump_to = end_marker;
+    m_IRCoder.push(0,Operation::JMP,{cond_label});
+    Triple *end_marker = m_IRCoder.push(0,Operation::MARKER);
+    
+    // end_label->m_jump_to = end_marker;
+    bind_label(end_label,end_marker);
   }
 
   void visitAss(Ass *ass) override {
@@ -503,7 +535,8 @@ public:
       return;
     }
 
-    m_nodes_to_operands[ass->expr_] = push_triple(ass->line_number,Operation::ASSIGN,op_1,m_nodes_to_operands.at(ass->expr_)); 
+    Operand op_ = m_nodes_to_operands.at(ass->expr_);
+    m_nodes_to_operands[ass->expr_] = m_IRCoder.push(ass->line_number,Operation::ASSIGN,op_1,m_nodes_to_operands.at(ass->expr_)); 
 
   }
 
@@ -513,30 +546,11 @@ public:
 
   void visitRet(Ret *p) override{
     p->expr_->accept(this);
-    push_triple(p->line_number,Operation::RETURN,m_nodes_to_operands[p->expr_]);
+    m_IRCoder.push(p->line_number,Operation::RETURN,m_nodes_to_operands[p->expr_]);
   }
 
   void visitVRet(VRet *p) override{ 
-    push_triple(p->line_number,Operation::RETURN);
-  }
-
-  std::string type_to_string(DataType dt){
-    switch (dt)
-    {
-    case DataType::INT:
-      return "int";
-    case DataType::BOOL:
-      return "bool";
-    case DataType::STRING:
-      return "string";
-    case DataType::VOID:
-      return "void";
-    case DataType::ERROR:
-      return "error";
-    default:
-      return "";
-      break;
-    }
+    m_IRCoder.push(p->line_number,Operation::RETURN);
   }
 
   void visitELitInt(ELitInt *p) override{
@@ -563,197 +577,8 @@ public:
       return DataType::ERROR;
   }
 
-  DataType deduce_bool_type(DataType op_1_type,DataType op_2_type){
-    if(op_1_type==DataType::INT && op_2_type==DataType::INT)
-      return DataType::BOOL;
-    else if(op_1_type==DataType::BOOL && op_2_type==DataType::BOOL)
-      return DataType::BOOL;
-    else
-      return DataType::ERROR;
-  }
-
-  DataType deduce_arithmetic_type(Operation operation,DataType op_1_type,DataType op_2_type){
-    if(op_1_type!=op_2_type)
-      return DataType::ERROR;
-
-    if(op_1_type==DataType::INT)
-      return DataType::INT;
-    else if(op_1_type==DataType::STRING && operation==Operation::ADD)
-      return DataType::STRING;
-    else 
-      return DataType::ERROR;
-  }
-
-  DataType deduce_arithmetical_neg(DataType op_1_type){
-    if(op_1_type==DataType::INT)
-      return DataType::INT;
-    else
-      return DataType::ERROR;
-  }
-
-  DataType deduce_type(Triple *triple){
-    DataType op_1_type=triple->m_op_1.get_type();
-    DataType op_2_type=triple->m_op_2.get_type();
-    
-    switch (triple->m_operation)
-    {
-    case Operation::ADD:
-    case Operation::MUL:
-    case Operation::MOD:
-    case Operation::SUB:
-    case Operation::DIV:
-      return deduce_arithmetic_type(triple->m_operation,op_1_type,op_2_type);
-    case Operation::NOT:
-      return deduce_bool_type_one_argument(op_1_type);
-    case Operation::ASSIGN:
-      return op_1_type;
-    case Operation::NEG:
-      return deduce_arithmetical_neg(op_1_type);
-    case Operation::AND:
-    case Operation::OR:
-    case Operation::LTH:
-    case Operation::LE:
-    case Operation::GTH:
-    case Operation::GE:
-    case Operation::EQU:
-    case Operation::NE:
-      return deduce_bool_type(op_1_type,op_2_type);
-    case Operation::JT:
-    case Operation::JF:
-    case Operation::JMP:
-      return DataType::VOID;
-    case Operation::CALL:
-      return op_1_type;
-    case Operation::PARAM:
-      return DataType::VOID;
-    case Operation::RETURN:
-      return DataType::VOID; 
-    case Operation::MARKER:
-      return DataType::VOID;
-    default:
-      throw 0;
-    }
-  }
-  
-  Triple* push_triple(Operation operation,const Operand &op_1={},const Operand &op_2={}){
-    return push_triple(0,operation,op_1,op_2);
-  }
-
   bool equal_data_types_or_error(DataType t1,DataType t2){
     return  t1 == DataType::ERROR || t2 == DataType::ERROR || t1==t2;
-  }
-
-  void check_triple(Triple * triple){
-    switch (triple->m_operation)
-    {
-    case Operation::ASSIGN:{
-      DataType t1 = triple->m_op_1.get_type();
-      DataType t2 = triple->m_op_2.get_type();
-
-      if(!equal_data_types_or_error(t1,t2)){
-
-        std::string msg = fmt::format("Incompatible type");
-        m_error_list.add_error(triple->m_code_line_number,msg);
-      }
-      break;
-    }
-    case Operation::RETURN:
-    {
-      if(triple->m_op_1.m_category==OperandCategory::EMPTY){
-        if(m_current_fn->m_return_type!=DataType::VOID){
-          std::string msg = fmt::format("Incompatible return type");
-          m_error_list.add_error(triple->m_code_line_number,msg);
-        }
-      }else if(m_current_fn->m_return_type!=triple->m_op_1.get_type()){
-        std::string msg = fmt::format("Incompatible return type");
-        m_error_list.add_error(triple->m_code_line_number,msg);
-      }
-      break;
-    }
-    case Operation::ADD:
-    case Operation::EQU:
-    {
-      DataType t1 = triple->m_op_1.get_type();
-      DataType t2 = triple->m_op_2.get_type();
-
-      if(!equal_data_types_or_error(t1,t2)){
-        std::string msg = fmt::format("Incompatible types");
-        m_error_list.add_error(triple->m_code_line_number,msg);
-      }
-      break;
-    }
-    case Operation::SUB:
-    case Operation::DIV:
-    case Operation::MUL:
-    case Operation::MOD:
-    case Operation::LTH:
-    case Operation::LE:
-    case Operation::GTH:
-    case Operation::GE:
-    {
-      DataType t1 = triple->m_op_1.get_type();
-      DataType t2 = triple->m_op_2.get_type();
-      if(!equal_data_types_or_error(t1,t2)){
-        std::string msg = fmt::format("Incompatible types");
-        m_error_list.add_error(triple->m_code_line_number,msg);
-      }else if(triple->m_op_1.get_type()!=DataType::INT){
-        std::string msg = fmt::format("Can't perform operation {} on operands of type {}",operation_to_string(triple->m_operation),type_to_string(triple->m_op_1.get_type()));
-        m_error_list.add_error(triple->m_code_line_number,msg);
-      }
-      break;
-    }
-    case Operation::NOT:
-    {
-      DataType t1 = triple->m_op_1.get_type();
-      if(t1!=DataType::BOOL)
-      {
-        std::string msg = fmt::format("Can't negate non boolean types");
-        m_error_list.add_error(triple->m_code_line_number,msg);
-      }
-      break;
-    }
-    case Operation::JF:
-    case Operation::JT:
-    { 
-      DataType t1 = triple->m_op_1.get_type();
-      if(t1 != DataType::BOOL && t1 != DataType::ERROR){
-        std::string msg = fmt::format("Expected boolean expression");
-        m_error_list.add_error(triple->m_code_line_number,msg);
-      }
-      break;
-    }
-    case Operation::AND:
-    case Operation::OR:
-    {
-      DataType t1 = triple->m_op_1.get_type();
-      DataType t2 = triple->m_op_2.get_type();
-
-      if(t1!=DataType::BOOL && t1!=DataType::ERROR)
-      {
-        std::string msg = fmt::format("Expected boolean expression");
-        m_error_list.add_error(triple->m_code_line_number,msg);
-      }
-      if(t2!=DataType::BOOL && t2!=DataType::ERROR)
-      {
-        std::string msg = fmt::format("Expected boolean expression");
-        m_error_list.add_error(triple->m_code_line_number,msg);
-      }
-    }
-    default:
-      break;
-    }
-  }
-
-  Triple* push_triple(int line_number,Operation operation,const Operand &op_1={},const Operand &op_2={}){
-
-    Triple *triple = new Triple{line_number,m_current_fn->m_triples.size(),operation,op_1,op_2};
-    DataType deduced_type = deduce_type(triple);
-    triple->m_data_type=deduced_type;
-
-    check_triple(triple);
-
-    m_current_fn->m_triples.push_back(triple);
-    return triple;
   }
 
   Label* create_label(){
@@ -786,19 +611,20 @@ public:
 
   void visitEAdd(EAdd *p) override {
     p->expr_1->accept(this);
-    p->addop_->accept(this);
     p->expr_2->accept(this);
-    
-    m_nodes_to_operands[p] = push_triple(p->line_number,m_current_operation,m_nodes_to_operands.at(p->expr_1),m_nodes_to_operands.at(p->expr_2));
+    p->addop_->accept(this);
+
+    // m_IRCoder.push
+    m_nodes_to_operands[p] = m_IRCoder.push(p->line_number,m_current_operation,m_nodes_to_operands.at(p->expr_1),m_nodes_to_operands.at(p->expr_2));
   }
 
   void visitEMul(EMul *p) override{
+    // the order of operations is really important 
     p->expr_1->accept(this);
-
-    p->mulop_->accept(this);
-
     p->expr_2->accept(this);
-    m_nodes_to_operands[p] = push_triple(m_current_operation,m_nodes_to_operands.at(p->expr_1),m_nodes_to_operands.at(p->expr_2));
+    p->mulop_->accept(this);
+    
+    m_nodes_to_operands[p] = m_IRCoder.push(0,m_current_operation,m_nodes_to_operands.at(p->expr_1),m_nodes_to_operands.at(p->expr_2));
   }
 
   void visitLTH(LTH *p) override {
@@ -835,21 +661,21 @@ public:
     Operand op_1 = m_nodes_to_operands.at(p->expr_1);
     Operand op_2 = m_nodes_to_operands.at(p->expr_2);
     
-    m_nodes_to_operands[p]=push_triple(p->line_number,m_current_operation,m_nodes_to_operands.at(p->expr_1),m_nodes_to_operands.at(p->expr_2));
+    m_nodes_to_operands[p]=m_IRCoder.push(p->line_number,m_current_operation,m_nodes_to_operands.at(p->expr_1),m_nodes_to_operands.at(p->expr_2));
   }
 
   void visitEAnd(EAnd *p) override{
     p->expr_1->accept(this);
     p->expr_2->accept(this);
     
-    m_nodes_to_operands[p]=push_triple(p->line_number,Operation::AND,m_nodes_to_operands.at(p->expr_1),m_nodes_to_operands.at(p->expr_2));
+    m_nodes_to_operands[p]=m_IRCoder.push(p->line_number,Operation::AND,m_nodes_to_operands.at(p->expr_1),m_nodes_to_operands.at(p->expr_2));
   }
 
   void visitEOr(EOr *p){
     p->expr_1->accept(this);
     p->expr_2->accept(this);
     
-    m_nodes_to_operands[p]=push_triple(p->line_number,Operation::OR,m_nodes_to_operands.at(p->expr_1),m_nodes_to_operands.at(p->expr_2));
+    m_nodes_to_operands[p]=m_IRCoder.push(p->line_number,Operation::OR,m_nodes_to_operands.at(p->expr_1),m_nodes_to_operands.at(p->expr_2));
   }
   
   void visitPlus(Plus *p) override {
@@ -859,7 +685,7 @@ public:
   void visitDiv(Div *p) override{
     m_current_operation=Operation::DIV;
   }
-
+  
   void visitMinus(Minus *p) override{
     m_current_operation=Operation::SUB;
   }
@@ -870,16 +696,6 @@ public:
 
   void visitMod(Mod *mod) override {
     m_current_operation=Operation::MOD;
-  }
-  
-  void print_functions(){
-    for(auto *fn : m_program->m_functions){
-      std::cout<<"Function name: "<<fn->m_name<<std::endl;
-      std::cout<<"Function return type: "<<type_to_string(fn->m_return_type)<<std::endl;
-      std::cout<<"Arguments: "<<std::endl;
-      for(auto *arg : fn->m_arguments)
-        std::cout<<" Identifier: "<<arg->m_identifier<<"\n Type :"<<type_to_string(arg->m_type)<<std::endl;
-    }
   }
 
   void print_constant(const Constant &constant){
@@ -934,74 +750,6 @@ public:
         break;
     }
   }
-
-  std::string operation_to_string(Operation operation){
-    switch (operation)
-    {
-      case Operation::ADD:{
-        return "ADD";
-      case Operation::ASSIGN:
-        return "ASSIGN";
-      case Operation::MUL:
-        return "MUL";
-      case Operation::SUB:
-        return "SUB";
-      case Operation::DIV:
-        return "DIV";
-      case Operation::AND:
-        return "AND";
-      case Operation::OR:
-        return "OR";
-      case Operation::LTH:
-        return "LTH";
-      case Operation::LE:
-        return "LE";
-      case Operation::GTH:
-        return "GTH";
-      case Operation::GE:
-        return "GE";
-      case Operation::EQU:
-        return "EQU";
-      case Operation::NE:
-        return "NE";
-      case Operation::JT:
-        return "JT";
-      case Operation::JF:
-        return "JF";
-      case Operation::MARKER:
-        return "MARKER";
-      case Operation::JMP:
-        return "JUMP";
-      case Operation::CALL:
-        return "CALL";
-      case Operation::PARAM:
-        return "PARAM";
-      case Operation::RETURN:
-        return "RETURN";
-      default:
-        return " ";
-      }
-    }
-  }
-
-  void print_functions_triples(){
-    for(auto *fn : m_program->m_functions){
-      std::cout<<"Function: "<<fn->m_name<<std::endl;
-      print_triples(fn);
-    }
-    std::cout<<std::endl;
-  }
-
-  void print_triples(Function * fn){
-    for(auto *triple: fn->m_triples){
-      std::cout<<"t"<<triple->m_index<<operation_to_string(triple->m_operation);
-      
-      print_operand(triple->m_op_1);
-      print_operand(triple->m_op_2);
-      std::cout<<"Type: "<<data_type_to_string(triple->m_data_type)<<" ";
-      std::cout<<std::endl;
-    }
-  }
 };
 
 int main(int argc, char ** argv)
@@ -1041,11 +789,14 @@ int main(int argc, char ** argv)
   fclose(input);
   if(!parse_tree)
     return 1;
+
   std::vector<Function*> functions;
   IntermediateProgram int_program;
-  MyVisitor my_visitor{&int_program};
-  LLVMCodeGenerator llvm_generator;
 
+
+  MyVisitor my_visitor{&int_program};
+  LLVMCodeGenerator llvm_generator{&int_program};
+  
   my_visitor.pass(parse_tree);
   
   for(auto *fn : int_program.m_functions){
@@ -1063,8 +814,17 @@ int main(int argc, char ** argv)
     my_visitor.print_errors();
     delete(parse_tree);
     return 1;
-  }else
-    std::cout<<"OK"<<std::endl;
+  }else{
+    // TODO uncomment latter
+    // std::cout<<"OK"<<std::endl;
+  }
+  
+  // IntermediateProgramPrinter ipp;
+
+  // ipp.print_program(int_program);
+
+  llvm_generator.process_program();
+  llvm_generator.print_generated_code();
   
   quiet=true;
   if (parse_tree)
