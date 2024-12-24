@@ -84,14 +84,24 @@ public:
 
 
 // TODO move to another file
+// std::string printInt_dec= R"abc(
+// @dnl = internal constant [4 x i8] c"%d\0A\00"
+// define void @printInt(i32 %x) {
+//     %t0 = getelementptr [4 x i8], [4 x i8]* @dnl, i32 0, i32 0
+//     call i32 (i8*, ...) @printf(i8* %t0, i32 %x) 
+//     ret void
+// })abc";
+
+
 std::string printInt_dec= R"abc(
-@dnl = internal constant [4 x i8] c"%d\0A\00"
-define void @printInt(i32 %x) {
-    %t0 = getelementptr [4 x i8], [4 x i8]* @dnl, i32 0, i32 0
-    call i32 (i8*, ...) @printf(i8* %t0, i32 %x) 
-    ret void
-}
-)abc";
+@.format_PrintInt = internal constant [4 x i8] c"%d\0A\00"
+define dso_local void @printInt(i32 noundef %0) {
+  %2 = alloca i32, align 4
+  store i32 %0, ptr %2, align 4
+  %3 = load i32, ptr %2, align 4
+  %4 = call i32 (ptr, ...) @printf(ptr noundef @.format_PrintInt, i32 noundef %3)
+  ret void
+})abc";
 
 std::string printString_dec = R"abc(
 declare i32 @puts(i8*)

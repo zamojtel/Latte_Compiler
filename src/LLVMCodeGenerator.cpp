@@ -37,12 +37,11 @@ std::string LLVMCodeGenerator::get_size_in_bits(DataType type){
         return "error";
     }
 }
-// get_data_type_name
 std::string LLVMCodeGenerator::get_data_type_name(DataType type){
     switch (type)
     {
     case DataType::BOOL:
-        return "i8";
+        return "i1";
     case DataType::INT:
         return "i32";
     case DataType::STRING:
@@ -118,7 +117,10 @@ std::string LLVMCodeGenerator::get_operand_value_with_load(const Operand &op){
         return "%"+std::to_string(loaded_argument_index);
     }
     case OperandCategory::TRIPLE:{
-        return "%"+std::to_string(m_triple_data[op.m_triple->m_index].m_number);
+        if(op.m_triple->m_operation==Operation::NEG)
+            return fmt::format("-{}",op.m_triple->m_op_1.m_constant.get_value_as_string());
+        else
+            return "%"+std::to_string(m_triple_data[op.m_triple->m_index].m_number);
     }
     default:
         return "error";
@@ -211,7 +213,6 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
         break;
     }
     case Operation::ADD:
-    case Operation::DIV:
     case Operation::SUB:
     case Operation::MUL:{
         if(triple->m_data_type!=DataType::STRING){
@@ -231,6 +232,17 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
             increase();
             break;
         }
+    }
+    case Operation::MOD:
+    case Operation::DIV:{
+        std::string op_1_val = get_operand_value_with_load(triple->m_op_1);
+        std::string op_2_val = get_operand_value_with_load(triple->m_op_2);
+        m_triple_data[triple->m_index].m_number = m_llvm_line_index;
+        std::string operation = ir_op_to_llvm_op(triple->m_operation);
+        std::string line = fmt::format("%{} = {} {} {}, {}",m_llvm_line_index,operation,get_data_type_name(triple->m_op_1.get_type()),op_1_val,op_2_val);
+        m_code_lines.push_back(line);
+        increase();
+        break;
     }
     case Operation::RETURN:{
         if(m_current_fn->m_return_type!=DataType::VOID)
@@ -253,8 +265,11 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
             m_code_lines.push_back(fmt::format("%{} = call noundef {} @{}({})",m_llvm_line_index,get_data_type_name(fn->m_return_type),fn->m_name,argument_list));
             increase();
         }
-        else
+        else{
             m_code_lines.push_back(fmt::format("call {} @{}({})",get_data_type_name(fn->m_return_type),fn->m_name,argument_list));
+            
+            break;
+        }
     }
     case Operation::OR:
     case Operation::AND:
@@ -314,6 +329,9 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
         m_code_lines.push_back(fmt::format("br label %Label{}",m_triple_data[triple->m_op_1.m_label->m_jump_to->m_index].m_marker_index));
         break;
 
+    }
+    case Operation::NEG:{
+       break;
     }
     default:
         break;
