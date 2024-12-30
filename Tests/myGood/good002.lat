@@ -1,6 +1,4 @@
 int main(){
-    if(true)
-    {
-        return 10;
-    }
+    printString("abc");
+    return 0;
 }

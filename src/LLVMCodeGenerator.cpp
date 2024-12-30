@@ -88,7 +88,6 @@ std::string LLVMCodeGenerator::get_string_literal_name(int index){
 }
 
 std::string LLVMCodeGenerator::get_operand_value_with_load(const Operand &op){
-    // @.str.1 = private unnamed_addr constant [4 x i8] c"cos\00", align 1
     switch (op.m_category)
     {
     case OperandCategory::CONSTANT:
@@ -116,12 +115,8 @@ std::string LLVMCodeGenerator::get_operand_value_with_load(const Operand &op){
         m_code_lines.push_back(line);
         return "%"+std::to_string(loaded_argument_index);
     }
-    case OperandCategory::TRIPLE:{
-        if(op.m_triple->m_operation==Operation::NEG)
-            return fmt::format("-{}",op.m_triple->m_op_1.m_constant.get_value_as_string());
-        else
-            return "%"+std::to_string(m_triple_data[op.m_triple->m_index].m_number);
-    }
+    case OperandCategory::TRIPLE:
+        return "%"+std::to_string(m_triple_data[op.m_triple->m_index].m_number);
     default:
         return "error";
     }
@@ -140,8 +135,6 @@ std::string LLVMCodeGenerator::ir_op_to_llvm_op(Operation op){
         return "mul";
     case Operation::MOD:
         return "srem";
-    // Logical Comparissons
-    // ,LTH,LE,GTH,GE,EQU,NE,
     case Operation::LTH:
         return "slt";
     case Operation::LE:
@@ -190,6 +183,11 @@ std::string LLVMCodeGenerator::process_argument_list(Triple *triple){
             argument_list+=argument;
             break;
         }
+        case OperandCategory::ARGUMENT:{
+            argument = fmt::format("{} noundef {}",get_data_type_name(arg.get_type()),get_operand_value_with_load(arg.m_argument));
+            argument_list+=argument;
+            break;
+        }
         default:
             break;
         }
@@ -200,6 +198,9 @@ std::string LLVMCodeGenerator::process_argument_list(Triple *triple){
 }
 
 void LLVMCodeGenerator::process_triple(Triple * triple){
+    if(triple==nullptr)
+        return;
+
     switch (triple->m_operation)
     {
     case Operation::ASSIGN:{
@@ -209,7 +210,6 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
         std::string alignment = get_align(type_op_1);
         
         m_code_lines.push_back(fmt::format("store {} {}, ptr {}, align {}",get_data_type_name(type_op_1),op_value_2,op_value_1,alignment));
-        // m_code_lines.push_back(fmt::format("store {} %{}, ptr %{}, align {}",get_data_type_name(type_op_1),get_operand_value(triple->m_op_2),get_operand_value(triple->m_op_1),get_align(type_op_1)));
         break;
     }
     case Operation::ADD:
@@ -223,15 +223,14 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
             std::string line = fmt::format("%{} = {} nsw {} {}, {}",m_llvm_line_index,operation,get_data_type_name(triple->m_op_1.get_type()),op_1_val,op_2_val);
             m_code_lines.push_back(line);
             increase();
-            break;
         }else{
             std::string op_1_val = get_operand_value_with_load(triple->m_op_1);
             std::string op_2_val = get_operand_value_with_load(triple->m_op_2);
             m_triple_data[triple->m_index].m_number = m_llvm_line_index;
             m_code_lines.push_back(fmt::format("%{} = call noundef ptr @addStrings(ptr noundef {}, ptr noundef {})",m_llvm_line_index,op_1_val,op_2_val));
             increase();
-            break;
         }
+        break;
     }
     case Operation::MOD:
     case Operation::DIV:{
@@ -265,15 +264,15 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
             m_code_lines.push_back(fmt::format("%{} = call noundef {} @{}({})",m_llvm_line_index,get_data_type_name(fn->m_return_type),fn->m_name,argument_list));
             increase();
         }
-        else{
+        else
             m_code_lines.push_back(fmt::format("call {} @{}({})",get_data_type_name(fn->m_return_type),fn->m_name,argument_list));
-            
-            break;
-        }
+        
+        break;
     }
     case Operation::OR:
     case Operation::AND:
     {
+        // tak ma byc
         break;
     }
     case Operation::LTH:
@@ -328,10 +327,35 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
     case Operation::JMP:{
         m_code_lines.push_back(fmt::format("br label %Label{}",m_triple_data[triple->m_op_1.m_label->m_jump_to->m_index].m_marker_index));
         break;
-
     }
     case Operation::NEG:{
-       break;
+        std::string op_1 = get_operand_value_with_load( triple->m_op_1);
+        m_triple_data[triple->m_index].m_number = m_llvm_line_index;
+        m_code_lines.push_back(fmt::format("%{} = sub nsw {} 0, {}",m_llvm_line_index,get_data_type_name(triple->m_op_1.get_type()),op_1));
+        increase();
+        break;
+    }
+    case Operation::INC:
+    {
+        std::string op_1 =get_operand_value_with_load(triple->m_op_1);
+        m_code_lines.push_back(fmt::format("%{} = add nsw {} {}, 1",m_llvm_line_index,get_data_type_name(triple->m_op_1.get_type()),op_1));
+        std::string from = "%"+std::to_string(m_llvm_line_index);
+        std::string to = get_operand_value(triple->m_op_1);
+        std::string store = fmt::format("store i32 {}, ptr {}, align 4",from,to);
+        m_code_lines.push_back(store);
+        increase();
+        break;
+    }
+    case Operation::DEC:
+    {
+        std::string op_1 =get_operand_value_with_load(triple->m_op_1);
+        m_code_lines.push_back(fmt::format("%{} = add nsw {} {}, -1",m_llvm_line_index,get_data_type_name(triple->m_op_1.get_type()),op_1));
+        std::string from = "%"+std::to_string(m_llvm_line_index);
+        std::string to = get_operand_value(triple->m_op_1);
+        std::string store = fmt::format("store i32 {}, ptr {}, align 4",from,to);
+        m_code_lines.push_back(store);
+        increase();
+        break;
     }
     default:
         break;
@@ -371,9 +395,8 @@ void LLVMCodeGenerator::collect_string_literals() {
 
 void LLVMCodeGenerator::map_string_literals(){
     for(size_t i=0;i<m_string_literals.size();i++){
-        if(m_string_literal_to_index.count(m_string_literals[i])==0){
+        if(m_string_literal_to_index.count(m_string_literals[i])==0)
             m_string_literal_to_index[m_string_literals[i]] = i+1;
-        }
     }
 
 }
@@ -381,8 +404,48 @@ void LLVMCodeGenerator::map_string_literals(){
 // to-do correct the order of string literals
 void LLVMCodeGenerator::generate_string_literal_declarations(){
     for(const auto& [key, value] : m_string_literal_to_index){
-        std::string line = fmt::format("@.str.{} = private unnamed_addr constant [{} x i8] c\"{}\", align 1",
-            value,key.size()+1,key+"\\00");
+
+        std::string str = "";
+        for(size_t i = 0;i<key.size();i++){
+            switch (key[i])
+            {
+            case '\n':
+                str += "\\0A";
+                break;
+            case '\"':
+                str+= "\\22";
+                break;
+            case '\t':
+                str+= "\\09";
+                break;
+            case '\a':
+                str+= "\\07";
+                break;
+            case '\\':
+                str+= "\\5C";
+                break;
+            case '\b':
+                str+= "\\08";
+                break;
+            case '\f':
+                str+= "\\0C";
+                break;
+            case '\v':
+                str+= "\\0B";
+                break;
+            case '\0':
+                str+= "\\00";
+                break;
+            default:
+                str += key[i];
+                break;
+            }
+        }
+        // an inserted counter for calculating references to the string 
+        // +4 for a counter 
+        std::string line = fmt::format("@.str.{} = private unnamed_addr constant [{} x i8] c\"\\01\\00\\00\\00{}\", align 1",
+            value,key.size()+4+1,str+"\\00");
+        
         m_code_lines.push_back(line);
     }
 }
@@ -485,55 +548,24 @@ void LLVMCodeGenerator::process_function(Function *fn){
     for(auto triple : fn->m_triples)
         process_triple(triple);
     
-    if(fn->m_return_type==DataType::VOID && fn->m_triples.back()->m_operation!=Operation::RETURN)
+    if(fn->m_return_type==DataType::VOID && fn->m_triples.size()==0)
         m_code_lines.push_back("ret void");
-    
+    else if(fn->m_return_type==DataType::VOID && fn->m_triples.back()->m_operation!=Operation::RETURN)
+        m_code_lines.push_back("ret void");
+    // this seems to be a temporary patch 
+    else if(fn->m_return_type==DataType::INT && m_code_lines.back().substr(0,5)=="Label")
+        m_code_lines.push_back("ret i32 0");
+
     m_code_lines.push_back("}");
 }
 
-// Todo
 void LLVMCodeGenerator::add_used_predefined_functions(){
-
-    for(auto fn : m_intermediate_program->m_functions){
-        // && fn->m_used
-        if(fn->m_type!=PredefinedFunction::USERDEFINED){
-            switch (fn->m_type)
-            {
-            case PredefinedFunction::PRINTINT:
-                if(!printf_added){
-                    m_code_lines.push_back("declare i32 @printf(i8* noundef, ...)");
-                    printf_added=true;
-                }
-                m_code_lines.push_back(printInt_dec);
-                break;
-            case PredefinedFunction::READINT:
-                if(!scanf_added){
-                    m_code_lines.push_back("declare i32 @scanf(i8*, ...)");
-                    scanf_added=true;
-                }
-                m_code_lines.push_back(readInt_dec);
-                break;
-            case PredefinedFunction::READSTRING:
-                if(!scanf_added){
-                    m_code_lines.push_back("declare i32 @scanf(i8*, ...)");
-                    scanf_added=true;
-                }
-                m_code_lines.push_back(readString_dec);
-                break;
-            case PredefinedFunction::PRINTSTRING:
-                m_code_lines.push_back(printString_dec);
-                break;
-            default:
-                break;
-            }
-        }
-    }
+    m_code_lines.push_back("declare dso_local noundef ptr @addStrings(ptr noundef %0, ptr noundef %1)");
+    m_code_lines.push_back("declare dso_local void @printInt(i32 noundef %0)");
+    m_code_lines.push_back("declare dso_local void @printString(ptr noundef %0)");
+    m_code_lines.push_back("declare dso_local noundef ptr @readString()");
+    m_code_lines.push_back("declare dso_local noundef i32 @readInt()");
 }
-
-void LLVMCodeGenerator::add_string_addition_function(){
-    m_code_lines.push_back(addString_dec);
-}
-
 
 void LLVMCodeGenerator::enumerate_all_markers(Function *fn){
     size_t marker_index=0;
@@ -551,15 +583,11 @@ std::string LLVMCodeGenerator::process_program(){
     collect_string_literals();
     map_string_literals();
     generate_string_literal_declarations();
-    add_string_addition_function();
 
     for(auto &fn : m_intermediate_program->m_functions)
     {   
         if(fn->m_type==PredefinedFunction::USERDEFINED)
             process_function(fn);
-        else{
-            
-        }
     }
 
     add_used_predefined_functions();
@@ -569,7 +597,6 @@ std::string LLVMCodeGenerator::process_program(){
 
 
 void LLVMCodeGenerator::print_generated_code() {
-    for(auto line:m_code_lines){
+    for(auto line:m_code_lines)
         std::cout<<line<<std::endl;
-    }
 }

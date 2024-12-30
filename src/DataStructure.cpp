@@ -132,7 +132,6 @@ DataType Operand::get_type() const{
         return DataType::ERROR;
     default:
         throw 0;
-        break;
     }
 }
 
@@ -165,9 +164,9 @@ void SymbolTable::pop(){
 }
 
 bool SymbolTable::add(const std::string &entry_name,const SymbolTableEntry &entry){
-
-    if(m_entries.back().count(entry_name)>0)
+    if(m_entries.back().count(entry_name)>0){
         return false;
+    }
 
     m_entries.back()[entry_name]=entry;
     return true;
@@ -228,3 +227,7 @@ const SymbolTableEntry* SymbolTable::get_entry_at_top(const std::string &name){
 }
 
 SymbolTable::SymbolTable(){}
+
+void SymbolTable::set_listener(IRCoderListener *listener){
+  m_listener = listener;
+}

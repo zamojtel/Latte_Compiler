@@ -17,11 +17,17 @@ DEP = -L./lib/fmt -lfmt
 
 all : CreateDirectory TestLatteCPP
 
+FrontendTests:
+	python3 Tests/TestFrontend.py
+
+BackendTests:
+	python3 Tests/TestBackend.py
+
+testsClean:
+	rm -rf ./Tests/badOutputs ./Tests/goodOutputs  ./Tests/myTests/someTestsOutputs
+
 CreateDirectory:
 	@mkdir -p build
-
-testClean:
-	rm ./Tests/myTests/*.ll ./Tests/myTests/*.bc
 
 clean :
 	rm -rf ./build ./latc_llvm ./Tests/myBadOutputs ./Tests/myGoodOutputs ./Tests/goodOutputs ./Tests/badOutputs \

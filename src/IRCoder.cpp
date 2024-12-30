@@ -113,27 +113,38 @@ void IRCoder::check_triple(Triple * triple){
       if(triple->m_op_1.m_category==OperandCategory::EMPTY){
         if(m_current_fn->m_return_type!=DataType::VOID){
           std::string msg = fmt::format("Incompatible return type");
-            //   m_error_list.add_error(triple->m_code_line_number,msg);
           m_listener->ircoder_error(triple->m_code_line_number,msg);
         }
       }else if(m_current_fn->m_return_type!=triple->m_op_1.get_type()){
         std::string msg = fmt::format("Incompatible return type");
-        // m_error_list.add_error(triple->m_code_line_number,msg);
         m_listener->ircoder_error(triple->m_code_line_number,msg);
       }
       break;
     }
-    case Operation::ADD:
+    case Operation::ADD:{
+      DataType t1 = triple->m_op_1.get_type();
+      DataType t2 = triple->m_op_2.get_type();
+       if(!equal_data_types_or_error(t1,t2) || t1 == DataType::BOOL){
+        std::string msg = fmt::format("Incompatible types");
+        m_listener->ircoder_error(triple->m_code_line_number,msg);
+      }
+    }
     case Operation::EQU:
     {
       DataType t1 = triple->m_op_1.get_type();
       DataType t2 = triple->m_op_2.get_type();
-
       if(!equal_data_types_or_error(t1,t2)){
         std::string msg = fmt::format("Incompatible types");
-        // m_error_list.add_error(triple->m_code_line_number,msg);
         m_listener->ircoder_error(triple->m_code_line_number,msg);
       }
+      
+      if(t1==DataType::VOID)
+        m_listener->ircoder_error(triple->m_code_line_number,"Void types can't be compared");
+      
+      break;
+    }
+    case Operation::NE:{
+
       break;
     }
     case Operation::SUB:
@@ -149,11 +160,9 @@ void IRCoder::check_triple(Triple * triple){
       DataType t2 = triple->m_op_2.get_type();
       if(!equal_data_types_or_error(t1,t2)){
         std::string msg = fmt::format("Incompatible types");
-        // m_error_list.add_error(triple->m_code_line_number,msg);
         m_listener->ircoder_error(triple->m_code_line_number,msg);
       }else if(triple->m_op_1.get_type()!=DataType::INT){
         std::string msg = fmt::format("Can't perform operation {} on operands of type {}",operation_to_string(triple->m_operation),type_to_string(triple->m_op_1.get_type()));
-        // m_error_list.add_error(triple->m_code_line_number,msg);
         m_listener->ircoder_error(triple->m_code_line_number,msg);
       }
       break;
@@ -164,7 +173,6 @@ void IRCoder::check_triple(Triple * triple){
       if(t1!=DataType::BOOL)
       {
         std::string msg = fmt::format("Can't negate non boolean types");
-        // m_error_list.add_error(triple->m_code_line_number,msg);
         m_listener->ircoder_error(triple->m_code_line_number,msg);
       }
       break;
@@ -175,7 +183,6 @@ void IRCoder::check_triple(Triple * triple){
       DataType t1 = triple->m_op_1.get_type();
       if(t1 != DataType::BOOL && t1 != DataType::ERROR){
         std::string msg = fmt::format("Expected boolean expression");
-        // m_error_list.add_error(triple->m_code_line_number,msg);
         m_listener->ircoder_error(triple->m_code_line_number,msg);
       }
       break;
@@ -189,15 +196,25 @@ void IRCoder::check_triple(Triple * triple){
       if(t1!=DataType::BOOL && t1!=DataType::ERROR)
       {
         std::string msg = fmt::format("Expected boolean expression");
-        // m_error_list.add_error(triple->m_code_line_number,msg);
         m_listener->ircoder_error(triple->m_code_line_number,msg);
       }
       if(t2!=DataType::BOOL && t2!=DataType::ERROR)
       {
         std::string msg = fmt::format("Expected boolean expression");
-        // m_error_list.add_error(triple->m_code_line_number,msg);
         m_listener->ircoder_error(triple->m_code_line_number,msg);
       }
+    }
+    case Operation::NEG:
+    case Operation::INC:
+    case Operation::DEC:
+    {
+      DataType t1 = triple->m_op_1.get_type();
+      if(t1!=DataType::INT){
+        std::string msg = fmt::format("Invalid type");
+        m_listener->ircoder_error(triple->m_code_line_number,msg);
+      }
+
+      break;
     }
     default:
       break;
@@ -233,12 +250,12 @@ DataType IRCoder::deduce_arithmetic_type(Operation operation,DataType op_1_type,
     return DataType::ERROR;
 }
 
-DataType IRCoder::deduce_arithmetical_neg(DataType op_1_type){
+DataType IRCoder::deduce_arithmetic_type_one_argument(DataType op_1_type){
     if(op_1_type==DataType::INT)
       return DataType::INT;
     else
       return DataType::ERROR;
-  }
+}
 
 DataType IRCoder::deduce_type(Triple *triple){
   DataType op_1_type=triple->m_op_1.get_type();
@@ -257,7 +274,7 @@ DataType IRCoder::deduce_type(Triple *triple){
   case Operation::ASSIGN:
     return op_1_type;
   case Operation::NEG:
-    return deduce_arithmetical_neg(op_1_type);
+    return deduce_arithmetic_type_one_argument(op_1_type);
   case Operation::AND:
   case Operation::OR:
   case Operation::LTH:
@@ -279,6 +296,9 @@ DataType IRCoder::deduce_type(Triple *triple){
     return DataType::VOID; 
   case Operation::MARKER:
     return DataType::VOID;
+  case Operation::INC:
+  case Operation::DEC:
+    return deduce_arithmetic_type_one_argument(op_1_type);
   default:
     throw 0;
   }

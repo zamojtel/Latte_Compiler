@@ -22,7 +22,7 @@ public:
     DataType deduce_type(Triple *triple);
     DataType deduce_bool_type_one_argument(DataType op_1_type);
     DataType deduce_bool_type(DataType op_1_type,DataType op_2_type);
-    DataType deduce_arithmetical_neg(DataType op_1_type);
+    DataType deduce_arithmetic_type_one_argument(DataType op_1_type);
     DataType deduce_arithmetic_type(Operation operation,DataType op_1_type,DataType op_2_type);
     bool equal_data_types_or_error(DataType t1,DataType t2);
     std::string operation_to_string(Operation operation);

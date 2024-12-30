@@ -1,0 +1,15 @@
+// Dokładnie ten sam nagłówek
+int main() {
+  foo(5);
+  return 0 ;
+}
+
+void foo(int x) {
+  printString("foo");
+  return;
+}
+
+void foo(int x) {
+  printString("BOO");
+  return;
+}

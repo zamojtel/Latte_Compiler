@@ -1,4 +1,4 @@
-/* test input */
+/* test input do zmiany*/
 
 int main() {
   int x = readInt();

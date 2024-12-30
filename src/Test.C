@@ -35,7 +35,7 @@ public:
 
   void print_errors(){
     for(auto *err : m_errors){
-      std::string error =  err->m_line !=0 ? fmt::format("Line {}: {}",err->m_line,err->m_msg) : fmt::format("{}",err->m_msg);
+      std::string error = err->m_line !=0 ? fmt::format("Line {}: {}",err->m_line,err->m_msg) : fmt::format("{}",err->m_msg);
       std::cout<<error<<std::endl;
     }
   }
@@ -58,6 +58,7 @@ public:
 
 class MyVisitor:public Skeleton,public IRCoderListener {
 private:
+  size_t m_special_variable_index;
   size_t m_pass_number;
   IntermediateProgram * m_program;
   std::vector<std::string> m_generated_code;
@@ -78,13 +79,36 @@ public:
     m_error_list.add_error(line,msg);
   }
 
-  void create_variable(const std::string &name , Expr *initializer,int line){
+  bool check_predifined_function(const std::string &name){
+    if(
+      name == "printInt" || name == "printString" || 
+      name == "readInt"  || name == "readString"  ||
+      name == "error"    || name == "error"
+      ){
+        return true;
+      }
 
+    return false;
+  }
+
+  Variable* create_special_boolean_variable(){
+    Variable *variable = new Variable{fmt::format("${}",m_special_variable_index),DataType::BOOL};
+    m_special_variable_index++;
+    m_current_fn->m_variables.push_back(variable);
+    return variable;
+  }
+
+  void create_variable(const std::string &name , Expr *initializer,int line){
     const SymbolTableEntry * entry = m_symbol_table.get_entry_at_top(name);
     if(entry)
     {
       std::string msg = fmt::format("Variable {} already defined",name);
       m_error_list.add_error(line,msg);
+      return ;
+    }
+
+    if(m_last_visited_type==DataType::VOID){
+      m_error_list.add_error(line,"Variable can't be of type void");
       return ;
     }
 
@@ -106,19 +130,30 @@ public:
     add_predefined_functions(); 
     parse_tree->accept(this);
     m_pass_number++;
-
     m_symbol_table.push();
+
     for(size_t i=0;i<m_program->m_functions.size();i++){
-      m_symbol_table.add(m_program->m_functions[i]->m_name,m_program->m_functions[i]);
+      auto fn = m_program->m_functions[i];
+      if(m_symbol_table.get_entry(fn->m_name)){
+          std::string msg=fmt::format("A function with the name '{}' is already defined.",m_program->m_functions[i]->m_name);
+          m_error_list.add_error(0,msg);
+          return;
+        }else
+          m_symbol_table.add(m_program->m_functions[i]->m_name,m_program->m_functions[i]);
     }
-   
+    
     parse_tree->accept(this);
+
+    if(!m_symbol_table.get_function("main"))
+      m_error_list.add_error(parse_tree->line_number,"The 'main' function is required but not found.");
+    
     m_symbol_table.pop();
   }
 
   bool errors_occured(){
     return m_error_list.errors_occured();
   }
+
   void print_errors(){
     m_error_list.print_errors();
   }
@@ -146,7 +181,6 @@ public:
     read_string->m_name="readString";
     read_string->m_return_type=DataType::STRING;
 
-
     m_program->m_functions.push_back(print_int);
     m_program->m_functions.push_back(print_string);
     m_program->m_functions.push_back(error);
@@ -165,12 +199,16 @@ public:
     LOG_DEBUG("End Program");
   }
   
-  // we'll process them multiple times 
   void visitFnDef(FnDef *p) override {
     if(m_pass_number==1){
       m_current_fn = new Function;
       LOG_DEBUG("Begin function definition");
       LOG_DEBUG("Function name: {}",p->ident_);
+      if(check_predifined_function(p->ident_)){
+        m_error_list.add_error(p->line_number,fmt::format("The predefined function '{}' cannot be overridden.",p->ident_));
+        return; 
+      }
+
       m_current_fn->m_name=p->ident_;
       p->type_->accept(this);
       m_current_fn->m_return_type=m_last_visited_type;
@@ -178,13 +216,15 @@ public:
       m_program->m_functions.push_back(m_current_fn);
       LOG_DEBUG("End function definition");
     }else if(m_pass_number==2){
-     
       m_current_fn = m_symbol_table.get_function(p->ident_);
+      m_special_variable_index=0;
       m_IRCoder.set_function(m_current_fn);
       m_symbol_table.push();
-      
+      if(m_current_fn->m_name=="main" && m_current_fn->m_arguments.size()!=0)
+        m_error_list.add_error(p->line_number,"The main function should not accept any arguments.");
+
       for(size_t i=0;i<m_current_fn->m_arguments.size();i++)
-        m_symbol_table.add(m_current_fn->m_arguments[i]->m_identifier,m_current_fn->m_arguments[i]);
+          m_symbol_table.add(m_current_fn->m_arguments[i]->m_identifier,m_current_fn->m_arguments[i]);
       
       p->block_->accept(this);
       m_symbol_table.pop();
@@ -262,14 +302,11 @@ public:
 
   void visitListArg(ListArg *p) override{
     LOG_DEBUG("List of arguments");
-    for(auto item : *p){
+    for(auto item : *p)
       item->accept(this);
-    }
-
   }
 
   void visitAr(Ar *p) override{
-
     if(m_current_fn->contains_argument(p->ident_)){
       std::string msg = fmt::format("Argument with name {} already defined",p->ident_); 
       m_error_list.add_error(p->line_number,msg);
@@ -280,6 +317,12 @@ public:
     LOG_DEBUG("Argument Identifier: {}",p->ident_);
     m_current_arg->m_identifier=p->ident_;
     p->type_->accept(this);
+
+    if(m_last_visited_type==DataType::VOID){
+      m_error_list.add_error(p->line_number,"Arguments can't be of type void");
+      return;
+    }
+
     m_current_arg->m_type=m_last_visited_type;
     m_current_fn->m_arguments.push_back(m_current_arg);
   }
@@ -299,7 +342,6 @@ public:
     triple->m_pointing_labels.push_back(label);
   }
 
-  // corrected donzo
   void visitCond(Cond *p) override {
     p->expr_->accept(this);
     Label *jump_to = create_label();
@@ -307,15 +349,12 @@ public:
     
     p->stmt_->accept(this);
     Triple *special_triple=m_IRCoder.push(p->line_number,Operation::MARKER);
-    // we bind label
-    // jf_triple->m_op_2.m_label->m_jump_to = special_triple;
     bind_label(jf_triple->m_op_2.m_label,special_triple);
   }
 
-  // corrected
   void visitCondElse(CondElse *p) override{
     p->expr_->accept(this);
-    // 2 labels
+
     Label *jump_to_else = create_label();
     Label *jump_out_if = create_label();
 
@@ -325,21 +364,10 @@ public:
     Triple* special_marker_before_else =m_IRCoder.push(0,Operation::MARKER);
     p->stmt_2->accept(this);
 
-    // Triple *jmp_out_of_else= m_IRCoder.push(0,Operation::JMP,{jump_out_if});
     Triple* special_marker_end_of_if =m_IRCoder.push(0,Operation::MARKER);
 
-    // 2 binds to do
-    // jf_triple->m_op_2.m_label->m_jump_to=special_marker_before_else;
     bind_label(jf_triple->m_op_2.m_label,special_marker_before_else);
-  
-    // bind_label(jmp_out_of_else->m_op_1.m_label,special_marker_end_of_if);
-    // jmp_triple->m_op_1.m_label->m_jump_to=special_marker_end_of_if;
     bind_label(jmp_triple->m_op_1.m_label,special_marker_end_of_if);
-  }
-
-  void visitNot(Not *p) override {
-    p->expr_->accept(this);
-    m_nodes_to_operands[p] = m_IRCoder.push(p->line_number,Operation::NOT,m_nodes_to_operands.at(p->expr_));
   }
 
   void visitNeg(Neg *p) override {
@@ -347,12 +375,26 @@ public:
     m_nodes_to_operands[p] = m_IRCoder.push(p->line_number,Operation::NEG,m_nodes_to_operands.at(p->expr_));
   }
 
-  // while donzo
+  void visitIncr(Incr *incr){
+    auto *entry = m_symbol_table.get_entry(incr->ident_);
+    if(entry->m_category==SymbolTableCategory::ARGUMENT)
+      m_nodes_to_operands[incr] = m_IRCoder.push(incr->line_number,Operation::INC,entry->m_argument); 
+    else if(entry->m_category==SymbolTableCategory::VARIABLE)
+      m_nodes_to_operands[incr] = m_IRCoder.push(incr->line_number,Operation::INC,entry->m_variable); 
+  }
+
+  void visitDecr(Decr *decr){
+    auto *entry = m_symbol_table.get_entry(decr->ident_);
+    if(entry->m_category==SymbolTableCategory::ARGUMENT)
+      m_nodes_to_operands[decr] = m_IRCoder.push(decr->line_number,Operation::DEC,entry->m_argument); 
+    else if(entry->m_category==SymbolTableCategory::VARIABLE)
+      m_nodes_to_operands[decr] = m_IRCoder.push(decr->line_number,Operation::DEC,entry->m_variable); 
+  }
+
   void visitWhile(While *p) override {
     Label * cond_label = create_label();
     Triple * cond_marker = m_IRCoder.push(0,Operation::MARKER);
-    // bind label
-    // cond_label->m_jump_to=cond_marker;
+  
     bind_label(cond_label,cond_marker);
 
     p->expr_->accept(this);
@@ -363,7 +405,6 @@ public:
     m_IRCoder.push(0,Operation::JMP,{cond_label});
     Triple *end_marker = m_IRCoder.push(0,Operation::MARKER);
     
-    // end_label->m_jump_to = end_marker;
     bind_label(end_label,end_marker);
   }
 
@@ -389,7 +430,7 @@ public:
     }
 
     Operand op_ = m_nodes_to_operands.at(ass->expr_);
-    // if(m_current_fn.)
+  
     m_nodes_to_operands[ass->expr_] = m_IRCoder.push(ass->line_number,Operation::ASSIGN,op_1,m_nodes_to_operands.at(ass->expr_)); 
 
   }
@@ -468,7 +509,6 @@ public:
     p->expr_2->accept(this);
     p->addop_->accept(this);
 
-    // m_IRCoder.push
     m_nodes_to_operands[p] = m_IRCoder.push(p->line_number,m_current_operation,m_nodes_to_operands.at(p->expr_1),m_nodes_to_operands.at(p->expr_2));
   }
 
@@ -505,9 +545,8 @@ public:
     m_current_operation=Operation::NE;
   }
 
-  // visitERel bez short circuit
   void visitERel(ERel *p) override {
-    // here the order is important 
+    // the order is important 
     p->expr_1->accept(this);
     p->expr_2->accept(this);
     p->relop_->accept(this);
@@ -519,19 +558,67 @@ public:
   }
 
   void visitEAnd(EAnd *p) override{
+    Label* label_1 = create_label();
+    Label* label_2 = create_label(); 
+    Variable* boolean_1 = create_special_boolean_variable();
     p->expr_1->accept(this);
-    p->expr_2->accept(this);
     
-    m_nodes_to_operands[p]=m_IRCoder.push(p->line_number,Operation::AND,m_nodes_to_operands.at(p->expr_1),m_nodes_to_operands.at(p->expr_2));
+    m_IRCoder.push(p->line_number,Operation::JF,m_nodes_to_operands.at(p->expr_1),label_1); 
+    p->expr_2->accept(this);
+    m_IRCoder.push(p->line_number,Operation::ASSIGN,boolean_1,m_nodes_to_operands.at(p->expr_2));
+
+    m_IRCoder.push(p->line_number,Operation::JMP,label_2);
+    Triple * marker_1 = m_IRCoder.push(p->line_number,Operation::MARKER); 
+
+    m_IRCoder.push(p->line_number,Operation::ASSIGN,boolean_1,{false}); 
+
+    Triple * marker_2 = m_IRCoder.push(p->line_number,Operation::MARKER);
+
+    bind_label(label_1,marker_1);
+    bind_label(label_2,marker_2);
+
+    m_nodes_to_operands[p] = boolean_1;
   }
 
   void visitEOr(EOr *p){
+    Label *label_1 = create_label(); 
+    Label *label_2 = create_label();
+
+    Variable *boolean_1 = create_special_boolean_variable();
+
     p->expr_1->accept(this);
+    m_IRCoder.push(p->line_number,Operation::JT,m_nodes_to_operands.at(p->expr_1),label_1);
     p->expr_2->accept(this);
+    m_IRCoder.push(p->line_number,Operation::ASSIGN,boolean_1,m_nodes_to_operands.at(p->expr_2));
+    m_IRCoder.push(p->line_number,Operation::JMP,label_2);
+    Triple * marker_1 = m_IRCoder.push(p->line_number,Operation::MARKER);
+    m_IRCoder.push(p->line_number,Operation::ASSIGN,boolean_1,{true});
+    Triple * marker_2 = m_IRCoder.push(p->line_number,Operation::MARKER);
     
-    m_nodes_to_operands[p]=m_IRCoder.push(p->line_number,Operation::OR,m_nodes_to_operands.at(p->expr_1),m_nodes_to_operands.at(p->expr_2));
+    bind_label(label_1,marker_1);
+    bind_label(label_2,marker_2);
+    
+    m_nodes_to_operands[p] = boolean_1;
   }
   
+  void visitNot(Not *p) override {
+    Label * label_1 = create_label();
+    Label * label_2 = create_label();
+    p->expr_->accept(this);  
+
+    Variable * boolean_var = create_special_boolean_variable();
+    m_IRCoder.push(p->line_number,Operation::JF,m_nodes_to_operands.at(p->expr_),label_1);
+    m_IRCoder.push(p->line_number,Operation::ASSIGN,boolean_var,{false});
+    m_IRCoder.push(p->line_number,Operation::JMP,label_2);
+    Triple * marker_1 = m_IRCoder.push(p->line_number,Operation::MARKER);
+    m_IRCoder.push(p->line_number,Operation::ASSIGN,boolean_var,{true});
+    Triple * marker_2 = m_IRCoder.push(p->line_number,Operation::MARKER);
+
+    bind_label(label_1,marker_1);
+    bind_label(label_2,marker_2);
+    m_nodes_to_operands[p] = boolean_var;
+  }
+
   void visitPlus(Plus *p) override {
     m_current_operation=Operation::ADD;
   }
@@ -647,7 +734,6 @@ int main(int argc, char ** argv)
   std::vector<Function*> functions;
   IntermediateProgram int_program;
 
-
   MyVisitor my_visitor{&int_program};
   LLVMCodeGenerator llvm_generator{&int_program};
   
@@ -657,7 +743,7 @@ int main(int argc, char ** argv)
     if(fn->m_return_type==DataType::VOID)
       continue;
 
-    if(fn->m_type==PredefinedFunction::USERDEFINED && int_program.find_path_without_return(fn,0)){
+    if(fn->m_type==PredefinedFunction::USERDEFINED && !my_visitor.errors_occured() && int_program.find_path_without_return(fn,0)){
         std::string msg = fmt::format("Not all possible paths return values in a function called: {}",fn->m_name);
         my_visitor.m_error_list.add_error(0,msg);
     }

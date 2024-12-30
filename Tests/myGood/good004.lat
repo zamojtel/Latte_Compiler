@@ -1,0 +1,12 @@
+int rfac(int n) {
+	if (n == 0)
+	  return 1;
+	else
+	  return n * rfac(n-1);
+}
+
+int main(){
+    int y = rfac(4);
+	printInt(y);
+    return 0;
+}

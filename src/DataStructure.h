@@ -6,6 +6,7 @@
 #include <forward_list>
 #include <map>
 #include <vector>
+#include "IRCoderListener.h"
 
 class Variable;
 class Triple;
@@ -34,7 +35,9 @@ enum class Operation{
     JMP, 
     CALL, // Function Invocation
     PARAM,
-    RETURN
+    RETURN,
+    INC,
+    DEC
 };
 
 enum class OperandCategory{
@@ -108,7 +111,6 @@ public:
     Operand(Argument *arg):m_category{OperandCategory::ARGUMENT},m_argument{arg}{}
     Operand():m_category{OperandCategory::EMPTY}{}
 
-    //   CONSTANT,VARIABLE,TRIPLE,EMPTY
     Operand(const Operand &other){
         m_category=other.m_category;
         switch (other.m_category)
@@ -237,65 +239,6 @@ public:
     bool contains_argument(const std::string &name) const;
 };
 
-// bool Function::contains_argument(const std::string &name) const{
-//     for(size_t i=0;i<m_arguments.size();i++){
-//         if(name==m_arguments[i]->m_identifier){
-//             return true;
-//         }
-//     }
-    
-//     return false;
-// }
-
-// void Function::add_label(Label *label){
-//     m_labels.push_back(label);
-// }
-
-// DataType Operand::get_type() const{
-//     switch (m_category)
-//     {
-//     case OperandCategory::CONSTANT:
-//         return m_constant.m_type;
-//     case OperandCategory::VARIABLE:
-//         return m_var->m_type;
-//     case OperandCategory::TRIPLE:
-//         return m_triple->m_data_type;
-//     case OperandCategory::FUNCTION:
-//         return m_function->m_return_type;
-//     case OperandCategory::LABEL:
-//         return DataType::VOID;
-//     case OperandCategory::EMPTY:
-//         return DataType::VOID;
-//     case OperandCategory::ARGUMENT:
-//         return m_argument->m_type;
-//     case OperandCategory::ERROR:
-//         return DataType::ERROR;
-//     default:
-//         throw 0;
-//         break;
-//     }
-// }
-
-// std::string Operand::get_category_as_string() const{
-//     switch (m_category)
-//     {
-//     case OperandCategory::LABEL:
-//         return "label";
-//     case OperandCategory::CONSTANT:
-//         return "constant";
-//     case OperandCategory::VARIABLE:
-//         return "variable";
-//     case OperandCategory::TRIPLE:
-//         return "triple";
-//     case OperandCategory::EMPTY:
-//         return "empty";
-//     case OperandCategory::FUNCTION:
-//         return "function";
-//     default:
-//         return "error";
-//     }
-// }
-
 class SymbolTableEntry{
 public:
     SymbolTableCategory m_category;
@@ -314,10 +257,12 @@ public:
 class SymbolTable{
 public:
     std::vector<std::map<std::string,SymbolTableEntry>> m_entries;
-    
+    IRCoderListener *m_listener = nullptr;
+
     void push();
     void pop();
     bool add(const std::string &entry_name,const SymbolTableEntry &entry);
+    void set_listener(IRCoderListener *listener);
     // to-do
     // std::optional 
     const SymbolTableEntry* get_entry(const std::string &name);

@@ -1,4 +1,5 @@
 int main(){
-    boolean a = 1<2;
-    return 1;
+    int x = 10;
+    printInt(x);
+    return 0;
 }

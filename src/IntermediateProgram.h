@@ -114,10 +114,18 @@ public:
         return "PARAM";
       case Operation::RETURN:
         return "RETURN";
+      case Operation::NEG:
+        return "NEG";
       default:
-        return " ";
+        throw 1;
       }
     }
+  }
+  void print_arguments(Triple *triple){
+    std::cout<<"{ "; 
+    for(auto op : triple->m_call_args)
+      print_operand(op);
+    std::cout<<"}";
   }
 
   void print_triples(Function * fn){
@@ -125,7 +133,11 @@ public:
       std::cout<<"t"<<triple->m_index<<": "<<operation_to_string(triple->m_operation)<<" ";
       print_operand(triple->m_op_1);
       print_operand(triple->m_op_2);
+
       std::cout<<"Type: "<<data_type_to_string(triple->m_data_type)<<" ";
+      if(triple->m_operation==Operation::CALL)
+        print_arguments(triple);
+
       std::cout<<std::endl;
     }
   }

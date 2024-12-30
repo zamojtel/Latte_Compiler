@@ -1,0 +1,16 @@
+// porownywanie typu void
+int main(){
+    if(foo()==boo()){
+        printString("Aha");
+    }
+    return 0;
+}
+
+
+void foo(){
+    printString("abc");
+}
+
+void boo(){
+    printString("efg");
+}
