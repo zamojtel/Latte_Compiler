@@ -78,6 +78,8 @@ public:
         return "ADD";
       case Operation::ASSIGN:
         return "ASSIGN";
+      case Operation::INIT:
+        return "INIT";
       case Operation::MUL:
         return "MUL";
       case Operation::SUB:

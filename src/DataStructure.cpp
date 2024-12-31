@@ -26,7 +26,7 @@ Constant::Constant(bool value):m_type{DataType::BOOL}{
     u.boolean=value;
 }
 
-Constant::Constant(std::string &s):m_type{DataType::STRING}{
+Constant::Constant(const std::string &s):m_type{DataType::STRING}{
     new (&u.str) std::string(s); // where and what  
     u.str=s;
 }

@@ -50,6 +50,8 @@ private:
     std::vector<std::string> m_string_literals;
     Function * m_current_fn = nullptr;
     std::map<std::string,int> m_string_literal_to_index;
+    // str1="abc" +"edf";
+    // str2 ="abc" +"edf";
 public:
     void process_triple(Triple * triple);
     void process_function(Function *fn);
@@ -75,6 +77,7 @@ public:
     std::string process_argument(Argument * arg,size_t index);
     std::string process_argument_list(Triple *triple);
     std::string get_string_literal_name(int index);
+    void initialize_variables(const Function *fn);
     LLVMCodeGenerator(IntermediateProgram *i_p):m_intermediate_program{i_p}{}
     // add template 
     // finish processing return statement 

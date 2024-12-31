@@ -28,7 +28,7 @@ std::string data_type_to_string(const DataType &type);
 
 enum class Operation{
     MUL,ADD,SUB,DIV,AND,OR,NEG,NOT,ASSIGN,
-    MOD,LTH,LE,GTH,GE,EQU,NE,
+    MOD,LTH,LE,GTH,GE,EQU,NE,INIT,
     //Special Operations
     JT,JF, // jump if true ,jump if false
     MARKER, // It will indicate a special triple
@@ -63,7 +63,7 @@ public:
     
     Constant(int value);
     Constant(bool value);
-    Constant(std::string &s);
+    Constant(const std::string &s);
     
     Constant(const Constant &constant);
 

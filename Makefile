@@ -24,7 +24,7 @@ BackendTests:
 	python3 Tests/TestBackend.py
 
 testsClean:
-	rm -rf ./Tests/badOutputs ./Tests/goodOutputs  ./Tests/myTests/someTestsOutputs
+	rm -rf ./Tests/badOutputs ./Tests/goodOutputs  ./Tests/myTests/someTestsOutputs ./Tests/myTests/BasicPredifinedFunctionsFunctionalitiesOutputs
 
 CreateDirectory:
 	@mkdir -p build

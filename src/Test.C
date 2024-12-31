@@ -117,7 +117,22 @@ public:
       initializer->accept(this);
       LOG_DEBUG("Initialized Identifier: {}",name);
       
-      m_nodes_to_operands[initializer] = m_IRCoder.push(line,Operation::ASSIGN,variable,m_nodes_to_operands.at(initializer));
+      m_nodes_to_operands[initializer] = m_IRCoder.push(line,Operation::INIT,variable,m_nodes_to_operands.at(initializer));
+    }else{
+      switch (variable->m_type)
+      {
+      case DataType::STRING:
+        m_IRCoder.push(line,Operation::INIT,variable,Constant{std::string{}});
+        break;
+      case DataType::INT:
+        m_IRCoder.push(line,Operation::INIT,variable,Constant{0});
+        break;
+      case DataType::BOOL:
+        m_IRCoder.push(line,Operation::INIT,variable,Constant{false});
+        break;
+      default:
+        throw 0;
+      }
     }
 
     m_current_fn->m_variables.push_back(variable);
@@ -331,6 +346,7 @@ public:
     p->type_->accept(this);
     for(auto item : *p->listitem_)
       item->accept(this);
+    
   }
   
   void visitInit(Init *p) override {
@@ -540,7 +556,7 @@ public:
   void visitEQU(EQU *p) override{
     m_current_operation = Operation::EQU;
   }
-
+  
   void visitNE(NE *p) override{
     m_current_operation=Operation::NE;
   }

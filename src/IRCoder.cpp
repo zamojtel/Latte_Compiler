@@ -33,6 +33,8 @@ std::string IRCoder::operation_to_string(Operation operation){
         return "ADD";
       case Operation::ASSIGN:
         return "ASSIGN";
+      case Operation::INIT:
+        return "INIT";
       case Operation::MUL:
         return "MUL";
       case Operation::SUB:
@@ -106,6 +108,10 @@ void IRCoder::check_triple(Triple * triple){
         std::string msg = fmt::format("Incompatible type");
         m_listener->ircoder_error(triple->m_code_line_number,msg);
       }
+      break;
+    }
+    case Operation::INIT:
+    {
       break;
     }
     case Operation::RETURN:
@@ -272,6 +278,7 @@ DataType IRCoder::deduce_type(Triple *triple){
   case Operation::NOT:
     return deduce_bool_type_one_argument(op_1_type);
   case Operation::ASSIGN:
+  case Operation::INIT:
     return op_1_type;
   case Operation::NEG:
     return deduce_arithmetic_type_one_argument(op_1_type);

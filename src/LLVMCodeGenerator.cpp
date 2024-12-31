@@ -203,12 +203,24 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
 
     switch (triple->m_operation)
     {
+    case Operation::INIT:
+    {
+
+    }
     case Operation::ASSIGN:{
+        // type must be the same
         DataType type_op_1 = triple->m_op_1.get_type();
         std::string op_value_1=get_operand_value(triple->m_op_1);
         std::string op_value_2=get_operand_value_with_load(triple->m_op_2);
         std::string alignment = get_align(type_op_1);
+        if(type_op_1==DataType::STRING){
+            // op_value_2
+            // @.str.1
+            // op_value_1
+
+            // m_code_lines.push_back(fmt::format("call void @decreaseStringCounter(ptr noundef {})",op_value_1));
         
+        }
         m_code_lines.push_back(fmt::format("store {} {}, ptr {}, align {}",get_data_type_name(type_op_1),op_value_2,op_value_1,alignment));
         break;
     }
@@ -463,6 +475,7 @@ std::string LLVMCodeGenerator::make_alloca_string(DataType type){
         break;
     case DataType::STRING:
         alloc = fmt::format("%{} = alloca ptr, align 8",m_llvm_line_index);
+
         break;
     default:
         break;
@@ -502,7 +515,7 @@ void LLVMCodeGenerator::alloc_arguments_and_variables(const Function *fn){
         m_argument_data[arg]=ArgumentData{m_llvm_line_index};
         m_code_lines.push_back(make_alloca_string(arg->m_type));
     }
-
+    
     for(auto var : fn->m_variables){
         m_variable_data[var]=VariableData{m_llvm_line_index};
         m_code_lines.push_back(make_alloca_string(var->m_type));
@@ -516,7 +529,18 @@ void LLVMCodeGenerator::store_arguments(const Function *fn){
         m_code_lines.push_back(make_store_string(fn->m_arguments[i]->m_type,i,to));
         to++;
     }
+
 }
+
+// void LLVMCodeGenerator::initialize_variables(const Function *fn){
+    
+//     size_t to = fn->m_variables.size()+1;
+//     for( size_t i=0; i < fn->m_variables.size() ; i++){
+//         m_code_lines.push_back(initialize_vars(fn->m_variables[i]->m_type,i,to));
+//         to++;
+//     }
+// }
+
 
 void LLVMCodeGenerator::process_function(Function *fn){
     m_current_fn=fn;
@@ -544,7 +568,6 @@ void LLVMCodeGenerator::process_function(Function *fn){
     alloc_arguments_and_variables(fn);
     store_arguments(fn);
 
-    // processing triples 
     for(auto triple : fn->m_triples)
         process_triple(triple);
     
@@ -552,7 +575,6 @@ void LLVMCodeGenerator::process_function(Function *fn){
         m_code_lines.push_back("ret void");
     else if(fn->m_return_type==DataType::VOID && fn->m_triples.back()->m_operation!=Operation::RETURN)
         m_code_lines.push_back("ret void");
-    // this seems to be a temporary patch 
     else if(fn->m_return_type==DataType::INT && m_code_lines.back().substr(0,5)=="Label")
         m_code_lines.push_back("ret i32 0");
 
@@ -565,6 +587,8 @@ void LLVMCodeGenerator::add_used_predefined_functions(){
     m_code_lines.push_back("declare dso_local void @printString(ptr noundef %0)");
     m_code_lines.push_back("declare dso_local noundef ptr @readString()");
     m_code_lines.push_back("declare dso_local noundef i32 @readInt()");
+    m_code_lines.push_back("declare dso_local void @increaseStringCounter(ptr noundef %0)");
+    m_code_lines.push_back("declare dso_local void @decreaseStringCounter(ptr noundef %0)");
 }
 
 void LLVMCodeGenerator::enumerate_all_markers(Function *fn){

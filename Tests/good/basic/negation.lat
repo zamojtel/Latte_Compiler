@@ -1,4 +1,5 @@
 // Author: Tomasz Wysocki 277696
+// w tym tescie parser wyrzuca blad
 int main() {
     printInt(- -1);
     int i = 1;
