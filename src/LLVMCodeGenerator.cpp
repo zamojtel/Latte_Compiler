@@ -197,6 +197,11 @@ std::string LLVMCodeGenerator::process_argument_list(Triple *triple){
     return argument_list;
 }
 
+void initialize(){
+
+}
+
+
 void LLVMCodeGenerator::process_triple(Triple * triple){
     if(triple==nullptr)
         return;
@@ -205,6 +210,33 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
     {
     case Operation::INIT:
     {
+        // init string
+        // and other variables
+        DataType type_op_1 = triple->m_op_1.get_type();
+        std::string op_value_1 = get_operand_value(triple->m_op_1);
+        std::string op_value_2 = get_operand_value_with_load(triple->m_op_2);
+        std::string alignment = get_align(type_op_1);
+        std::string line;
+        switch (type_op_1)
+        {
+        case DataType::BOOL:{
+            line = fmt::format("store i8 {}, ptr {}, align {}",op_value_2,op_value_1,alignment);
+            break;
+        }
+        case DataType::INT:{
+            line = fmt::format("store i32 {}, ptr {}, align {}",op_value_2,op_value_1,alignment);
+            break;
+        }
+        case DataType::STRING:{
+            line = fmt::format("store ptr {}, ptr {}, align {}",op_value_2,op_value_1,alignment);
+            break;
+        }
+        default:
+            throw 0;
+        }
+        m_code_lines.push_back(line);
+        // m_code_lines.push_back(fmt::format("store {} {}, ptr {}, align {}",get_data_type_name(type_op_1),op_value_2,op_value_1,alignment));
+        break;
 
     }
     case Operation::ASSIGN:{
@@ -213,14 +245,13 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
         std::string op_value_1=get_operand_value(triple->m_op_1);
         std::string op_value_2=get_operand_value_with_load(triple->m_op_2);
         std::string alignment = get_align(type_op_1);
-        if(type_op_1==DataType::STRING){
-            // op_value_2
-            // @.str.1
-            // op_value_1
+        // if(type_op_1==DataType::STRING){
+        //     // op_value_2
+        //     // @.str.1
+        //     // op_value_1
 
-            // m_code_lines.push_back(fmt::format("call void @decreaseStringCounter(ptr noundef {})",op_value_1));
-        
-        }
+        //     // m_code_lines.push_back(fmt::format("call void @decreaseStringCounter(ptr noundef {})",op_value_1));
+        // }
         m_code_lines.push_back(fmt::format("store {} {}, ptr {}, align {}",get_data_type_name(type_op_1),op_value_2,op_value_1,alignment));
         break;
     }
@@ -463,7 +494,6 @@ void LLVMCodeGenerator::generate_string_literal_declarations(){
 }
 
 std::string LLVMCodeGenerator::make_alloca_string(DataType type){
-
     std::string alloc="";
     switch (type)
     {
@@ -531,16 +561,6 @@ void LLVMCodeGenerator::store_arguments(const Function *fn){
     }
 
 }
-
-// void LLVMCodeGenerator::initialize_variables(const Function *fn){
-    
-//     size_t to = fn->m_variables.size()+1;
-//     for( size_t i=0; i < fn->m_variables.size() ; i++){
-//         m_code_lines.push_back(initialize_vars(fn->m_variables[i]->m_type,i,to));
-//         to++;
-//     }
-// }
-
 
 void LLVMCodeGenerator::process_function(Function *fn){
     m_current_fn=fn;
