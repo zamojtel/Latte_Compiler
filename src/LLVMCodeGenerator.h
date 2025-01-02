@@ -66,7 +66,8 @@ public:
     void add_used_predefined_functions();
     void enumerate_all_markers(Function *fn);
     std::string make_alloca_string(DataType type);
-    std::string make_store_string(DataType type,size_t from,size_t to);
+    // std::string make_store_string(DataType type,int from,int to);
+    std::string make_store_string(Argument *arg,int from,int to);
     std::string get_align(DataType type);
     std::string get_size_in_bits(DataType type);
     std::string get_data_type_name(DataType type);
