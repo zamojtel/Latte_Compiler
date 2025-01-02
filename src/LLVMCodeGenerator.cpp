@@ -37,11 +37,15 @@ std::string LLVMCodeGenerator::get_size_in_bits(DataType type){
         return "error";
     }
 }
+//  %7 = zext i1 %6 to i8
+//   store i8 %7, i8* %3, align 1
 std::string LLVMCodeGenerator::get_data_type_name(DataType type){
     switch (type)
     {
     case DataType::BOOL:
+        // moze przywrocic
         return "i1";
+        // return "i8";
     case DataType::INT:
         return "i32";
     case DataType::STRING:
@@ -105,6 +109,14 @@ std::string LLVMCodeGenerator::get_operand_value_with_load(const Operand &op){
     case OperandCategory::VARIABLE:{
         DataType type = op.get_type();
         std::string data_type_name = get_data_type_name(type);
+        
+        // Rozmiar boola kiedy przekazywany jest do porownania warunkowego
+        // store i8 %7, i8* %3, align 1
+        // %8 = load i8, i8* %3, align 1
+        // %9 = trunc i8 %8 to i1
+        // %10 = zext i1 %9 to i32
+        if(type==DataType::BOOL)
+            data_type_name="i8";
         // std::string line = fmt::format("%{} = load {}, ptr %{}, align {}",m_llvm_line_index,get_data_type_name(type),m_variable_data.at(op.m_var).m_index,get_align(type));
         std::string line = fmt::format("%{} = load {}, {}* %{}, align {}",m_llvm_line_index,data_type_name,data_type_name,m_variable_data.at(op.m_var).m_index,get_align(type));
         size_t loaded_variable_index = m_llvm_line_index;
@@ -117,6 +129,8 @@ std::string LLVMCodeGenerator::get_operand_value_with_load(const Operand &op){
     {
         DataType type = op.get_type();
         std::string data_type_name = get_data_type_name(type);
+        if(type==DataType::BOOL)
+            data_type_name="i8";
         // std::string line = fmt::format("%{} = load {}, ptr %{}, align {}",m_llvm_line_index,get_data_type_name(type),m_argument_data.at(op.m_argument).m_index,get_align(type));
         std::string line = fmt::format("%{} = load {}, {}* %{}, align {}",m_llvm_line_index,data_type_name,data_type_name,m_argument_data.at(op.m_argument).m_index,get_align(type));
         size_t loaded_argument_index = m_llvm_line_index;
@@ -171,7 +185,7 @@ std::string LLVMCodeGenerator::process_argument_list(Triple *triple){
         switch (arg.m_category)
         {
         case OperandCategory::CONSTANT:
-        {
+        {   
             if(arg.get_type()!=DataType::STRING){
                 argument = fmt::format("{} noundef {}",get_data_type_name(arg.get_type()),arg.m_constant.get_value_as_string());
             }else{
@@ -187,18 +201,44 @@ std::string LLVMCodeGenerator::process_argument_list(Triple *triple){
             break;
         }
         case OperandCategory::VARIABLE:{
-            argument = fmt::format("{} noundef {}",get_data_type_name(arg.get_type()),get_operand_value_with_load(arg.m_var));
+            //   %9 = trunc i8 %8 to i1
+            if(arg.get_type()==DataType::BOOL){
+                // %14 = load i8, i8* %1, align 1
+                // %15 = trunc i8 %%14 to i1
+                // call void @printBool(i1 noundef %14)
+                std::string op =  get_operand_value_with_load(arg.m_var);
+                m_triple_data[triple->m_index].m_number=m_llvm_line_index;
+                std::string line = fmt::format("%{} = trunc i8 {} to i1",m_llvm_line_index,op);
+                m_code_lines.push_back(line);
+                increase();
+                argument = fmt::format("{} noundef %{}",get_data_type_name(arg.get_type()),m_triple_data[triple->m_index].m_number);        
+            }else{
+                argument = fmt::format("{} noundef {}",get_data_type_name(arg.get_type()),get_operand_value_with_load(arg.m_var));
+            }
+            
+            argument_list+=argument;
+            // argument = fmt::format("{} noundef %{}",get_data_type_name(arg.get_type()),m_triple_data[triple->m_index].m_number);
+            // argument_list+=argument;
+            break;
+        }
+        case OperandCategory::ARGUMENT:{
+            if(arg.get_type()==DataType::BOOL){
+                std::string op =  get_operand_value_with_load(arg.m_var);
+                m_triple_data[triple->m_index].m_number=m_llvm_line_index;
+                std::string line = fmt::format("%{} = trunc i8 {} to i1",m_llvm_line_index,op);
+                m_code_lines.push_back(line);
+                increase();
+                argument = fmt::format("{} noundef %{}",get_data_type_name(arg.get_type()),m_triple_data[triple->m_index].m_number);
+            }else
+                argument = fmt::format("{} noundef {}",get_data_type_name(arg.get_type()),get_operand_value_with_load(arg.m_argument));
+            
+            // argument = fmt::format("{} noundef {}",get_data_type_name(arg.get_type()),get_operand_value_with_load(arg.m_argument));
             argument_list+=argument;
             break;
         }
         case OperandCategory::TRIPLE:
         {
             argument = fmt::format("{} noundef {}",get_data_type_name(arg.get_type()),get_operand_value_with_load(arg.m_triple));
-            argument_list+=argument;
-            break;
-        }
-        case OperandCategory::ARGUMENT:{
-            argument = fmt::format("{} noundef {}",get_data_type_name(arg.get_type()),get_operand_value_with_load(arg.m_argument));
             argument_list+=argument;
             break;
         }
@@ -210,7 +250,9 @@ std::string LLVMCodeGenerator::process_argument_list(Triple *triple){
 
     return argument_list;
 }
-
+// void line_contains_icmp(const std::string &line){
+//     std::contains
+// }
 void LLVMCodeGenerator::process_triple(Triple * triple){
     if(triple==nullptr)
         return;
@@ -264,7 +306,42 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
         // mozliwe bledy
         // m_code_lines.push_back(fmt::format("store {} {}, ptr {}, align {}",get_data_type_name(type_op_1),op_value_2,get_ptr_for_data(type_op_1),op_value_1,alignment));
         // zmienic potem ten typ
-        m_code_lines.push_back(fmt::format("store {} {}, {}* {}, align {}",get_data_type_name(type_op_1),op_value_2,get_data_type_name(type_op_1),op_value_1,alignment));
+           switch (type_op_1)
+        {
+        case DataType::INT:{
+            // store i32 0, i32* %2, align 4
+            std::string line = fmt::format("store i32 {}, i32* {}, align {}",op_value_2,op_value_1,alignment);
+            m_code_lines.push_back(line);
+            break;
+        }
+        case DataType::BOOL:
+        {
+            // tutaj poprawka
+            m_triple_data[triple->m_index].m_number = m_llvm_line_index;
+            std::string new_line = fmt::format("%{} = zext i1 {} to i8",m_llvm_line_index,op_value_2);
+            increase();
+            m_code_lines.push_back(new_line);
+            // std::string line = fmt::format("store i8 {}, i8* {}, align {}",op_value_2,m_triple_data[triple->m_index].m_number,alignment);
+            std::string line = fmt::format("store i8 %{}, i8* {}, align {}",m_triple_data[triple->m_index].m_number,op_value_1,alignment);
+            m_code_lines.push_back(line);
+            // store i8 0, i8* %2, align 1
+            break;
+        }
+        case DataType::STRING:{
+            // tu jeszcze modyfikacja dotyczaca zliczania referencji
+            // + 4 for counter
+            int size = triple->m_op_2.m_constant.get_value_as_string().size()+1+4;
+            std::string line = fmt::format("store i8* getelementptr inbounds ([{} x i8], [{} x i8]* {}, i32 0, i32 0), {}* {}, align {}",size,size,op_value_2,get_data_type_name(type_op_1),op_value_1,alignment);
+            m_code_lines.push_back(line);
+            break;
+        } 
+        default:
+            break;
+        }
+        break;
+
+        // stare 
+        // m_code_lines.push_back(fmt::format("store {} {}, {}* {}, align {}",get_data_type_name(type_op_1),op_value_2,get_data_type_name(type_op_1),op_value_1,alignment));
         break;
     }
     case Operation::ADD:
@@ -375,8 +452,31 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
         
         if(triple->m_operation==Operation::JF)
             std::swap(label_false,label_true);
-    
-        m_code_lines.push_back(fmt::format("br i1 {}, label %Label{}, label %Label{}",condition,label_true,label_false));
+        //   %9 = trunc i8 %8 to i1
+        // br i1 %9, label %10, label %12
+        // dodane 
+        // sprawdzenie czy wczesniej jest icmp
+        // if (s1.find(s2) != std::string::npos) {
+        //     std::cout << "found!" << '\n';
+        // }
+        // 
+        
+        // Triple * prev_triple = nullptr;
+        // if(m_current_fn->m_triples.size() > 0 && m_current_fn->m_triples.size()>triple->m_index-1)
+        //     prev_triple=m_current_fn->m_triples[triple->m_index-1];
+
+        if(m_code_lines.size() > 0 && !(m_code_lines.back().find("icmp")!=std::string::npos) 
+           && !(m_code_lines.back().find("call noundef i1 @")!=std::string::npos))
+        {
+            m_triple_data[triple->m_index].m_number = m_llvm_line_index;
+            std::string truncat = fmt::format("%{} = trunc i8 {} to i1",m_llvm_line_index,condition);
+            m_code_lines.push_back(truncat);
+            increase();
+            m_code_lines.push_back(fmt::format("br i1 %{}, label %Label{}, label %Label{}",m_triple_data[triple->m_index].m_number,label_true,label_false));
+        }else{
+            m_code_lines.push_back(fmt::format("br i1 {}, label %Label{}, label %Label{}",condition,label_true,label_false));
+        }
+        
         if(added_marker)
             m_code_lines.push_back(fmt::format("Label{}:", triple->m_operation == Operation::JT ? label_false : label_true));
         break;

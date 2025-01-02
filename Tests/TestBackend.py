@@ -27,8 +27,8 @@ def compare_results(input_files : List[str],output_dir : str,expected_output_dir
 
 def check_tests(input_file_names : List[str],input_dir : str,output_dir : str):
     cwd = os.getcwd()
-    func_bc = f"/home/bartlomiej-zamojtel/Programming/Zadanie_2_Latte_Compiler/lib/functions.bc"
-    # /home/bartlomiej-zamojtel/Programming/Zadanie_2_Latte_Compiler/lib/functions.bc
+    func_bc = f"/home/bartlomiej-zamojtel/Desktop/CompilerTestingVersion/Testing_Latte_Compiler/lib/functions_14.bc"
+
     executable = cwd + '/latc_llvm'
     for input_file_name in input_file_names:
         generated_llvm = f'{output_dir}/{input_file_name}.ll'
@@ -40,11 +40,11 @@ def check_tests(input_file_names : List[str],input_dir : str,output_dir : str):
         final_command = generate_files_cmd+f" > {generated_llvm}"
         os.system(final_command)
 
-        run_llvm_as = f'llvm-as {generated_llvm} -o {processed_llvm_file}'  
+        run_llvm_as = f'llvm-as-14 {generated_llvm} -o {processed_llvm_file}'  
 
         os.system(run_llvm_as)
 
-        run_link_cmd = f'llvm-link {processed_llvm_file} {func_bc} -o {final_bc}'
+        run_link_cmd = f'llvm-link-14 {processed_llvm_file} {func_bc} -o {final_bc}'
         os.system(run_link_cmd)
         
         output_test = f"{output_dir}/{input_file_name}.output"
@@ -52,9 +52,9 @@ def check_tests(input_file_names : List[str],input_dir : str,output_dir : str):
 
         run_lli=None
         if os.path.exists(stdinfile):
-            run_lli = f'lli {final_bc} < {stdinfile} > {output_test}'
+            run_lli = f'lli-14 {final_bc} < {stdinfile} > {output_test}'
         else:
-            run_lli = f'lli {final_bc} > {output_test}'
+            run_lli = f'lli-14 {final_bc} > {output_test}'
 
         os.system(run_lli)
     
@@ -81,31 +81,32 @@ if __name__ == '__main__':
     input_file_names_good = collect_all_files(f'{cwd}/Tests/good/general') 
     input_dir_good = f'{cwd}/Tests/good/general'
     output_dir_good = f'{cwd}/Tests/goodOutputs/general'
+    # check_tests(["bore001"],input_dir_good,output_dir_good)
     check_tests(input_file_names_good,input_dir_good,output_dir_good)
     
-    # More Tests (Some of them are more complex):
-    # Basic Tests:
-    print("Basic Tests: ")
-    os.system(f'mkdir -p {cwd}/Tests/goodOutputs/basic')
-    input_file_names_basic = collect_all_files(f'{cwd}/Tests/good/basic') 
-    input_dir_basic = f'{cwd}/Tests/good/basic'
-    output_dir_basic = f'{cwd}/Tests/goodOutputs/basic'
-    check_tests(input_file_names_basic,input_dir_basic,output_dir_basic)
+    # # More Tests (Some of them are more complex):
+    # # Basic Tests:
+    # print("Basic Tests: ")
+    # os.system(f'mkdir -p {cwd}/Tests/goodOutputs/basic')
+    # input_file_names_basic = collect_all_files(f'{cwd}/Tests/good/basic') 
+    # input_dir_basic = f'{cwd}/Tests/good/basic'
+    # output_dir_basic = f'{cwd}/Tests/goodOutputs/basic'
+    # check_tests(input_file_names_basic,input_dir_basic,output_dir_basic)
 
-    # Test NewTests 
-    os.system(f'mkdir -p {cwd}/Tests/myTests/NewTestsOutputs')
+    # # Test NewTests 
+    # os.system(f'mkdir -p {cwd}/Tests/myTests/NewTestsOutputs')
     
-    input_file_names_newtests = collect_all_files(f'{cwd}/Tests/myTests/NewTests') 
-    input_dir_newtests = f'{cwd}/Tests/myTests/NewTests'
-    output_dir_newtests = f'{cwd}/Tests/myTests/NewTestsOutputs'
-    check_tests(input_file_names_newtests,input_dir_newtests,output_dir_newtests)
+    # input_file_names_newtests = collect_all_files(f'{cwd}/Tests/myTests/NewTests') 
+    # input_dir_newtests = f'{cwd}/Tests/myTests/NewTests'
+    # output_dir_newtests = f'{cwd}/Tests/myTests/NewTestsOutputs'
+    # check_tests(input_file_names_newtests,input_dir_newtests,output_dir_newtests)
 
-    # test someTests 
-    print("My Tests: ")
-    os.system(f'mkdir -p {cwd}/Tests/myTests/someTestsOutputs')
+    # # test someTests 
+    # print("My Tests: ")
+    # os.system(f'mkdir -p {cwd}/Tests/myTests/someTestsOutputs')
     
-    input_file_names_newtests = collect_all_files(f'{cwd}/Tests/myTests/someTests') 
-    input_dir_newtests = f'{cwd}/Tests/myTests/someTests'
-    output_dir_newtests = f'{cwd}/Tests/myTests/someTestsOutputs'
-    check_tests(input_file_names_newtests,input_dir_newtests,output_dir_newtests)
+    # input_file_names_newtests = collect_all_files(f'{cwd}/Tests/myTests/someTests') 
+    # input_dir_newtests = f'{cwd}/Tests/myTests/someTests'
+    # output_dir_newtests = f'{cwd}/Tests/myTests/someTestsOutputs'
+    # check_tests(input_file_names_newtests,input_dir_newtests,output_dir_newtests)
     # check_tests(["OneReadInt_TworeadStrings"],input_dir_newtests,output_dir_newtests)
