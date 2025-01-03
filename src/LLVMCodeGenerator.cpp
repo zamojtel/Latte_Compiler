@@ -115,13 +115,23 @@ std::string LLVMCodeGenerator::get_operand_value_with_load(const Operand &op){
         // %8 = load i8, i8* %3, align 1
         // %9 = trunc i8 %8 to i1
         // %10 = zext i1 %9 to i32
+        // if(type==DataType::BOOL)
+        //     data_type_name="i8";
+        // std::string line = fmt::format("%{} = load {}, ptr %{}, align {}",m_llvm_line_index,get_data_type_name(type),m_variable_data.at(op.m_var).m_index,get_align(type));
         if(type==DataType::BOOL)
             data_type_name="i8";
-        // std::string line = fmt::format("%{} = load {}, ptr %{}, align {}",m_llvm_line_index,get_data_type_name(type),m_variable_data.at(op.m_var).m_index,get_align(type));
+
         std::string line = fmt::format("%{} = load {}, {}* %{}, align {}",m_llvm_line_index,data_type_name,data_type_name,m_variable_data.at(op.m_var).m_index,get_align(type));
         size_t loaded_variable_index = m_llvm_line_index;
         increase();
         m_code_lines.push_back(line);
+
+        if(type==DataType::BOOL){
+            std::string line = fmt::format("%{} = trunc i8 %{} to i1",m_llvm_line_index,loaded_variable_index);
+            m_code_lines.push_back(line);
+            increase();
+            loaded_variable_index++;
+        }
         return "%"+std::to_string(loaded_variable_index);
     }
     // moze byc zle
@@ -129,13 +139,24 @@ std::string LLVMCodeGenerator::get_operand_value_with_load(const Operand &op){
     {
         DataType type = op.get_type();
         std::string data_type_name = get_data_type_name(type);
+
+
         if(type==DataType::BOOL)
             data_type_name="i8";
+        
         // std::string line = fmt::format("%{} = load {}, ptr %{}, align {}",m_llvm_line_index,get_data_type_name(type),m_argument_data.at(op.m_argument).m_index,get_align(type));
         std::string line = fmt::format("%{} = load {}, {}* %{}, align {}",m_llvm_line_index,data_type_name,data_type_name,m_argument_data.at(op.m_argument).m_index,get_align(type));
         size_t loaded_argument_index = m_llvm_line_index;
         increase();
         m_code_lines.push_back(line);
+           // %9 = trunc i8 %8 to i1
+        if(type==DataType::BOOL){
+            std::string line = fmt::format("%{} = trunc i8 %{} to i1",m_llvm_line_index,loaded_argument_index);
+            m_code_lines.push_back(line);
+            increase();
+            loaded_argument_index++;
+        }
+        
         return "%"+std::to_string(loaded_argument_index);
     }
     case OperandCategory::TRIPLE:
@@ -191,48 +212,27 @@ std::string LLVMCodeGenerator::process_argument_list(Triple *triple){
             }else{
                 // %16 = call noundef i8* @repStr(i8* noundef getelementptr ([6 x i8], [6 x i8]* @.str.2, i32 0, i32 0),i32 noundef 60)
                 // + 4 for counter +1 \0
-                int size = arg.m_constant.get_value_as_string().size()+4+1;
+                // wsadzic obliczanie dlugosci str w jedna metode
+                int size = arg.m_constant.get_value_as_string().size()+4+1+1;
                 // int true_size = 
                 argument = fmt::format("{} noundef getelementptr ([{} x i8], [{} x i8]* @.str.{}, i32 0, i32 0)",get_data_type_name(arg.get_type()),size,size,m_string_literal_to_index.at(arg.m_constant.get_value_as_string()));
                 // argument = fmt::format("{} noundef @.str.{} ",get_data_type_name(arg.get_type()),m_string_literal_to_index.at(arg.m_constant.get_value_as_string()));
             }
-
+        
             argument_list+=argument;
             break;
         }
         case OperandCategory::VARIABLE:{
-            //   %9 = trunc i8 %8 to i1
-            if(arg.get_type()==DataType::BOOL){
-                // %14 = load i8, i8* %1, align 1
-                // %15 = trunc i8 %%14 to i1
-                // call void @printBool(i1 noundef %14)
-                std::string op =  get_operand_value_with_load(arg.m_var);
-                m_triple_data[triple->m_index].m_number=m_llvm_line_index;
-                std::string line = fmt::format("%{} = trunc i8 {} to i1",m_llvm_line_index,op);
-                m_code_lines.push_back(line);
-                increase();
-                argument = fmt::format("{} noundef %{}",get_data_type_name(arg.get_type()),m_triple_data[triple->m_index].m_number);        
-            }else{
-                argument = fmt::format("{} noundef {}",get_data_type_name(arg.get_type()),get_operand_value_with_load(arg.m_var));
-            }
+
+            std::string op =get_operand_value_with_load(arg.m_var);
+            argument = fmt::format("{} noundef {}",get_data_type_name(arg.get_type()),op);
             
             argument_list+=argument;
-            // argument = fmt::format("{} noundef %{}",get_data_type_name(arg.get_type()),m_triple_data[triple->m_index].m_number);
-            // argument_list+=argument;
             break;
         }
         case OperandCategory::ARGUMENT:{
-            if(arg.get_type()==DataType::BOOL){
-                std::string op =  get_operand_value_with_load(arg.m_var);
-                m_triple_data[triple->m_index].m_number=m_llvm_line_index;
-                std::string line = fmt::format("%{} = trunc i8 {} to i1",m_llvm_line_index,op);
-                m_code_lines.push_back(line);
-                increase();
-                argument = fmt::format("{} noundef %{}",get_data_type_name(arg.get_type()),m_triple_data[triple->m_index].m_number);
-            }else
-                argument = fmt::format("{} noundef {}",get_data_type_name(arg.get_type()),get_operand_value_with_load(arg.m_argument));
-            
-            // argument = fmt::format("{} noundef {}",get_data_type_name(arg.get_type()),get_operand_value_with_load(arg.m_argument));
+            std::string op =get_operand_value_with_load(arg.m_argument);
+            argument = fmt::format("{} noundef {}",get_data_type_name(arg.get_type()),op);
             argument_list+=argument;
             break;
         }
@@ -250,9 +250,7 @@ std::string LLVMCodeGenerator::process_argument_list(Triple *triple){
 
     return argument_list;
 }
-// void line_contains_icmp(const std::string &line){
-//     std::contains
-// }
+
 void LLVMCodeGenerator::process_triple(Triple * triple){
     if(triple==nullptr)
         return;
@@ -261,8 +259,6 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
     {
     case Operation::INIT:
     {
-        // init string
-        // and other variables
         DataType type_op_1 = triple->m_op_1.get_type();
         std::string op_value_1 = get_operand_value(triple->m_op_1);
         std::string op_value_2 = get_operand_value_with_load(triple->m_op_2);
@@ -270,23 +266,31 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
         switch (type_op_1)
         {
         case DataType::INT:{
-            // store i32 0, i32* %2, align 4
             std::string line = fmt::format("store i32 {}, i32* {}, align {}",op_value_2,op_value_1,alignment);
             m_code_lines.push_back(line);
             break;
         }
         case DataType::BOOL:
         {
-             std::string line = fmt::format("store i8 {}, i8* {}, align {}",op_value_2,op_value_1,alignment);
+            m_triple_data[triple->m_index].m_number = m_llvm_line_index;
+            std::string new_line = fmt::format("%{} = zext i1 {} to i8",m_llvm_line_index,op_value_2);
+            increase();
+            m_code_lines.push_back(new_line);
+            std::string line = fmt::format("store i8 %{}, i8* {}, align {}",m_triple_data[triple->m_index].m_number,op_value_1,alignment);
             m_code_lines.push_back(line);
-            // store i8 0, i8* %2, align 1
             break;
         }
         case DataType::STRING:{
             // + 4 for counter
-            int size = triple->m_op_2.m_constant.get_value_as_string().size()+1+4;
-            std::string line = fmt::format("store i8* getelementptr inbounds ([{} x i8], [{} x i8]* {}, i32 0, i32 0), {}* {}, align {}",size,size,op_value_2,get_data_type_name(type_op_1),op_value_1,alignment);
-            m_code_lines.push_back(line);
+            if(triple->m_op_2.m_category==OperandCategory::CONSTANT){
+                // to samo tu przeniesc do metody
+                int size = triple->m_op_2.m_constant.get_value_as_string().size()+1+4+1;
+                std::string line = fmt::format("store i8* getelementptr inbounds ([{} x i8], [{} x i8]* {}, i32 0, i32 0), {}* {}, align {}",size,size,op_value_2,get_data_type_name(type_op_1),op_value_1,alignment);
+                m_code_lines.push_back(line);
+            }else{
+                std::string line = fmt::format("store i8* {}, i8** {}, align {}",op_value_2,op_value_1,alignment);
+                m_code_lines.push_back(line);
+            }
             break;
         } 
         default:
@@ -300,16 +304,10 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
         std::string op_value_1=get_operand_value(triple->m_op_1);
         std::string op_value_2=get_operand_value_with_load(triple->m_op_2);
         std::string alignment = get_align(type_op_1);
-        // if(type_op_1){
 
-        // }
-        // mozliwe bledy
-        // m_code_lines.push_back(fmt::format("store {} {}, ptr {}, align {}",get_data_type_name(type_op_1),op_value_2,get_ptr_for_data(type_op_1),op_value_1,alignment));
-        // zmienic potem ten typ
-           switch (type_op_1)
+        switch (type_op_1)
         {
         case DataType::INT:{
-            // store i32 0, i32* %2, align 4
             std::string line = fmt::format("store i32 {}, i32* {}, align {}",op_value_2,op_value_1,alignment);
             m_code_lines.push_back(line);
             break;
@@ -321,27 +319,27 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
             std::string new_line = fmt::format("%{} = zext i1 {} to i8",m_llvm_line_index,op_value_2);
             increase();
             m_code_lines.push_back(new_line);
-            // std::string line = fmt::format("store i8 {}, i8* {}, align {}",op_value_2,m_triple_data[triple->m_index].m_number,alignment);
             std::string line = fmt::format("store i8 %{}, i8* {}, align {}",m_triple_data[triple->m_index].m_number,op_value_1,alignment);
             m_code_lines.push_back(line);
-            // store i8 0, i8* %2, align 1
             break;
         }
         case DataType::STRING:{
             // tu jeszcze modyfikacja dotyczaca zliczania referencji
             // + 4 for counter
-            int size = triple->m_op_2.m_constant.get_value_as_string().size()+1+4;
-            std::string line = fmt::format("store i8* getelementptr inbounds ([{} x i8], [{} x i8]* {}, i32 0, i32 0), {}* {}, align {}",size,size,op_value_2,get_data_type_name(type_op_1),op_value_1,alignment);
-            m_code_lines.push_back(line);
+            if(triple->m_op_2.m_category==OperandCategory::CONSTANT){
+                int size = triple->m_op_2.m_constant.get_value_as_string().size()+1+4+1;
+                std::string line = fmt::format("store i8* getelementptr inbounds ([{} x i8], [{} x i8]* {}, i32 0, i32 0), {}* {}, align {}",size,size,op_value_2,get_data_type_name(type_op_1),op_value_1,alignment);
+                m_code_lines.push_back(line);
+            }else{
+                std::string line = fmt::format("store i8* {}, i8** {}, align {}",op_value_2,op_value_1,alignment);
+                m_code_lines.push_back(line);
+            }
+
             break;
         } 
         default:
             break;
         }
-        break;
-
-        // stare 
-        // m_code_lines.push_back(fmt::format("store {} {}, {}* {}, align {}",get_data_type_name(type_op_1),op_value_2,get_data_type_name(type_op_1),op_value_1,alignment));
         break;
     }
     case Operation::ADD:
@@ -359,9 +357,26 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
             std::string op_1_val = get_operand_value_with_load(triple->m_op_1);
             std::string op_2_val = get_operand_value_with_load(triple->m_op_2);
             m_triple_data[triple->m_index].m_number = m_llvm_line_index;
-            // addString na sztywno zwraca uchwyt do str                              //str          //str
-            // m_code_lines.push_back(fmt::format("%{} = call noundef ptr @addStrings(ptr noundef {}, ptr noundef {})",m_llvm_line_index,op_1_val,op_2_val));
-            m_code_lines.push_back(fmt::format("%{} = call noundef i8* @addStrings(i8* noundef {}, i8* noundef {})",m_llvm_line_index,op_1_val,op_2_val));
+
+            // zamienic na petle 
+            std::string line_operand_1;
+            if(triple->m_op_1.m_category==OperandCategory::CONSTANT){
+                //  4 counter + 1 flag
+                int size = triple->m_op_1.m_constant.get_value_as_string().size()+1+4+1;
+                line_operand_1 = fmt::format("i8* noundef getelementptr ([{} x i8], [{} x i8]* @.str.{}, i32 0, i32 0)",size,size,m_string_literal_to_index.at(triple->m_op_1.m_constant.get_value_as_string()));
+            }else
+                line_operand_1 = fmt::format("i8* noundef {}",op_1_val);
+            
+            std::string line_operand_2; 
+            if(triple->m_op_2.m_category==OperandCategory::CONSTANT){
+                //  4 counter + 1 flag
+                int size = triple->m_op_2.m_constant.get_value_as_string().size()+1+4+1;
+                line_operand_2 = fmt::format("i8* noundef getelementptr ([{} x i8], [{} x i8]* @.str.{}, i32 0, i32 0)",size,size,m_string_literal_to_index.at(triple->m_op_2.m_constant.get_value_as_string()));
+            }else
+                line_operand_2 = fmt::format("i8* noundef {}",op_2_val);
+
+
+            m_code_lines.push_back(fmt::format("%{} = call noundef i8* @addStrings({},{})",m_llvm_line_index,line_operand_1,line_operand_2));
             increase();
         }
         break;
@@ -452,30 +467,8 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
         
         if(triple->m_operation==Operation::JF)
             std::swap(label_false,label_true);
-        //   %9 = trunc i8 %8 to i1
-        // br i1 %9, label %10, label %12
-        // dodane 
-        // sprawdzenie czy wczesniej jest icmp
-        // if (s1.find(s2) != std::string::npos) {
-        //     std::cout << "found!" << '\n';
-        // }
-        // 
-        
-        // Triple * prev_triple = nullptr;
-        // if(m_current_fn->m_triples.size() > 0 && m_current_fn->m_triples.size()>triple->m_index-1)
-        //     prev_triple=m_current_fn->m_triples[triple->m_index-1];
 
-        if(m_code_lines.size() > 0 && !(m_code_lines.back().find("icmp")!=std::string::npos) 
-           && !(m_code_lines.back().find("call noundef i1 @")!=std::string::npos))
-        {
-            m_triple_data[triple->m_index].m_number = m_llvm_line_index;
-            std::string truncat = fmt::format("%{} = trunc i8 {} to i1",m_llvm_line_index,condition);
-            m_code_lines.push_back(truncat);
-            increase();
-            m_code_lines.push_back(fmt::format("br i1 %{}, label %Label{}, label %Label{}",m_triple_data[triple->m_index].m_number,label_true,label_false));
-        }else{
-            m_code_lines.push_back(fmt::format("br i1 {}, label %Label{}, label %Label{}",condition,label_true,label_false));
-        }
+        m_code_lines.push_back(fmt::format("br i1 {}, label %Label{}, label %Label{}",condition,label_true,label_false));
         
         if(added_marker)
             m_code_lines.push_back(fmt::format("Label{}:", triple->m_operation == Operation::JT ? label_false : label_true));
@@ -498,8 +491,6 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
         m_code_lines.push_back(fmt::format("%{} = add nsw {} {}, 1",m_llvm_line_index,get_data_type_name(triple->m_op_1.get_type()),op_1));
         std::string from = "%"+std::to_string(m_llvm_line_index);
         std::string to = get_operand_value(triple->m_op_1);
-        // we can increment only integer values
-        // std::string store = fmt::format("store i32 {}, ptr {}, align 4",from,to);
         std::string store = fmt::format("store i32 {}, i32* {}, align 4",from,to);
         m_code_lines.push_back(store);
         increase();
@@ -512,7 +503,6 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
         std::string from = "%"+std::to_string(m_llvm_line_index);
         std::string to = get_operand_value(triple->m_op_1);
         // we can decrement only integer values
-        // std::string store = fmt::format("store i32 {}, ptr {}, align 4",from,to);
         std::string store = fmt::format("store i32 {}, i32* {}, align 4",from,to);
         m_code_lines.push_back(store);
         increase();
@@ -531,7 +521,6 @@ std::string LLVMCodeGenerator::process_argument(Argument * arg,size_t index){
     case DataType::BOOL:
         return fmt::format("i1 noundef zeroext %{}",index);
     case DataType::STRING:
-        // return fmt::format("ptr noundef %{}",index);
         // pointer to int  
         return fmt::format("i8* noundef %{}",index); 
     default:
@@ -604,10 +593,13 @@ void LLVMCodeGenerator::generate_string_literal_declarations(){
                 break;
             }
         }
+        
         // an inserted counter for calculating references to the string 
-        // +4 for a counter 
-        std::string line = fmt::format("@.str.{} = private unnamed_addr constant [{} x i8] c\"\\01\\00\\00\\00{}\", align 1",
-            value,key.size()+4+1,str+"\\00");
+        // +4 for a counter + for flag
+        // std::string line = fmt::format("@.str.{} = private unnamed_addr constant [{} x i8] c\"\\00\\01\\00\\00\\00{}\", align 1",
+        //     value,key.size()+4+1+1,str+"\\00");
+        std::string line = fmt::format("@.str.{} = private unnamed_addr constant [{} x i8] c\"\\00\\00\\00\\00\\00{}\", align 1",
+            value,key.size()+4+1+1,str+"\\00");
         
         m_code_lines.push_back(line);
     }
@@ -622,12 +614,11 @@ std::string LLVMCodeGenerator::make_alloca_string(DataType type){
         alloc = fmt::format("%{} = alloca i32, align 4",m_llvm_line_index);
         break;
     case DataType::BOOL:
+        // w allocach zostaje i8 
         alloc = fmt::format("%{} = alloca i8, align 1",m_llvm_line_index);
         break;
     case DataType::STRING:
-        // alloc = fmt::format("%{} = alloca ptr, align 8",m_llvm_line_index);
         alloc = fmt::format("%{} = alloca i8*, align 8",m_llvm_line_index);
-
         break;
     default:
         break;
@@ -644,14 +635,12 @@ std::string LLVMCodeGenerator::make_store_string(Argument *arg,int from,int to){
     switch (arg->m_type)
     {
     case DataType::INT:
-        // store = fmt::format("store i32 %{}, ptr %{}, align 4",from,to);
         store = fmt::format("store i32 %{}, i32* %{}, align 4",from,to);
         break;
     case DataType::BOOL:{
         std::string new_line = fmt::format("%{} = zext i1 %{} to i8",m_llvm_line_index,from);
         m_code_lines.push_back(new_line);
-        // store = fmt::format("store i8 %{}, ptr %{}, align 1",m_llvm_line_index,to);
-        store = fmt::format("store i8 %{}, i8* %{}, align 1",m_llvm_line_index,to); // mozliwe ze zle
+        store = fmt::format("store i8 %{}, i8* %{}, align 1",m_llvm_line_index,to); 
         increase();
         break;
     }
@@ -745,6 +734,10 @@ void LLVMCodeGenerator::add_used_predefined_functions(){
     m_code_lines.push_back("declare dso_local noundef i32 @readInt()");
     m_code_lines.push_back("declare dso_local void @increaseStringCounter(i8* noundef %0)");
     m_code_lines.push_back("declare dso_local void @decreaseStringCounter(i8* noundef %0)");
+    // define dso_local zeroext i1 @isConstant(i8* noundef %0) 
+    m_code_lines.push_back("declare dso_local zeroext i1 @isConstant(i8* noundef %0)");
+    // define dso_local i32 @getReferenceCount(i8* noundef %0) #2 
+    m_code_lines.push_back("declare dso_local i32 @getReferenceCount(i8* noundef %0)");
 }
 
 void LLVMCodeGenerator::enumerate_all_markers(Function *fn){

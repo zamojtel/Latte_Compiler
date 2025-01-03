@@ -3,7 +3,6 @@
 import os
 from typing import List
 
-
 def compare_results(input_files : List[str],output_dir : str,expected_output_dir : str):
     passed = 0
     for output_file_name in input_files:
@@ -81,32 +80,42 @@ if __name__ == '__main__':
     input_file_names_good = collect_all_files(f'{cwd}/Tests/good/general') 
     input_dir_good = f'{cwd}/Tests/good/general'
     output_dir_good = f'{cwd}/Tests/goodOutputs/general'
-    # check_tests(["bore001"],input_dir_good,output_dir_good)
+    # check_tests(["bore000"],input_dir_good,output_dir_good)
+    # check_tests(["bore000"],input_dir_good,output_dir_good)
     check_tests(input_file_names_good,input_dir_good,output_dir_good)
     
-    # # More Tests (Some of them are more complex):
-    # # Basic Tests:
-    # print("Basic Tests: ")
-    # os.system(f'mkdir -p {cwd}/Tests/goodOutputs/basic')
-    # input_file_names_basic = collect_all_files(f'{cwd}/Tests/good/basic') 
-    # input_dir_basic = f'{cwd}/Tests/good/basic'
-    # output_dir_basic = f'{cwd}/Tests/goodOutputs/basic'
-    # check_tests(input_file_names_basic,input_dir_basic,output_dir_basic)
+    # More Tests (Some of them are more complex):
+    # Basic Tests:
+    print("Basic Tests: ")
+    os.system(f'mkdir -p {cwd}/Tests/goodOutputs/basic')
+    input_file_names_basic = collect_all_files(f'{cwd}/Tests/good/basic') 
+    input_dir_basic = f'{cwd}/Tests/good/basic'
+    output_dir_basic = f'{cwd}/Tests/goodOutputs/basic'
+    check_tests(input_file_names_basic,input_dir_basic,output_dir_basic)
 
-    # # Test NewTests 
+    # Test NewTests 
     # os.system(f'mkdir -p {cwd}/Tests/myTests/NewTestsOutputs')
     
     # input_file_names_newtests = collect_all_files(f'{cwd}/Tests/myTests/NewTests') 
     # input_dir_newtests = f'{cwd}/Tests/myTests/NewTests'
     # output_dir_newtests = f'{cwd}/Tests/myTests/NewTestsOutputs'
     # check_tests(input_file_names_newtests,input_dir_newtests,output_dir_newtests)
-
-    # # test someTests 
-    # print("My Tests: ")
-    # os.system(f'mkdir -p {cwd}/Tests/myTests/someTestsOutputs')
     
-    # input_file_names_newtests = collect_all_files(f'{cwd}/Tests/myTests/someTests') 
-    # input_dir_newtests = f'{cwd}/Tests/myTests/someTests'
-    # output_dir_newtests = f'{cwd}/Tests/myTests/someTestsOutputs'
-    # check_tests(input_file_names_newtests,input_dir_newtests,output_dir_newtests)
-    # check_tests(["OneReadInt_TworeadStrings"],input_dir_newtests,output_dir_newtests)
+    # Test BasicPredifinedFunctions
+    print("BasicPredifinedFunctions: ") 
+    os.system(f'mkdir -p {cwd}/Tests/myTests/BasicPredifinedFunctionsFunctionalitiesOutputs')
+    
+    input_file_names_func = collect_all_files(f'{cwd}/Tests/myTests/BasicPredifinedFunctionsFunctionalities') 
+    input_dir_func = f'{cwd}/Tests/myTests/BasicPredifinedFunctionsFunctionalities'
+    output_dir_func = f'{cwd}/Tests/myTests/BasicPredifinedFunctionsFunctionalitiesOutputs'
+    check_tests(input_file_names_func,input_dir_func,output_dir_func)
+
+    # test someTests 
+    print("My Tests: ")
+    os.system(f'mkdir -p {cwd}/Tests/myTests/someTestsOutputs')
+    
+    input_file_names_newtests = collect_all_files(f'{cwd}/Tests/myTests/someTests') 
+    input_dir_newtests = f'{cwd}/Tests/myTests/someTests'
+    output_dir_newtests = f'{cwd}/Tests/myTests/someTestsOutputs'
+    check_tests(input_file_names_newtests,input_dir_newtests,output_dir_newtests)
+    check_tests(["OneReadInt_TworeadStrings"],input_dir_newtests,output_dir_newtests)

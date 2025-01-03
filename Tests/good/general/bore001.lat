@@ -1,0 +1,19 @@
+
+int main(){
+    printString("&&");
+    return 0;
+}
+
+void printBool(boolean b) {
+  if (!b) {
+    printString("false");
+  } else {
+    printString("true");
+ }
+ return;
+}
+
+boolean test(int i) {
+  printInt(i);
+  return i > 0;
+}
