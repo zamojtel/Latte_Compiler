@@ -1,5 +1,3 @@
-
-
 import os
 from typing import List
 
@@ -26,7 +24,7 @@ def compare_results(input_files : List[str],output_dir : str,expected_output_dir
 
 def check_tests(input_file_names : List[str],input_dir : str,output_dir : str):
     cwd = os.getcwd()
-    func_bc = f"/home/bartlomiej-zamojtel/Desktop/CompilerTestingVersion/Testing_Latte_Compiler/lib/functions_14.bc"
+    func_bc = f"{cwd}/lib/functions_14.bc"
 
     executable = cwd + '/latc_llvm'
     for input_file_name in input_file_names:
@@ -80,7 +78,7 @@ if __name__ == '__main__':
     input_file_names_good = collect_all_files(f'{cwd}/Tests/good/general') 
     input_dir_good = f'{cwd}/Tests/good/general'
     output_dir_good = f'{cwd}/Tests/goodOutputs/general'
-    # check_tests(["bore000"],input_dir_good,output_dir_good)
+    # check_tests(["aore"],input_dir_good,output_dir_good)
     # check_tests(["bore000"],input_dir_good,output_dir_good)
     check_tests(input_file_names_good,input_dir_good,output_dir_good)
     
@@ -93,13 +91,13 @@ if __name__ == '__main__':
     output_dir_basic = f'{cwd}/Tests/goodOutputs/basic'
     check_tests(input_file_names_basic,input_dir_basic,output_dir_basic)
 
-    # Test NewTests 
-    # os.system(f'mkdir -p {cwd}/Tests/myTests/NewTestsOutputs')
+    # # Test NewTests 
+    # # os.system(f'mkdir -p {cwd}/Tests/myTests/NewTestsOutputs')
     
-    # input_file_names_newtests = collect_all_files(f'{cwd}/Tests/myTests/NewTests') 
-    # input_dir_newtests = f'{cwd}/Tests/myTests/NewTests'
-    # output_dir_newtests = f'{cwd}/Tests/myTests/NewTestsOutputs'
-    # check_tests(input_file_names_newtests,input_dir_newtests,output_dir_newtests)
+    # # input_file_names_newtests = collect_all_files(f'{cwd}/Tests/myTests/NewTests') 
+    # # input_dir_newtests = f'{cwd}/Tests/myTests/NewTests'
+    # # output_dir_newtests = f'{cwd}/Tests/myTests/NewTestsOutputs'
+    # # check_tests(input_file_names_newtests,input_dir_newtests,output_dir_newtests)
     
     # Test BasicPredifinedFunctions
     print("BasicPredifinedFunctions: ") 
@@ -119,3 +117,11 @@ if __name__ == '__main__':
     output_dir_newtests = f'{cwd}/Tests/myTests/someTestsOutputs'
     check_tests(input_file_names_newtests,input_dir_newtests,output_dir_newtests)
     check_tests(["OneReadInt_TworeadStrings"],input_dir_newtests,output_dir_newtests)
+
+    print("BooleanExpressions: ") 
+    os.system(f'mkdir -p {cwd}/Tests/myTests/BooleanExpressionsOutputs')
+    
+    input_file_names_booleans = collect_all_files(f'{cwd}/Tests/myTests/BooleanExpressions') 
+    input_dir_booleans = f'{cwd}/Tests/myTests/BooleanExpressions'
+    output_dir_booleans = f'{cwd}/Tests/myTests/BooleanExpressionsOutputs'
+    check_tests(input_file_names_booleans,input_dir_booleans,output_dir_booleans)

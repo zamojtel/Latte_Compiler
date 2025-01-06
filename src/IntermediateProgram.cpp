@@ -1,3 +1,21 @@
+bool IntermediateProgram::has_function(const std::string & fn_name) const{
+  for(size_t i=0;i<m_functions.size();i++){
+    if(m_functions[i]->m_name == fn_name){
+      return true;
+    }
+  }
+
+  return false;
+}
+
+Function* IntermediateProgram::get_function(const std::string &name) const{
+  for(size_t i=0;i<m_functions.size();i++){
+    if(m_functions[i]->m_name==name)
+      return m_functions[i];
+  }
+  
+  return nullptr;
+}
 
 // this function checks if we can reach the end of the function without finding any return on the way
 bool IntermediateProgram::check_all_returns(Function *fn,size_t start){

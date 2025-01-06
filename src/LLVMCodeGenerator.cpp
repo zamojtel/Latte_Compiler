@@ -281,6 +281,7 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
             break;
         }
         case DataType::STRING:{
+            // tutaj nie robimy decrase bo nie ma na czym
             // + 4 for counter
             if(triple->m_op_2.m_category==OperandCategory::CONSTANT){
                 // to samo tu przeniesc do metody
@@ -292,6 +293,8 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
                 m_code_lines.push_back(line);
             }
             break;
+            std::string myline2 = fmt::format("call noundef void @increaseStringCounter({})",op_value_2);
+            m_code_lines.push_back(myline2);
         } 
         default:
             break;
@@ -325,7 +328,12 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
         }
         case DataType::STRING:{
             // tu jeszcze modyfikacja dotyczaca zliczania referencji
-            // + 4 for counter
+            // + 4 for counter + 1 for the flag
+            // tutaj string
+            // void @decreaseStringCounter(i8* noundef %0)
+            // call {} @{}({})
+            // std::string myline = fmt::format("call noundef void @decreaseStringCounter({})",op_value_1);
+            // m_code_lines.push_back(myline);
             if(triple->m_op_2.m_category==OperandCategory::CONSTANT){
                 int size = triple->m_op_2.m_constant.get_value_as_string().size()+1+4+1;
                 std::string line = fmt::format("store i8* getelementptr inbounds ([{} x i8], [{} x i8]* {}, i32 0, i32 0), {}* {}, align {}",size,size,op_value_2,get_data_type_name(type_op_1),op_value_1,alignment);
@@ -334,7 +342,9 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
                 std::string line = fmt::format("store i8* {}, i8** {}, align {}",op_value_2,op_value_1,alignment);
                 m_code_lines.push_back(line);
             }
-
+            // declare dso_local void @increaseStringCounter(i8* noundef %0)
+            // std::string myline2 = fmt::format("call noundef void @increaseStringCounter({})",op_value_2);
+            // m_code_lines.push_back(myline2);
             break;
         } 
         default:
@@ -521,7 +531,6 @@ std::string LLVMCodeGenerator::process_argument(Argument * arg,size_t index){
     case DataType::BOOL:
         return fmt::format("i1 noundef zeroext %{}",index);
     case DataType::STRING:
-        // pointer to int  
         return fmt::format("i8* noundef %{}",index); 
     default:
         throw 0;
@@ -593,7 +602,7 @@ void LLVMCodeGenerator::generate_string_literal_declarations(){
                 break;
             }
         }
-        
+
         // an inserted counter for calculating references to the string 
         // +4 for a counter + for flag
         // std::string line = fmt::format("@.str.{} = private unnamed_addr constant [{} x i8] c\"\\00\\01\\00\\00\\00{}\", align 1",

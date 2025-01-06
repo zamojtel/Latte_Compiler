@@ -8,6 +8,8 @@ public:
   IntermediateProgram(){}
   bool check_all_returns(Function *fn,size_t start);
   bool find_path_without_return(Function *fn,size_t start);
+  bool has_function(const std::string & fn_name) const;
+  Function* get_function(const std::string &name) const;
   ~IntermediateProgram(){
     for(auto *fn: m_functions)
       delete fn;
@@ -118,6 +120,10 @@ public:
         return "RETURN";
       case Operation::NEG:
         return "NEG";
+      case Operation::INC:
+        return "INC";
+      case Operation::DEC:
+        return "DEC";
       default:
         throw 1;
       }

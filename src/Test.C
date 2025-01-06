@@ -56,6 +56,21 @@ public:
   TrueFalseLabel():m_false_label{nullptr},m_true_label{nullptr}{}
 };
 
+class CheckSingleDeclarationVisitor:public Skeleton{
+private:
+  bool m_is_single_decl_stmt=false;
+public:
+  bool is_single_decl(){
+    return m_is_single_decl_stmt;
+  }
+
+  void visitDecl(Decl *p) override {
+    m_is_single_decl_stmt=true;
+  }
+
+  void visitBStmt(BStmt *b_stmt) override {}
+};
+
 class MyVisitor:public Skeleton,public IRCoderListener {
 private:
   size_t m_special_variable_index;
@@ -139,28 +154,42 @@ public:
     m_symbol_table.add(name,variable);
   }
 
+  bool is_single_declaration(Stmt *stmt){
+    CheckSingleDeclarationVisitor decl_visitor;
+    stmt->accept(&decl_visitor);
+    return decl_visitor.is_single_decl();
+  }
+
   void pass(Program *parse_tree){
     m_pass_number=1;
     
     add_predefined_functions(); 
     parse_tree->accept(this);
+    if(!m_program->has_function("main"))
+      m_error_list.add_error(parse_tree->line_number,"The 'main' function is required but not found.");
+    else
+    {
+      auto *main = m_program->get_function("main");
+
+      if(main->m_return_type != DataType::INT || main->m_arguments.size()>0){
+        m_error_list.add_error(parse_tree->line_number,"Invalid 'main' function definition.");
+      }
+    }
+
+    if(errors_occured())
+      return;
+
     m_pass_number++;
     m_symbol_table.push();
 
     for(size_t i=0;i<m_program->m_functions.size();i++){
       auto fn = m_program->m_functions[i];
-      if(m_symbol_table.get_entry(fn->m_name)){
-          std::string msg=fmt::format("A function with the name '{}' is already defined.",m_program->m_functions[i]->m_name);
-          m_error_list.add_error(0,msg);
-          return;
-        }else
-          m_symbol_table.add(m_program->m_functions[i]->m_name,m_program->m_functions[i]);
+      m_symbol_table.add(fn->m_name,fn);
     }
-    
     parse_tree->accept(this);
 
-    if(!m_symbol_table.get_function("main"))
-      m_error_list.add_error(parse_tree->line_number,"The 'main' function is required but not found.");
+    // if(!m_symbol_table.get_function("main"))
+    //   m_error_list.add_error(parse_tree->line_number,"The 'main' function is required but not found.");
     
     m_symbol_table.pop();
   }
@@ -213,17 +242,29 @@ public:
     p->listtopdef_->accept(this);
     LOG_DEBUG("End Program");
   }
-  
+  // void check_if_name_
   void visitFnDef(FnDef *p) override {
     if(m_pass_number==1){
-      m_current_fn = new Function;
       LOG_DEBUG("Begin function definition");
       LOG_DEBUG("Function name: {}",p->ident_);
-      if(check_predifined_function(p->ident_)){
-        m_error_list.add_error(p->line_number,fmt::format("The predefined function '{}' cannot be overridden.",p->ident_));
-        return; 
+      
+      if(m_program->has_function(p->ident_)){
+        auto *fn = m_program->get_function(p->ident_);
+
+        if(fn->m_type!=PredefinedFunction::USERDEFINED)
+          m_error_list.add_error(p->line_number,fmt::format("The predefined function '{}' cannot be overridden.",p->ident_));
+        else
+          m_error_list.add_error(p->line_number,fmt::format("Function {} already defined",p->ident_));
+        
+        return;
       }
 
+      m_current_fn = new Function;
+      // if(check_predifined_function(p->ident_)){
+      //   m_error_list.add_error(p->line_number,fmt::format("The predefined function '{}' cannot be overridden.",p->ident_));
+      //   return; 
+      // }
+      
       m_current_fn->m_name=p->ident_;
       p->type_->accept(this);
       m_current_fn->m_return_type=m_last_visited_type;
@@ -235,8 +276,6 @@ public:
       m_special_variable_index=0;
       m_IRCoder.set_function(m_current_fn);
       m_symbol_table.push();
-      if(m_current_fn->m_name=="main" && m_current_fn->m_arguments.size()!=0)
-        m_error_list.add_error(p->line_number,"The main function should not accept any arguments.");
 
       for(size_t i=0;i<m_current_fn->m_arguments.size();i++)
           m_symbol_table.add(m_current_fn->m_arguments[i]->m_identifier,m_current_fn->m_arguments[i]);
@@ -290,7 +329,7 @@ public:
       m_nodes_to_operands[p].m_triple->m_call_args.push_back(op);
     }
   }
- 
+
   void visitBlk(Blk *p){
     m_symbol_table.push();
     for(auto statement : *p->liststmt_){
@@ -360,20 +399,39 @@ public:
 
   void visitCond(Cond *p) override {
     p->expr_->accept(this);
+
     Label *jump_to = create_label();
     Triple *jf_triple = m_IRCoder.push(p->line_number,Operation::JF,m_nodes_to_operands.at(p->expr_),{jump_to});
     
+    if(is_single_declaration(p->stmt_)){
+      std::string msg = fmt::format("Single unused declaration inside if");
+      m_error_list.add_error(p->stmt_->line_number,msg);
+    }
+
     p->stmt_->accept(this);
+    
+
     Triple *special_triple=m_IRCoder.push(p->line_number,Operation::MARKER);
     bind_label(jf_triple->m_op_2.m_label,special_triple);
   }
 
+  // samotne deklaracje
   void visitCondElse(CondElse *p) override{
     p->expr_->accept(this);
 
     Label *jump_to_else = create_label();
     Label *jump_out_if = create_label();
 
+    if(is_single_declaration(p->stmt_1)){
+      std::string msg = fmt::format("Single unused declaration inside if");
+      m_error_list.add_error(p->stmt_1->line_number,msg);
+    }
+
+    if(is_single_declaration(p->stmt_2)){
+      std::string msg = fmt::format("Single unused declaration inside else");
+      m_error_list.add_error(p->stmt_2->line_number,msg);
+    }
+    
     Triple *jf_triple = m_IRCoder.push(0,Operation::JF,m_nodes_to_operands.at(p->expr_),{jump_to_else});
     p->stmt_1->accept(this);
     Triple *jmp_triple = m_IRCoder.push(0,Operation::JMP,{jump_out_if});
@@ -416,6 +474,11 @@ public:
     p->expr_->accept(this);
     Label *end_label = create_label();
     m_IRCoder.push(0,Operation::JF,m_nodes_to_operands.at(p->expr_),{end_label});
+     
+    if(is_single_declaration(p->stmt_)){
+      std::string msg = fmt::format("Single unused declaration inside while");
+      m_error_list.add_error(p->stmt_->line_number,msg);
+    }
 
     p->stmt_->accept(this);
     m_IRCoder.push(0,Operation::JMP,{cond_label});
@@ -673,6 +736,7 @@ public:
   }
   
   void print_operand(const Operand &operand){
+    //  CONSTANT,VARIABLE,TRIPLE,EMPTY,LABEL,FUNCTION,ARGUMENT,ERROR
     switch (operand.m_category)
       {
       case OperandCategory::CONSTANT:
@@ -779,7 +843,7 @@ int main(int argc, char ** argv)
 
   // ipp.print_program(int_program);
 
-  llvm_generator.process_program();
+  std::string program_ll = llvm_generator.process_program();
   llvm_generator.print_generated_code();
   
   quiet=true;

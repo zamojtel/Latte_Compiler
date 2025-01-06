@@ -142,7 +142,7 @@ public:
             break;
         }
     }
-
+    //  CONSTANT,VARIABLE,TRIPLE,EMPTY,LABEL,FUNCTION,ARGUMENT,ERROR
     Operand& operator=(const Operand &other){
         m_category=other.m_category;
         switch (other.m_category)
@@ -162,7 +162,11 @@ public:
         case OperandCategory::ARGUMENT:
             this->m_argument=other.m_argument;
             break;
+        case OperandCategory::LABEL:
+            this->m_label=other.m_label;
+            break;
         case OperandCategory::ERROR:
+        case OperandCategory::EMPTY:
             break;
         default:
             throw 0;
