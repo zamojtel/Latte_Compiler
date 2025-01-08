@@ -17,7 +17,7 @@
 #include "Logger.h"
 #include "IRCoder.h"
 #include "IRCoderListener.h"
-
+// originalny plik ktory jest zmodyfikowany
 void usage() {
   printf("usage: Call with one of the following argument combinations:\n");
   printf("\t--help\t\tDisplay this help message.\n");
@@ -90,6 +90,66 @@ private:
 public:
   ErrorList m_error_list;
 
+  void visitNewArray(NewArray *p) override {
+    // typ i rozmiar 
+    p->type_->accept(this);
+    p->expr_->accept(this);
+  
+    Triple * triple = m_IRCoder.push(p->line_number,Operation::NEW_ARRAY,m_nodes_to_operands.at(p->expr_));
+    triple->m_data_type_for_new=m_last_visited_type;
+
+    m_nodes_to_operands[p] = triple;
+  }
+
+  // declaration
+  void visitArray(Array *p) override {
+    p->type_->accept(this);
+
+    if(m_last_visited_type==BasicType::VOID)
+    {
+      std::string msg = fmt::format("Can't define arrays of type void");
+      m_error_list.add_error(p->line_number,msg);
+      // 
+      m_last_visited_type=BasicType::ERROR;
+      return;
+    }
+
+    // [] traciajac na zwiekszamy
+    if(m_last_visited_type!=BasicType::ERROR)
+      m_last_visited_type.dimensions++;
+    
+  }
+
+  void visitArrAcc(ArrAcc *p) override{
+    // t[expr]
+    // potem tutaj bedzie zmiana 
+    p->expr_->accept(this);
+    // p->ident_
+    // p->ident_
+    Operand op;
+    auto *entry = m_symbol_table.get_entry(p->ident_);
+  
+    if(entry->m_category==SymbolTableCategory::ARGUMENT){
+      op = entry->m_argument;
+    }else if(entry->m_category==SymbolTableCategory::VARIABLE){
+      op = entry->m_variable;
+    }else{
+      // prepare for a function
+
+      // m_error_list.add_error();
+    }
+    // ACCESS_ARRAY t 21
+    // t[21]
+
+    // Init X0 1
+    // ACCESS_ARRAY t x0
+    // t[X0]
+
+    m_IRCoder.push(p->line_number,Operation::ACCESS_ARRAY,op,m_nodes_to_operands.at(p->expr_));
+  
+    // m_IRCoder.push();
+  }
+
   void ircoder_error(int line,const std::string &msg) override {
     m_error_list.add_error(line,msg);
   }
@@ -107,7 +167,7 @@ public:
   }
 
   Variable* create_special_boolean_variable(){
-    Variable *variable = new Variable{fmt::format("${}",m_special_variable_index),DataType::BOOL};
+    Variable *variable = new Variable{fmt::format("${}",m_special_variable_index),BasicType::BOOL};
     m_special_variable_index++;
     m_current_fn->m_variables.push_back(variable);
     return variable;
@@ -121,8 +181,8 @@ public:
       m_error_list.add_error(line,msg);
       return ;
     }
-
-    if(m_last_visited_type==DataType::VOID){
+  
+    if(m_last_visited_type==BasicType::VOID){
       m_error_list.add_error(line,"Variable can't be of type void");
       return ;
     }
@@ -134,20 +194,27 @@ public:
       
       m_nodes_to_operands[initializer] = m_IRCoder.push(line,Operation::INIT,variable,m_nodes_to_operands.at(initializer));
     }else{
-      switch (variable->m_type)
-      {
-      case DataType::STRING:
-        m_IRCoder.push(line,Operation::INIT,variable,Constant{std::string{}});
-        break;
-      case DataType::INT:
-        m_IRCoder.push(line,Operation::INIT,variable,Constant{0});
-        break;
-      case DataType::BOOL:
-        m_IRCoder.push(line,Operation::INIT,variable,Constant{false});
-        break;
-      default:
-        throw 0;
+      if(variable->m_type.dimensions==0){
+        switch (variable->m_type.basic_type)
+        {
+        case BasicType::STRING:
+          m_IRCoder.push(line,Operation::INIT,variable,Constant{std::string{}});
+          break;
+        case BasicType::INT:
+          m_IRCoder.push(line,Operation::INIT,variable,Constant{0});
+          break;
+        case BasicType::BOOL:
+          m_IRCoder.push(line,Operation::INIT,variable,Constant{false});
+          break;
+        case BasicType::ERROR:
+          break;
+        default:
+          throw 0;
+        }
+      }else{
+        m_IRCoder.push(line,Operation::INIT,variable,Constant{nullptr});
       }
+
     }
 
     m_current_fn->m_variables.push_back(variable);
@@ -171,7 +238,7 @@ public:
     {
       auto *main = m_program->get_function("main");
 
-      if(main->m_return_type != DataType::INT || main->m_arguments.size()>0){
+      if(main->m_return_type != BasicType::INT || main->m_arguments.size()>0){
         m_error_list.add_error(parse_tree->line_number,"Invalid 'main' function definition.");
       }
     }
@@ -205,25 +272,25 @@ public:
   void add_predefined_functions(){
     Function * print_int = new Function{PredefinedFunction::PRINTINT};
     print_int->m_name = "printInt";
-    print_int->m_return_type = DataType::VOID;
-    print_int->m_arguments.push_back(new Argument{DataType::INT,"value"});
+    print_int->m_return_type = BasicType::VOID;
+    print_int->m_arguments.push_back(new Argument{BasicType::INT,"value"});
 
     Function * print_string = new Function{PredefinedFunction::PRINTSTRING};
     print_string->m_name = "printString";
-    print_string->m_return_type=DataType::VOID;
-    print_string->m_arguments.push_back(new Argument{DataType::STRING,"value"});
+    print_string->m_return_type=BasicType::VOID;
+    print_string->m_arguments.push_back(new Argument{BasicType::STRING,"value"});
 
     Function * error = new Function{PredefinedFunction::ERROR};
     error->m_name = "error";
-    error->m_return_type=DataType::VOID;
+    error->m_return_type=BasicType::VOID;
 
     Function * read_int = new Function{PredefinedFunction::READINT};
     read_int->m_name = "readInt";
-    read_int->m_return_type = DataType::INT;
+    read_int->m_return_type = BasicType::INT;
 
     Function * read_string = new Function{PredefinedFunction::READSTRING};
     read_string->m_name="readString";
-    read_string->m_return_type=DataType::STRING;
+    read_string->m_return_type=BasicType::STRING;
 
     m_program->m_functions.push_back(print_int);
     m_program->m_functions.push_back(print_string);
@@ -313,7 +380,7 @@ public:
       // to-do implicit conversion
 
       if(fn_argument_type!=current_argument_type){
-        if(current_argument_type!=DataType::ERROR)
+        if(current_argument_type!=BasicType::ERROR)
         {
           std::string msg=fmt::format("Mismatched argument type {}, expected type {}, provided {}",i+1,data_type_to_string(fn_argument_type),data_type_to_string(current_argument_type));
           m_error_list.add_error(line_number,msg);
@@ -339,19 +406,19 @@ public:
   }
 
   void visitInt(Int *x) override{
-    m_last_visited_type = DataType::INT;
+    m_last_visited_type = BasicType::INT;
   }
 
   void visitVoid(Void *p) override{
-    m_last_visited_type = DataType::VOID;
+    m_last_visited_type = BasicType::VOID;
   }
 
   void visitBool(Bool *p) override{
-    m_last_visited_type=DataType::BOOL;
+    m_last_visited_type=BasicType::BOOL;
   }
 
   void visitStr(Str *p) override {
-    m_last_visited_type=DataType::STRING; 
+    m_last_visited_type=BasicType::STRING; 
   }
 
   void visitListArg(ListArg *p) override{
@@ -372,7 +439,7 @@ public:
     m_current_arg->m_identifier=p->ident_;
     p->type_->accept(this);
 
-    if(m_last_visited_type==DataType::VOID){
+    if(m_last_visited_type==BasicType::VOID){
       m_error_list.add_error(p->line_number,"Arguments can't be of type void");
       return;
     }
@@ -383,6 +450,10 @@ public:
 
   void visitDecl(Decl *p) override{
     p->type_->accept(this);
+
+
+
+
     for(auto item : *p->listitem_)
       item->accept(this);
     
@@ -545,14 +616,14 @@ public:
   }
 
   DataType deduce_bool_type_one_argument(DataType op_1_type){
-    if(op_1_type==DataType::BOOL)
-      return DataType::BOOL;
+    if(op_1_type==BasicType::BOOL)
+      return BasicType::BOOL;
     else
-      return DataType::ERROR;
+      return BasicType::ERROR;
   }
 
   bool equal_data_types_or_error(DataType t1,DataType t2){
-    return  t1 == DataType::ERROR || t2 == DataType::ERROR || t1==t2;
+    return  t1 == BasicType::ERROR || t2 == BasicType::ERROR || t1==t2;
   }
 
   Label* create_label(){
@@ -721,13 +792,13 @@ public:
   void print_constant(const Constant &constant){
     switch (constant.m_type)
     {
-    case DataType::INT:
+    case BasicType::INT:
       std::cout<<"INT("<<constant.u.integer<<") ";
       break;
-    case DataType::BOOL:
+    case BasicType::BOOL:
       std::cout<<"BOOL("<<constant.u.boolean<<")";
       break;
-    case DataType::STRING:
+    case BasicType::STRING:
       std::cout<<"STRING("<<constant.u.str<<")";
       break;
     default:
@@ -820,7 +891,7 @@ int main(int argc, char ** argv)
   my_visitor.pass(parse_tree);
   
   for(auto *fn : int_program.m_functions){
-    if(fn->m_return_type==DataType::VOID)
+    if(fn->m_return_type==BasicType::VOID)
       continue;
 
     if(fn->m_type==PredefinedFunction::USERDEFINED && !my_visitor.errors_occured() && int_program.find_path_without_return(fn,0)){
@@ -839,12 +910,12 @@ int main(int argc, char ** argv)
     // std::cout<<"OK"<<std::endl;
   }
   
-  // IntermediateProgramPrinter ipp;
+  IntermediateProgramPrinter ipp;
 
-  // ipp.print_program(int_program);
+  ipp.print_program(int_program);
 
-  std::string program_ll = llvm_generator.process_program();
-  llvm_generator.print_generated_code();
+  // std::string program_ll = llvm_generator.process_program();
+  // llvm_generator.print_generated_code();
   
   quiet=true;
   if (parse_tree)

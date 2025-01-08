@@ -39,6 +39,7 @@ public:
   void visitCondElse(CondElse *p);
   void visitWhile(While *p);
   void visitSExp(SExp *p);
+  void visitArray(Array *p);
   void visitInt(Int *p);
   void visitStr(Str *p);
   void visitBool(Bool *p);
@@ -48,6 +49,7 @@ public:
   void visitELitInt(ELitInt *p);
   void visitELitTrue(ELitTrue *p);
   void visitELitFalse(ELitFalse *p);
+  void visitArrAcc(ArrAcc *p);
   void visitEApp(EApp *p);
   void visitEString(EString *p);
   void visitNeg(Neg *p);
@@ -57,6 +59,7 @@ public:
   void visitERel(ERel *p);
   void visitEAnd(EAnd *p);
   void visitEOr(EOr *p);
+  void visitNewArray(NewArray *p);
   void visitPlus(Plus *p);
   void visitMinus(Minus *p);
   void visitTimes(Times *p);

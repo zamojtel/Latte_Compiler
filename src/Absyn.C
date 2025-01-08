@@ -827,6 +827,50 @@ Init *Init::clone() const
 
 
 
+/********************   Array    ********************/
+Array::Array(Type *p1)
+{
+  type_ = p1;
+
+}
+
+Array::Array(const Array & other)
+{
+  type_ = other.type_->clone();
+
+}
+
+Array &Array::operator=(const Array & other)
+{
+  Array tmp(other);
+  swap(tmp);
+  return *this;
+}
+
+void Array::swap(Array & other)
+{
+  std::swap(type_, other.type_);
+
+}
+
+Array::~Array()
+{
+  delete(type_);
+
+}
+
+void Array::accept(Visitor *v)
+{
+  v->visitArray(this);
+}
+
+Array *Array::clone() const
+{
+  return new Array(*this);
+}
+
+
+
 /********************   Int    ********************/
 Int::Int()
 {
@@ -1197,6 +1241,53 @@ void ELitFalse::accept(Visitor *v)
 ELitFalse *ELitFalse::clone() const
 {
   return new ELitFalse(*this);
+}
+
+
+
+/********************   ArrAcc    ********************/
+ArrAcc::ArrAcc(Ident p1, Expr *p2)
+{
+  ident_ = p1;
+  expr_ = p2;
+
+}
+
+ArrAcc::ArrAcc(const ArrAcc & other)
+{
+  ident_ = other.ident_;
+  expr_ = other.expr_->clone();
+
+}
+
+ArrAcc &ArrAcc::operator=(const ArrAcc & other)
+{
+  ArrAcc tmp(other);
+  swap(tmp);
+  return *this;
+}
+
+void ArrAcc::swap(ArrAcc & other)
+{
+  std::swap(ident_, other.ident_);
+  std::swap(expr_, other.expr_);
+
+}
+
+ArrAcc::~ArrAcc()
+{
+  delete(expr_);
+
+}
+
+void ArrAcc::accept(Visitor *v)
+{
+  v->visitArrAcc(this);
+}
+
+ArrAcc *ArrAcc::clone() const
+{
+  return new ArrAcc(*this);
 }
 
 
@@ -1627,6 +1718,54 @@ void EOr::accept(Visitor *v)
 EOr *EOr::clone() const
 {
   return new EOr(*this);
+}
+
+
+
+/********************   NewArray    ********************/
+NewArray::NewArray(Type *p1, Expr *p2)
+{
+  type_ = p1;
+  expr_ = p2;
+
+}
+
+NewArray::NewArray(const NewArray & other)
+{
+  type_ = other.type_->clone();
+  expr_ = other.expr_->clone();
+
+}
+
+NewArray &NewArray::operator=(const NewArray & other)
+{
+  NewArray tmp(other);
+  swap(tmp);
+  return *this;
+}
+
+void NewArray::swap(NewArray & other)
+{
+  std::swap(type_, other.type_);
+  std::swap(expr_, other.expr_);
+
+}
+
+NewArray::~NewArray()
+{
+  delete(type_);
+  delete(expr_);
+
+}
+
+void NewArray::accept(Visitor *v)
+{
+  v->visitNewArray(this);
+}
+
+NewArray *NewArray::clone() const
+{
+  return new NewArray(*this);
 }
 
 

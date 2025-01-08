@@ -26,7 +26,7 @@ public:
     DataType deduce_arithmetic_type(Operation operation,DataType op_1_type,DataType op_2_type);
     bool equal_data_types_or_error(DataType t1,DataType t2);
     std::string operation_to_string(Operation operation);
-    std::string type_to_string(DataType dt);
+    // std::string type_to_string(DataType dt);
     IRCoder(Function *fn, size_t position):m_position{position},m_current_fn{fn}{}
     IRCoder():m_position{0}{}
 };

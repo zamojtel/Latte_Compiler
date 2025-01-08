@@ -175,6 +175,14 @@ void Skeleton::visitInit(Init *init)
 
 }
 
+void Skeleton::visitArray(Array *array)
+{
+  /* Code For Array Goes Here */
+
+  if (array->type_) array->type_->accept(this);
+
+}
+
 void Skeleton::visitInt(Int *int_)
 {
   /* Code For Int Goes Here */
@@ -239,6 +247,15 @@ void Skeleton::visitELitFalse(ELitFalse *e_lit_false)
 {
   /* Code For ELitFalse Goes Here */
 
+
+}
+
+void Skeleton::visitArrAcc(ArrAcc *arr_acc)
+{
+  /* Code For ArrAcc Goes Here */
+
+  visitIdent(arr_acc->ident_);
+  if (arr_acc->expr_) arr_acc->expr_->accept(this);
 
 }
 
@@ -320,6 +337,15 @@ void Skeleton::visitEOr(EOr *e_or)
 
   if (e_or->expr_1) e_or->expr_1->accept(this);
   if (e_or->expr_2) e_or->expr_2->accept(this);
+
+}
+
+void Skeleton::visitNewArray(NewArray *new_array)
+{
+  /* Code For NewArray Goes Here */
+
+  if (new_array->type_) new_array->type_->accept(this);
+  if (new_array->expr_) new_array->expr_->accept(this);
 
 }
 

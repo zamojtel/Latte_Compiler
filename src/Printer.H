@@ -68,6 +68,7 @@ class PrintAbsyn : public Visitor
   void visitListItem(ListItem *p);
   void iterListItem(ListItem::const_iterator i, ListItem::const_iterator j);
   void visitType(Type *p); /* abstract class */
+  void visitArray(Array *p);
   void visitInt(Int *p);
   void visitStr(Str *p);
   void visitBool(Bool *p);
@@ -80,6 +81,7 @@ class PrintAbsyn : public Visitor
   void visitELitInt(ELitInt *p);
   void visitELitTrue(ELitTrue *p);
   void visitELitFalse(ELitFalse *p);
+  void visitArrAcc(ArrAcc *p);
   void visitEApp(EApp *p);
   void visitEString(EString *p);
   void visitNeg(Neg *p);
@@ -89,6 +91,7 @@ class PrintAbsyn : public Visitor
   void visitERel(ERel *p);
   void visitEAnd(EAnd *p);
   void visitEOr(EOr *p);
+  void visitNewArray(NewArray *p);
   void visitListExpr(ListExpr *p);
   void iterListExpr(ListExpr::const_iterator i, ListExpr::const_iterator j);
   void visitAddOp(AddOp *p); /* abstract class */
@@ -232,6 +235,7 @@ class ShowAbsyn : public Visitor
   void visitListItem(ListItem *p);
   void iterListItem(ListItem::const_iterator i, ListItem::const_iterator j);
   void visitType(Type *p); /* abstract class */
+  void visitArray(Array *p);
   void visitInt(Int *p);
   void visitStr(Str *p);
   void visitBool(Bool *p);
@@ -244,6 +248,7 @@ class ShowAbsyn : public Visitor
   void visitELitInt(ELitInt *p);
   void visitELitTrue(ELitTrue *p);
   void visitELitFalse(ELitFalse *p);
+  void visitArrAcc(ArrAcc *p);
   void visitEApp(EApp *p);
   void visitEString(EString *p);
   void visitNeg(Neg *p);
@@ -253,6 +258,7 @@ class ShowAbsyn : public Visitor
   void visitERel(ERel *p);
   void visitEAnd(EAnd *p);
   void visitEOr(EOr *p);
+  void visitNewArray(NewArray *p);
   void visitListExpr(ListExpr *p);
   void iterListExpr(ListExpr::const_iterator i, ListExpr::const_iterator j);
   void visitAddOp(AddOp *p); /* abstract class */

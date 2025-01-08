@@ -75,22 +75,26 @@ extern int latte_cpp_debug;
     _DEQ = 276,                    /* _DEQ  */
     _GT = 277,                     /* _GT  */
     _GTEQ = 278,                   /* _GTEQ  */
-    _KW_boolean = 279,             /* _KW_boolean  */
-    _KW_else = 280,                /* _KW_else  */
-    _KW_false = 281,               /* _KW_false  */
-    _KW_if = 282,                  /* _KW_if  */
-    _KW_int = 283,                 /* _KW_int  */
-    _KW_return = 284,              /* _KW_return  */
-    _KW_string = 285,              /* _KW_string  */
-    _KW_true = 286,                /* _KW_true  */
-    _KW_void = 287,                /* _KW_void  */
-    _KW_while = 288,               /* _KW_while  */
-    _LBRACE = 289,                 /* _LBRACE  */
-    _DBAR = 290,                   /* _DBAR  */
-    _RBRACE = 291,                 /* _RBRACE  */
-    _STRING_ = 292,                /* _STRING_  */
-    _INTEGER_ = 293,               /* _INTEGER_  */
-    _IDENT_ = 294                  /* _IDENT_  */
+    _LBRACK = 279,                 /* _LBRACK  */
+    _EMPTYBRACK = 280,             /* _EMPTYBRACK  */
+    _RBRACK = 281,                 /* _RBRACK  */
+    _KW_boolean = 282,             /* _KW_boolean  */
+    _KW_else = 283,                /* _KW_else  */
+    _KW_false = 284,               /* _KW_false  */
+    _KW_if = 285,                  /* _KW_if  */
+    _KW_int = 286,                 /* _KW_int  */
+    _KW_new = 287,                 /* _KW_new  */
+    _KW_return = 288,              /* _KW_return  */
+    _KW_string = 289,              /* _KW_string  */
+    _KW_true = 290,                /* _KW_true  */
+    _KW_void = 291,                /* _KW_void  */
+    _KW_while = 292,               /* _KW_while  */
+    _LBRACE = 293,                 /* _LBRACE  */
+    _DBAR = 294,                   /* _DBAR  */
+    _RBRACE = 295,                 /* _RBRACE  */
+    _STRING_ = 296,                /* _STRING_  */
+    _INTEGER_ = 297,               /* _INTEGER_  */
+    _IDENT_ = 298                  /* _IDENT_  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -99,7 +103,7 @@ extern int latte_cpp_debug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 50 "./src/LatteCPP.y"
+#line 50 "LatteCPP.y"
 
   int    _int;
   char   _char;
@@ -123,7 +127,7 @@ union YYSTYPE
   MulOp* mulop_;
   RelOp* relop_;
 
-#line 127 "Bison.H"
+#line 131 "Bison.H"
 
 };
 typedef union YYSTYPE YYSTYPE;

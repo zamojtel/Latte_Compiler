@@ -12,8 +12,27 @@ class Variable;
 class Triple;
 class Function;
 
-enum class DataType{
-    INT,BOOL,STRING,VOID,ERROR
+enum class BasicType{
+    INT,BOOL,STRING,VOID,ERROR,NULLPTR
+    // Arrays
+};
+
+struct DataType {
+ BasicType basic_type;
+ int dimensions;
+//  BasicType::BOOL
+ DataType(BasicType t):basic_type{t},dimensions{0}{}
+ DataType(BasicType b_t,int d):basic_type{b_t},dimensions{d}{}
+ DataType(){}
+ bool operator==(const DataType &other) const = default;
+ bool operator==(BasicType other) const {
+    return basic_type==other && dimensions == 0;
+ };
+
+ bool operator!=(const DataType &other) const = default;
+ bool operator!=(BasicType other) const {
+   return basic_type!=other || dimensions != 0;
+ };
 };
 
 class Argument{
@@ -29,6 +48,9 @@ std::string data_type_to_string(const DataType &type);
 enum class Operation{
     MUL,ADD,SUB,DIV,AND,OR,NEG,NOT,ASSIGN,
     MOD,LTH,LE,GTH,GE,EQU,NE,INIT,
+    // Arrays
+    NEW_ARRAY,
+    ACCESS_ARRAY,
     //Special Operations
     JT,JF, // jump if true ,jump if false
     MARKER, // It will indicate a special triple
@@ -51,7 +73,7 @@ void call_destructor(T* arg){
 
 class Constant{
 public:
-    DataType m_type;
+    BasicType m_type;
     union Value
     {
         int integer;
@@ -64,6 +86,8 @@ public:
     Constant(int value);
     Constant(bool value);
     Constant(const std::string &s);
+
+    Constant(nullptr_t ptr);
     
     Constant(const Constant &constant);
 
@@ -191,6 +215,7 @@ public:
     int m_code_line_number;
     bool m_visited;
     DataType m_data_type;
+    DataType m_data_type_for_new;
     size_t m_index;
     Operation m_operation;
     Operand m_op_1;

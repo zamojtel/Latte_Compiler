@@ -50,6 +50,7 @@ class Cond;
 class CondElse;
 class While;
 class SExp;
+class Array;
 class Int;
 class Str;
 class Bool;
@@ -59,6 +60,7 @@ class EVar;
 class ELitInt;
 class ELitTrue;
 class ELitFalse;
+class ArrAcc;
 class EApp;
 class EString;
 class Neg;
@@ -68,6 +70,7 @@ class EAdd;
 class ERel;
 class EAnd;
 class EOr;
+class NewArray;
 class Plus;
 class Minus;
 class Times;
@@ -121,6 +124,7 @@ public:
   virtual void visitCondElse(CondElse *p) = 0;
   virtual void visitWhile(While *p) = 0;
   virtual void visitSExp(SExp *p) = 0;
+  virtual void visitArray(Array *p) = 0;
   virtual void visitInt(Int *p) = 0;
   virtual void visitStr(Str *p) = 0;
   virtual void visitBool(Bool *p) = 0;
@@ -130,6 +134,7 @@ public:
   virtual void visitELitInt(ELitInt *p) = 0;
   virtual void visitELitTrue(ELitTrue *p) = 0;
   virtual void visitELitFalse(ELitFalse *p) = 0;
+  virtual void visitArrAcc(ArrAcc *p) = 0;
   virtual void visitEApp(EApp *p) = 0;
   virtual void visitEString(EString *p) = 0;
   virtual void visitNeg(Neg *p) = 0;
@@ -139,6 +144,7 @@ public:
   virtual void visitERel(ERel *p) = 0;
   virtual void visitEAnd(EAnd *p) = 0;
   virtual void visitEOr(EOr *p) = 0;
+  virtual void visitNewArray(NewArray *p) = 0;
   virtual void visitPlus(Plus *p) = 0;
   virtual void visitMinus(Minus *p) = 0;
   virtual void visitTimes(Times *p) = 0;
@@ -517,6 +523,20 @@ public:
   void swap(Init &);
 };
 
+class Array : public Type
+{
+public:
+  Type *type_;
+
+  Array(const Array &);
+  Array &operator=(const Array &);
+  Array(Type *p1);
+  ~Array();
+  virtual void accept(Visitor *v);
+  virtual Array *clone() const;
+  void swap(Array &);
+};
+
 class Int : public Type
 {
 public:
@@ -636,6 +656,21 @@ public:
   virtual void accept(Visitor *v);
   virtual ELitFalse *clone() const;
   void swap(ELitFalse &);
+};
+
+class ArrAcc : public Expr
+{
+public:
+  Ident ident_;
+  Expr *expr_;
+
+  ArrAcc(const ArrAcc &);
+  ArrAcc &operator=(const ArrAcc &);
+  ArrAcc(Ident p1, Expr *p2);
+  ~ArrAcc();
+  virtual void accept(Visitor *v);
+  virtual ArrAcc *clone() const;
+  void swap(ArrAcc &);
 };
 
 class EApp : public Expr
@@ -771,6 +806,21 @@ public:
   virtual void accept(Visitor *v);
   virtual EOr *clone() const;
   void swap(EOr &);
+};
+
+class NewArray : public Expr
+{
+public:
+  Type *type_;
+  Expr *expr_;
+
+  NewArray(const NewArray &);
+  NewArray &operator=(const NewArray &);
+  NewArray(Type *p1, Expr *p2);
+  ~NewArray();
+  virtual void accept(Visitor *v);
+  virtual NewArray *clone() const;
+  void swap(NewArray &);
 };
 
 class Plus : public AddOp

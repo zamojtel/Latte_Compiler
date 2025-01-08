@@ -1,32 +1,52 @@
 #include "DataStructure.h"
 
 std::string data_type_to_string(const DataType &type){
-    switch (type)
+    std::string basic_type;
+    switch (type.basic_type)
     {
-    case DataType::INT:
-        return "int";
-    case DataType::BOOL:
-        return "bool";
-    case DataType::STRING:
-        return "string";
-    case DataType::VOID:
-        return "void";
-    case DataType::ERROR:
-        return "error";
+    case BasicType::INT:
+        basic_type= "int";
+        break;
+    case BasicType::BOOL:
+        basic_type= "bool";
+        break;
+    case BasicType::STRING:
+        basic_type= "string";
+        break;
+    case BasicType::VOID:
+        basic_type= "void";
+        break;
+    case BasicType::ERROR:
+        basic_type= "error";
+        break;
+    case BasicType::NULLPTR:
+        basic_type= "nullptr";
+        break;
     default:
         throw 0;;
     }
+
+    std::string arr="";
+    for(int i =0;i<type.dimensions;i++)
+        arr+="[]";
+    
+    std::string final_type = basic_type+arr;
+
+    return final_type;
 }
 
-Constant::Constant(int value):m_type{DataType::INT}{
+Constant::Constant(nullptr_t ptr):m_type{BasicType::NULLPTR}{
+}
+
+Constant::Constant(int value):m_type{BasicType::INT}{
     u.integer=value;
 }
 
-Constant::Constant(bool value):m_type{DataType::BOOL}{
+Constant::Constant(bool value):m_type{BasicType::BOOL}{
     u.boolean=value;
 }
 
-Constant::Constant(const std::string &s):m_type{DataType::STRING}{
+Constant::Constant(const std::string &s):m_type{BasicType::STRING}{
     new (&u.str) std::string(s); // where and what  
     u.str=s;
 }
@@ -35,21 +55,23 @@ Constant& Constant::operator=(const Constant &other){
     // INT,BOOL,STRING,
     if(this == &other)
         return *this;
-    if(this->m_type==DataType::STRING)
+    if(this->m_type==BasicType::STRING)
         call_destructor(&this->u.str);
     
     m_type=other.m_type;
     switch (other.m_type)
     {
-    case DataType::INT:
+    case BasicType::INT:
         this->u.integer=other.u.integer;
         break;
-    case DataType::BOOL:
+    case BasicType::BOOL:
         this->u.boolean=other.u.boolean;
         break;
-    case DataType::STRING:{
+    case BasicType::STRING:{
         new (&u.str) std::string;
         this->u.str=other.u.str;
+        break;
+    case BasicType::NULLPTR:
         break;
     }
     default:
@@ -61,19 +83,21 @@ Constant& Constant::operator=(const Constant &other){
 std::string Constant::get_value_as_string() const {
         switch (m_type)
         {
-        case DataType::INT:
+        case BasicType::INT:
             return std::to_string(u.integer);
-        case DataType::BOOL:
+        case BasicType::BOOL:
             return std::to_string(u.boolean);
-        case DataType::STRING:
+        case BasicType::STRING:
             return u.str;
+        case BasicType::NULLPTR:
+            return "null";
         default:
             return "error";
         }
 }
 
 Constant::~Constant(){
-    if(m_type==DataType::STRING){
+    if(m_type==BasicType::STRING){
         call_destructor(&u.str);
     }
 }
@@ -82,13 +106,13 @@ Constant::Constant(const Constant &constant){
     m_type = constant.m_type;
     switch (constant.m_type)
     {
-    case DataType::INT:
+    case BasicType::INT:
         u.integer = constant.u.integer;
         break;
-    case DataType::BOOL:
+    case BasicType::BOOL:
         u.boolean = constant.u.boolean;
         break;
-    case DataType::STRING:{
+    case BasicType::STRING:{
         new (&u.str) std::string(constant.u.str);
     }
     default:
@@ -123,13 +147,13 @@ DataType Operand::get_type() const{
     case OperandCategory::FUNCTION:
         return m_function->m_return_type;
     case OperandCategory::LABEL:
-        return DataType::VOID;
+        return BasicType::VOID;
     case OperandCategory::EMPTY:
-        return DataType::VOID;
+        return BasicType::VOID;
     case OperandCategory::ARGUMENT:
         return m_argument->m_type;
     case OperandCategory::ERROR:
-        return DataType::ERROR;
+        return BasicType::ERROR;
     default:
         throw 0;
     }

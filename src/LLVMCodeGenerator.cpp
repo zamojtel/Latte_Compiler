@@ -4,73 +4,76 @@
 
 void LLVMCodeGenerator::alloc_variable(Variable *variable){
     std::string code;
-
-    switch (variable->m_type)
+    //  rozwazamy tez tablice 
+    switch (variable->m_type.basic_type)
     {
-    case DataType::INT:{
-        m_code_lines.push_back(fmt::format("%{} = alloca i32, align 4",m_llvm_line_index));
-        m_variable_data[variable]=VariableData{m_llvm_line_index};
-        increase();
-        return;
-    }
-    case DataType::BOOL:{
-        m_code_lines.push_back(fmt::format("%{} = alloca i8, align 1",m_llvm_line_index));
-        m_variable_data[variable]=VariableData{m_llvm_line_index};
-        increase();
-        return;
-    }
-    default:
-        break;
+    // case BasicType::INT:{
+    //     m_code_lines.push_back(fmt::format("%{} = alloca i32, align 4",m_llvm_line_index));
+    //     m_variable_data[variable]=VariableData{m_llvm_line_index};
+    //     increase();
+    //     return;
+    // }
+    // case BasicType::BOOL:{
+    //     m_code_lines.push_back(fmt::format("%{} = alloca i8, align 1",m_llvm_line_index));
+    //     m_variable_data[variable]=VariableData{m_llvm_line_index};
+    //     increase();
+    //     return;
+    // }
+    // default:
+    //     break;
     }
 }
 
 std::string LLVMCodeGenerator::get_size_in_bits(DataType type){
-    switch (type)
-    {
-    case DataType::BOOL:
-        return "1";
-    case DataType::INT:
-        return "32";
-    case DataType::STRING:
-        return "";
-    default:
-        return "error";
-    }
+    // switch (type)
+    // {
+    // case BasicType::BOOL:
+    //     return "1";
+    // case BasicType::INT:
+    //     return "32";
+    // case BasicType::STRING:
+    //     return "";
+    // default:
+    //     return "error";
+    // }
+    throw 0;
 }
 //  %7 = zext i1 %6 to i8
 //   store i8 %7, i8* %3, align 1
 std::string LLVMCodeGenerator::get_data_type_name(DataType type){
-    switch (type)
-    {
-    case DataType::BOOL:
-        // moze przywrocic
-        return "i1";
-        // return "i8";
-    case DataType::INT:
-        return "i32";
-    case DataType::STRING:
-        // moze byc zle  
-        // return "ptr";
-        return "i8*";
-    case DataType::VOID:
-        return "void";
-    default:
-        return "error unknown size";
-    }
+    // switch (type)
+    // {
+    // case BasicType::BOOL:
+    //     // moze przywrocic
+    //     return "i1";
+    //     // return "i8";
+    // case BasicType::INT:
+    //     return "i32";
+    // case BasicType::STRING:
+    //     // moze byc zle  
+    //     // return "ptr";
+    //     return "i8*";
+    // case BasicType::VOID:
+    //     return "void";
+    // default:
+    //     return "error unknown size";
+    // }
+    throw 0;
 }
 
 std::string LLVMCodeGenerator::get_align(DataType type){
-    switch (type)
-    {
-    case DataType::BOOL:
-        return "1";
-    case DataType::INT:
-        return "4";
-    case DataType::STRING:
-        return "8";
-    default:
-        return "error";
-    }
+    // switch (type)
+    // {
+    // case BasicType::BOOL:
+    //     return "1";
+    // case BasicType::INT:
+    //     return "4";
+    // case BasicType::STRING:
+    //     return "8";
+    // default:
+    //     return "error";
+    // }
+    throw 0;
 }
 
 std::string LLVMCodeGenerator::get_operand_value(const Operand &op){
@@ -99,7 +102,7 @@ std::string LLVMCodeGenerator::get_operand_value_with_load(const Operand &op){
     {
     case OperandCategory::CONSTANT:
     {
-        if(op.m_constant.m_type!=DataType::STRING)
+        if(op.m_constant.m_type!=BasicType::STRING)
             return op.m_constant.get_value_as_string();
         else
             return  get_string_literal_name(m_string_literal_to_index.at(op.m_constant.u.str));
@@ -115,10 +118,10 @@ std::string LLVMCodeGenerator::get_operand_value_with_load(const Operand &op){
         // %8 = load i8, i8* %3, align 1
         // %9 = trunc i8 %8 to i1
         // %10 = zext i1 %9 to i32
-        // if(type==DataType::BOOL)
+        // if(type==BasicType::BOOL)
         //     data_type_name="i8";
         // std::string line = fmt::format("%{} = load {}, ptr %{}, align {}",m_llvm_line_index,get_data_type_name(type),m_variable_data.at(op.m_var).m_index,get_align(type));
-        if(type==DataType::BOOL)
+        if(type==BasicType::BOOL)
             data_type_name="i8";
 
         std::string line = fmt::format("%{} = load {}, {}* %{}, align {}",m_llvm_line_index,data_type_name,data_type_name,m_variable_data.at(op.m_var).m_index,get_align(type));
@@ -126,7 +129,7 @@ std::string LLVMCodeGenerator::get_operand_value_with_load(const Operand &op){
         increase();
         m_code_lines.push_back(line);
 
-        if(type==DataType::BOOL){
+        if(type==BasicType::BOOL){
             std::string line = fmt::format("%{} = trunc i8 %{} to i1",m_llvm_line_index,loaded_variable_index);
             m_code_lines.push_back(line);
             increase();
@@ -141,7 +144,7 @@ std::string LLVMCodeGenerator::get_operand_value_with_load(const Operand &op){
         std::string data_type_name = get_data_type_name(type);
 
 
-        if(type==DataType::BOOL)
+        if(type==BasicType::BOOL)
             data_type_name="i8";
         
         // std::string line = fmt::format("%{} = load {}, ptr %{}, align {}",m_llvm_line_index,get_data_type_name(type),m_argument_data.at(op.m_argument).m_index,get_align(type));
@@ -150,7 +153,7 @@ std::string LLVMCodeGenerator::get_operand_value_with_load(const Operand &op){
         increase();
         m_code_lines.push_back(line);
            // %9 = trunc i8 %8 to i1
-        if(type==DataType::BOOL){
+        if(type==BasicType::BOOL){
             std::string line = fmt::format("%{} = trunc i8 %{} to i1",m_llvm_line_index,loaded_argument_index);
             m_code_lines.push_back(line);
             increase();
@@ -207,7 +210,7 @@ std::string LLVMCodeGenerator::process_argument_list(Triple *triple){
         {
         case OperandCategory::CONSTANT:
         {   
-            if(arg.get_type()!=DataType::STRING){
+            if(arg.get_type()!=BasicType::STRING){
                 argument = fmt::format("{} noundef {}",get_data_type_name(arg.get_type()),arg.m_constant.get_value_as_string());
             }else{
                 // %16 = call noundef i8* @repStr(i8* noundef getelementptr ([6 x i8], [6 x i8]* @.str.2, i32 0, i32 0),i32 noundef 60)
@@ -263,14 +266,14 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
         std::string op_value_1 = get_operand_value(triple->m_op_1);
         std::string op_value_2 = get_operand_value_with_load(triple->m_op_2);
         std::string alignment = get_align(type_op_1);
-        switch (type_op_1)
+        switch (type_op_1.basic_type)
         {
-        case DataType::INT:{
+        case BasicType::INT:{
             std::string line = fmt::format("store i32 {}, i32* {}, align {}",op_value_2,op_value_1,alignment);
             m_code_lines.push_back(line);
             break;
         }
-        case DataType::BOOL:
+        case BasicType::BOOL:
         {
             m_triple_data[triple->m_index].m_number = m_llvm_line_index;
             std::string new_line = fmt::format("%{} = zext i1 {} to i8",m_llvm_line_index,op_value_2);
@@ -280,7 +283,7 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
             m_code_lines.push_back(line);
             break;
         }
-        case DataType::STRING:{
+        case BasicType::STRING:{
             // tutaj nie robimy decrase bo nie ma na czym
             // + 4 for counter
             if(triple->m_op_2.m_category==OperandCategory::CONSTANT){
@@ -308,14 +311,14 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
         std::string op_value_2=get_operand_value_with_load(triple->m_op_2);
         std::string alignment = get_align(type_op_1);
 
-        switch (type_op_1)
+        switch (type_op_1.basic_type)
         {
-        case DataType::INT:{
+        case BasicType::INT:{
             std::string line = fmt::format("store i32 {}, i32* {}, align {}",op_value_2,op_value_1,alignment);
             m_code_lines.push_back(line);
             break;
         }
-        case DataType::BOOL:
+        case BasicType::BOOL:
         {
             // tutaj poprawka
             m_triple_data[triple->m_index].m_number = m_llvm_line_index;
@@ -326,7 +329,7 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
             m_code_lines.push_back(line);
             break;
         }
-        case DataType::STRING:{
+        case BasicType::STRING:{
             // tu jeszcze modyfikacja dotyczaca zliczania referencji
             // + 4 for counter + 1 for the flag
             // tutaj string
@@ -355,7 +358,7 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
     case Operation::ADD:
     case Operation::SUB:
     case Operation::MUL:{
-        if(triple->m_data_type!=DataType::STRING){
+        if(triple->m_data_type!=BasicType::STRING){
             std::string op_1_val = get_operand_value_with_load(triple->m_op_1);
             std::string op_2_val = get_operand_value_with_load(triple->m_op_2);
             m_triple_data[triple->m_index].m_number = m_llvm_line_index;
@@ -403,7 +406,7 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
         break;
     }
     case Operation::RETURN:{
-        if(m_current_fn->m_return_type!=DataType::VOID)
+        if(m_current_fn->m_return_type!=BasicType::VOID)
         {
             std::string ref = get_operand_value_with_load(triple->m_op_1);
             m_code_lines.push_back(fmt::format("ret {} {}",get_data_type_name(triple->m_op_1.get_type()),ref));
@@ -419,7 +422,7 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
         Function *fn = triple->m_op_1.m_function;
         std::string argument_list = process_argument_list(triple);
         m_triple_data[triple->m_index].m_number = m_llvm_line_index;
-        if(fn->m_return_type!=DataType::VOID){
+        if(fn->m_return_type!=BasicType::VOID){
             m_code_lines.push_back(fmt::format("%{} = call noundef {} @{}({})",m_llvm_line_index,get_data_type_name(fn->m_return_type),fn->m_name,argument_list));
             increase();
         }
@@ -524,13 +527,13 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
 }
 
 std::string LLVMCodeGenerator::process_argument(Argument * arg,size_t index){
-    switch (arg->m_type)
+    switch (arg->m_type.basic_type)
     {
-    case DataType::INT:
+    case BasicType::INT:
         return fmt::format("i32 noundef %{}",index);
-    case DataType::BOOL:
+    case BasicType::BOOL:
         return fmt::format("i1 noundef zeroext %{}",index);
-    case DataType::STRING:
+    case BasicType::STRING:
         return fmt::format("i8* noundef %{}",index); 
     default:
         throw 0;
@@ -540,14 +543,14 @@ std::string LLVMCodeGenerator::process_argument(Argument * arg,size_t index){
 void LLVMCodeGenerator::collect_string_literals() {
     for(size_t i=0;i<m_intermediate_program->m_functions.size();i++){
         for(const auto &triple : m_intermediate_program->m_functions[i]->m_triples){
-            if(triple->m_op_1.m_category==OperandCategory::CONSTANT && triple->m_op_1.get_type()==DataType::STRING)
+            if(triple->m_op_1.m_category==OperandCategory::CONSTANT && triple->m_op_1.get_type()==BasicType::STRING)
                 m_string_literals.push_back(triple->m_op_1.m_constant.get_value_as_string());
 
-            if(triple->m_op_2.m_category==OperandCategory::CONSTANT && triple->m_op_2.get_type()==DataType::STRING)
+            if(triple->m_op_2.m_category==OperandCategory::CONSTANT && triple->m_op_2.get_type()==BasicType::STRING)
                 m_string_literals.push_back(triple->m_op_2.m_constant.get_value_as_string());
             
             for(auto &op : triple->m_call_args){
-                if(op.m_category==OperandCategory::CONSTANT && op.get_type()==DataType::STRING)
+                if(op.m_category==OperandCategory::CONSTANT && op.get_type()==BasicType::STRING)
                     m_string_literals.push_back(op.m_constant.get_value_as_string());
             }
         }
@@ -617,16 +620,16 @@ void LLVMCodeGenerator::generate_string_literal_declarations(){
 std::string LLVMCodeGenerator::make_alloca_string(DataType type){
 
     std::string alloc="";
-    switch (type)
+    switch (type.basic_type)
     {
-    case DataType::INT:
+    case BasicType::INT:
         alloc = fmt::format("%{} = alloca i32, align 4",m_llvm_line_index);
         break;
-    case DataType::BOOL:
+    case BasicType::BOOL:
         // w allocach zostaje i8 
         alloc = fmt::format("%{} = alloca i8, align 1",m_llvm_line_index);
         break;
-    case DataType::STRING:
+    case BasicType::STRING:
         alloc = fmt::format("%{} = alloca i8*, align 8",m_llvm_line_index);
         break;
     default:
@@ -641,19 +644,19 @@ std::string LLVMCodeGenerator::make_alloca_string(DataType type){
 // std::string LLVMCodeGenerator::make_store_string(DataType type,int from,int to){
 std::string LLVMCodeGenerator::make_store_string(Argument *arg,int from,int to){
     std::string store = "";
-    switch (arg->m_type)
+    switch (arg->m_type.basic_type)
     {
-    case DataType::INT:
+    case BasicType::INT:
         store = fmt::format("store i32 %{}, i32* %{}, align 4",from,to);
         break;
-    case DataType::BOOL:{
+    case BasicType::BOOL:{
         std::string new_line = fmt::format("%{} = zext i1 %{} to i8",m_llvm_line_index,from);
         m_code_lines.push_back(new_line);
         store = fmt::format("store i8 %{}, i8* %{}, align 1",m_llvm_line_index,to); 
         increase();
         break;
     }
-    case DataType::STRING:{
+    case BasicType::STRING:{
         // store = fmt::format("store ptr %{}, ptr %{}, align 8",from,to);
         // m_string_literals
                                                                 // type 
@@ -711,7 +714,7 @@ void LLVMCodeGenerator::process_function(Function *fn){
     }
 
     std::string fn_dec;
-    if(fn->m_return_type!=DataType::VOID)
+    if(fn->m_return_type!=BasicType::VOID)
         fn_dec=fmt::format("define dso_local noundef {} @{}({}) {{",get_data_type_name(fn->m_return_type),fn->m_name,argument_list);
     else
         fn_dec=fmt::format("define dso_local {} @{}({}) {{",get_data_type_name(fn->m_return_type),fn->m_name,argument_list);
@@ -725,11 +728,11 @@ void LLVMCodeGenerator::process_function(Function *fn){
     for(auto triple : fn->m_triples)
         process_triple(triple);
     
-    if(fn->m_return_type==DataType::VOID && fn->m_triples.size()==0)
+    if(fn->m_return_type==BasicType::VOID && fn->m_triples.size()==0)
         m_code_lines.push_back("ret void");
-    else if(fn->m_return_type==DataType::VOID && fn->m_triples.back()->m_operation!=Operation::RETURN)
+    else if(fn->m_return_type==BasicType::VOID && fn->m_triples.back()->m_operation!=Operation::RETURN)
         m_code_lines.push_back("ret void");
-    else if(fn->m_return_type==DataType::INT && m_code_lines.back().substr(0,5)=="Label")
+    else if(fn->m_return_type==BasicType::INT && m_code_lines.back().substr(0,5)=="Label")
         m_code_lines.push_back("ret i32 0");
 
     m_code_lines.push_back("}");

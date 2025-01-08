@@ -49,6 +49,9 @@ While.     Stmt ::= "while" "(" Expr ")" Stmt ;
 SExp.      Stmt ::= Expr  ";" ;
 
 -- Types ---------------------------------------------------
+-- Arrays --------------------------------------------------
+
+Array.     Type ::= Type "[]";
 
 Int.       Type ::= "int" ;
 
@@ -71,6 +74,8 @@ ELitInt.   Expr6 ::= Integer ;
 ELitTrue.  Expr6 ::= "true" ;
 
 ELitFalse. Expr6 ::= "false" ;
+-- added -----
+ArrAcc.    Expr6 ::= Ident "[" Expr "]" ;
 
 EApp.      Expr6 ::= Ident "(" [Expr] ")" ;
 
@@ -93,6 +98,10 @@ EOr.       Expr ::= Expr1 "||" Expr ;
 coercions  Expr 6 ;
 
 separator  Expr "," ;
+
+----Arrays--------------------------------------------------
+
+NewArray.  Expr ::= "new" Type "[" Expr "]" ;
 
 -- operators -----------------------------------------------
 

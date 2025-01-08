@@ -21,20 +21,23 @@ class IntermediateProgramPrinter{
 public:
 
   void print_constant(const Constant &constant){
-    switch (constant.m_type)
-    {
-    case DataType::INT:
-      std::cout<<"INT("<<constant.u.integer<<") ";
-      break;
-    case DataType::BOOL:
-      std::cout<<"BOOL("<<constant.u.boolean<<")";
-      break;
-    case DataType::STRING:
-      std::cout<<"STRING("<<constant.u.str<<")";
-      break;
-    default:
-      break;
-    }
+    // data_type_to_string(constant.m_type);
+    // constant.get_value_as_string();
+    // switch (constant.m_type)
+    // {
+    // case BasicType::INT:
+    //   std::cout<<"INT("<<constant.u.integer<<") ";
+    //   break;
+    // case DataType::BOOL:
+    //   std::cout<<"BOOL("<<constant.u.boolean<<")";
+    //   break;
+    // case DataType::STRING:
+    //   std::cout<<"STRING("<<constant.u.str<<")";
+    //   break;
+    // default:
+    //   break;
+    // }
+    std::cout<<data_type_to_string(constant.m_type)+"("+constant.get_value_as_string()+")";
   }
 
   void print_operand(const Operand &operand){
@@ -124,6 +127,10 @@ public:
         return "INC";
       case Operation::DEC:
         return "DEC";
+      case Operation::NEW_ARRAY:
+        return "NEW_ARRAY";
+      case Operation::ACCESS_ARRAY:
+        return "ACCESS_ARRAY";
       default:
         throw 1;
       }
