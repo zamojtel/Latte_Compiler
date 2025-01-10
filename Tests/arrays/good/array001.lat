@@ -1,0 +1,12 @@
+
+
+int main(){
+    int [] t = new int [10];
+    t[0]=100;
+    t[1]=200;
+
+    printInt(t[0]);
+    printInt(t[1]);
+
+    return 0;
+}

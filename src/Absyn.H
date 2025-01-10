@@ -24,6 +24,7 @@ typedef std::string Ident;
 class Program;
 class TopDef;
 class Arg;
+class ClassDecl;
 class Block;
 class Stmt;
 class Item;
@@ -34,7 +35,11 @@ class MulOp;
 class RelOp;
 class Prog;
 class FnDef;
+class ClassDef;
+class ClassExtDef;
 class Ar;
+class MethodDef;
+class FieldDef;
 class Blk;
 class Empty;
 class BStmt;
@@ -50,7 +55,9 @@ class Cond;
 class CondElse;
 class While;
 class SExp;
+class For;
 class Array;
+class Class;
 class Int;
 class Str;
 class Bool;
@@ -60,9 +67,13 @@ class EVar;
 class ELitInt;
 class ELitTrue;
 class ELitFalse;
+class ELitNull;
 class ArrAcc;
+class EClass;
+class EMethod;
 class EApp;
 class EString;
+class ENull;
 class Neg;
 class Not;
 class EMul;
@@ -71,6 +82,7 @@ class ERel;
 class EAnd;
 class EOr;
 class NewArray;
+class MemberAcc;
 class Plus;
 class Minus;
 class Times;
@@ -84,6 +96,7 @@ class EQU;
 class NE;
 class ListTopDef;
 class ListArg;
+class ListClassDecl;
 class ListStmt;
 class ListItem;
 class ListType;
@@ -98,6 +111,7 @@ public:
   virtual void visitProgram(Program *p) = 0;
   virtual void visitTopDef(TopDef *p) = 0;
   virtual void visitArg(Arg *p) = 0;
+  virtual void visitClassDecl(ClassDecl *p) = 0;
   virtual void visitBlock(Block *p) = 0;
   virtual void visitStmt(Stmt *p) = 0;
   virtual void visitItem(Item *p) = 0;
@@ -108,7 +122,11 @@ public:
   virtual void visitRelOp(RelOp *p) = 0;
   virtual void visitProg(Prog *p) = 0;
   virtual void visitFnDef(FnDef *p) = 0;
+  virtual void visitClassDef(ClassDef *p) = 0;
+  virtual void visitClassExtDef(ClassExtDef *p) = 0;
   virtual void visitAr(Ar *p) = 0;
+  virtual void visitMethodDef(MethodDef *p) = 0;
+  virtual void visitFieldDef(FieldDef *p) = 0;
   virtual void visitBlk(Blk *p) = 0;
   virtual void visitEmpty(Empty *p) = 0;
   virtual void visitBStmt(BStmt *p) = 0;
@@ -124,7 +142,9 @@ public:
   virtual void visitCondElse(CondElse *p) = 0;
   virtual void visitWhile(While *p) = 0;
   virtual void visitSExp(SExp *p) = 0;
+  virtual void visitFor(For *p) = 0;
   virtual void visitArray(Array *p) = 0;
+  virtual void visitClass(Class *p) = 0;
   virtual void visitInt(Int *p) = 0;
   virtual void visitStr(Str *p) = 0;
   virtual void visitBool(Bool *p) = 0;
@@ -134,9 +154,13 @@ public:
   virtual void visitELitInt(ELitInt *p) = 0;
   virtual void visitELitTrue(ELitTrue *p) = 0;
   virtual void visitELitFalse(ELitFalse *p) = 0;
+  virtual void visitELitNull(ELitNull *p) = 0;
   virtual void visitArrAcc(ArrAcc *p) = 0;
+  virtual void visitEClass(EClass *p) = 0;
+  virtual void visitEMethod(EMethod *p) = 0;
   virtual void visitEApp(EApp *p) = 0;
   virtual void visitEString(EString *p) = 0;
+  virtual void visitENull(ENull *p) = 0;
   virtual void visitNeg(Neg *p) = 0;
   virtual void visitNot(Not *p) = 0;
   virtual void visitEMul(EMul *p) = 0;
@@ -145,6 +169,7 @@ public:
   virtual void visitEAnd(EAnd *p) = 0;
   virtual void visitEOr(EOr *p) = 0;
   virtual void visitNewArray(NewArray *p) = 0;
+  virtual void visitMemberAcc(MemberAcc *p) = 0;
   virtual void visitPlus(Plus *p) = 0;
   virtual void visitMinus(Minus *p) = 0;
   virtual void visitTimes(Times *p) = 0;
@@ -158,6 +183,7 @@ public:
   virtual void visitNE(NE *p) = 0;
   virtual void visitListTopDef(ListTopDef *p) = 0;
   virtual void visitListArg(ListArg *p) = 0;
+  virtual void visitListClassDecl(ListClassDecl *p) = 0;
   virtual void visitListStmt(ListStmt *p) = 0;
   virtual void visitListItem(ListItem *p) = 0;
   virtual void visitListType(ListType *p) = 0;
@@ -201,6 +227,13 @@ class Arg : public Visitable
 {
 public:
   virtual Arg *clone() const = 0;
+  int line_number, char_number;
+};
+
+class ClassDecl : public Visitable
+{
+public:
+  virtual ClassDecl *clone() const = 0;
   int line_number, char_number;
 };
 
@@ -293,6 +326,37 @@ public:
   void swap(FnDef &);
 };
 
+class ClassDef : public TopDef
+{
+public:
+  Ident ident_;
+  ListClassDecl *listclassdecl_;
+
+  ClassDef(const ClassDef &);
+  ClassDef &operator=(const ClassDef &);
+  ClassDef(Ident p1, ListClassDecl *p2);
+  ~ClassDef();
+  virtual void accept(Visitor *v);
+  virtual ClassDef *clone() const;
+  void swap(ClassDef &);
+};
+
+class ClassExtDef : public TopDef
+{
+public:
+  Ident ident_1;
+  Ident ident_2;
+  ListClassDecl *listclassdecl_;
+
+  ClassExtDef(const ClassExtDef &);
+  ClassExtDef &operator=(const ClassExtDef &);
+  ClassExtDef(Ident p1, Ident p2, ListClassDecl *p3);
+  ~ClassExtDef();
+  virtual void accept(Visitor *v);
+  virtual ClassExtDef *clone() const;
+  void swap(ClassExtDef &);
+};
+
 class Ar : public Arg
 {
 public:
@@ -306,6 +370,38 @@ public:
   virtual void accept(Visitor *v);
   virtual Ar *clone() const;
   void swap(Ar &);
+};
+
+class MethodDef : public ClassDecl
+{
+public:
+  Type *type_;
+  Ident ident_;
+  ListArg *listarg_;
+  Block *block_;
+
+  MethodDef(const MethodDef &);
+  MethodDef &operator=(const MethodDef &);
+  MethodDef(Type *p1, Ident p2, ListArg *p3, Block *p4);
+  ~MethodDef();
+  virtual void accept(Visitor *v);
+  virtual MethodDef *clone() const;
+  void swap(MethodDef &);
+};
+
+class FieldDef : public ClassDecl
+{
+public:
+  Type *type_;
+  Ident ident_;
+
+  FieldDef(const FieldDef &);
+  FieldDef &operator=(const FieldDef &);
+  FieldDef(Type *p1, Ident p2);
+  ~FieldDef();
+  virtual void accept(Visitor *v);
+  virtual FieldDef *clone() const;
+  void swap(FieldDef &);
 };
 
 class Blk : public Block
@@ -367,12 +463,12 @@ public:
 class Ass : public Stmt
 {
 public:
-  Ident ident_;
-  Expr *expr_;
+  Expr *expr_1;
+  Expr *expr_2;
 
   Ass(const Ass &);
   Ass &operator=(const Ass &);
-  Ass(Ident p1, Expr *p2);
+  Ass(Expr *p1, Expr *p2);
   ~Ass();
   virtual void accept(Visitor *v);
   virtual Ass *clone() const;
@@ -382,11 +478,11 @@ public:
 class Incr : public Stmt
 {
 public:
-  Ident ident_;
+  Expr *expr_;
 
   Incr(const Incr &);
   Incr &operator=(const Incr &);
-  Incr(Ident p1);
+  Incr(Expr *p1);
   ~Incr();
   virtual void accept(Visitor *v);
   virtual Incr *clone() const;
@@ -396,11 +492,11 @@ public:
 class Decr : public Stmt
 {
 public:
-  Ident ident_;
+  Expr *expr_;
 
   Decr(const Decr &);
   Decr &operator=(const Decr &);
-  Decr(Ident p1);
+  Decr(Expr *p1);
   ~Decr();
   virtual void accept(Visitor *v);
   virtual Decr *clone() const;
@@ -494,6 +590,23 @@ public:
   void swap(SExp &);
 };
 
+class For : public Stmt
+{
+public:
+  Type *type_;
+  Ident ident_;
+  Expr *expr_;
+  Stmt *stmt_;
+
+  For(const For &);
+  For &operator=(const For &);
+  For(Type *p1, Ident p2, Expr *p3, Stmt *p4);
+  ~For();
+  virtual void accept(Visitor *v);
+  virtual For *clone() const;
+  void swap(For &);
+};
+
 class NoInit : public Item
 {
 public:
@@ -535,6 +648,20 @@ public:
   virtual void accept(Visitor *v);
   virtual Array *clone() const;
   void swap(Array &);
+};
+
+class Class : public Type
+{
+public:
+  Ident ident_;
+
+  Class(const Class &);
+  Class &operator=(const Class &);
+  Class(Ident p1);
+  ~Class();
+  virtual void accept(Visitor *v);
+  virtual Class *clone() const;
+  void swap(Class &);
 };
 
 class Int : public Type
@@ -658,19 +785,62 @@ public:
   void swap(ELitFalse &);
 };
 
+class ELitNull : public Expr
+{
+public:
+
+  ELitNull(const ELitNull &);
+  ELitNull &operator=(const ELitNull &);
+  ELitNull();
+  ~ELitNull();
+  virtual void accept(Visitor *v);
+  virtual ELitNull *clone() const;
+  void swap(ELitNull &);
+};
+
 class ArrAcc : public Expr
 {
 public:
-  Ident ident_;
-  Expr *expr_;
+  Expr *expr_1;
+  Expr *expr_2;
 
   ArrAcc(const ArrAcc &);
   ArrAcc &operator=(const ArrAcc &);
-  ArrAcc(Ident p1, Expr *p2);
+  ArrAcc(Expr *p1, Expr *p2);
   ~ArrAcc();
   virtual void accept(Visitor *v);
   virtual ArrAcc *clone() const;
   void swap(ArrAcc &);
+};
+
+class EClass : public Expr
+{
+public:
+  Ident ident_;
+
+  EClass(const EClass &);
+  EClass &operator=(const EClass &);
+  EClass(Ident p1);
+  ~EClass();
+  virtual void accept(Visitor *v);
+  virtual EClass *clone() const;
+  void swap(EClass &);
+};
+
+class EMethod : public Expr
+{
+public:
+  Expr *expr_;
+  Ident ident_;
+  ListExpr *listexpr_;
+
+  EMethod(const EMethod &);
+  EMethod &operator=(const EMethod &);
+  EMethod(Expr *p1, Ident p2, ListExpr *p3);
+  ~EMethod();
+  virtual void accept(Visitor *v);
+  virtual EMethod *clone() const;
+  void swap(EMethod &);
 };
 
 class EApp : public Expr
@@ -700,6 +870,20 @@ public:
   virtual void accept(Visitor *v);
   virtual EString *clone() const;
   void swap(EString &);
+};
+
+class ENull : public Expr
+{
+public:
+  Ident ident_;
+
+  ENull(const ENull &);
+  ENull &operator=(const ENull &);
+  ENull(Ident p1);
+  ~ENull();
+  virtual void accept(Visitor *v);
+  virtual ENull *clone() const;
+  void swap(ENull &);
 };
 
 class Neg : public Expr
@@ -821,6 +1005,21 @@ public:
   virtual void accept(Visitor *v);
   virtual NewArray *clone() const;
   void swap(NewArray &);
+};
+
+class MemberAcc : public Expr
+{
+public:
+  Expr *expr_;
+  Ident ident_;
+
+  MemberAcc(const MemberAcc &);
+  MemberAcc &operator=(const MemberAcc &);
+  MemberAcc(Expr *p1, Ident p2);
+  ~MemberAcc();
+  virtual void accept(Visitor *v);
+  virtual MemberAcc *clone() const;
+  void swap(MemberAcc &);
 };
 
 class Plus : public AddOp
@@ -985,6 +1184,15 @@ public:
 };
 
 ListArg* consListArg(Arg* x, ListArg* xs);
+
+class ListClassDecl : public Visitable, public std::vector<ClassDecl*>
+{
+public:
+  virtual void accept(Visitor *v);
+  virtual ListClassDecl *clone() const;
+};
+
+ListClassDecl* consListClassDecl(ClassDecl* x, ListClassDecl* xs);
 
 class ListStmt : public Visitable, public std::vector<Stmt*>
 {

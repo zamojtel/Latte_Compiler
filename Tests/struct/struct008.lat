@@ -1,0 +1,16 @@
+class Character{
+    string name;
+    int age;
+}
+
+int main(){
+    Character []characters = new Character[1];
+    characters[0] = new Character;
+    characters[0].name = "John";
+    characters[0].age = 43;
+
+    printString(characters[0].name);
+    printInt(characters[0].age);
+
+    return 0;
+}

@@ -1,0 +1,20 @@
+class A{
+    int x;
+}
+
+class B extends A{
+    int y;
+    void foo(){
+        printString("asd");
+    }
+}
+
+int main(){
+    B b = new B;
+    b.x=10;
+    b.y=20;
+
+    printInt(b.x);
+    printInt(b.y);
+    return 0;
+}

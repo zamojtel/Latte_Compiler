@@ -1,0 +1,13 @@
+
+int main(){
+    string a ="abc"; 
+    string b ="abc";
+
+    if(a==b){
+        printString("Equal");
+    }else{
+        printString("Not Equal");
+    }
+
+    return 0;
+}

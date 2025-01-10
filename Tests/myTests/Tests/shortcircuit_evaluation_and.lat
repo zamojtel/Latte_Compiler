@@ -1,0 +1,13 @@
+
+boolean cond(boolean var,string x){
+    printString(x);
+    return var;
+}
+
+int main(){
+    if(cond(false,"1") && cond(true,"2")){
+        printString("No");
+    }
+    printString("Yes");
+    return 0;
+}

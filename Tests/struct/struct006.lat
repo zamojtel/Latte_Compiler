@@ -1,0 +1,21 @@
+class Dice{
+    int m_faces;
+}
+
+int main(){
+
+    Dice [] dices = new Dice[3];
+    dices[0] = new Dice;
+    dices[1] = new Dice;
+    dices[2] = new Dice;
+    
+    dices[0].m_faces=6;
+    dices[1].m_faces=2;
+    dices[2].m_faces=3;
+
+    for(Dice d : dices){
+        printInt(d.m_faces);
+    }
+    
+    return 0;
+}

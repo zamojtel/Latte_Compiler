@@ -1,3 +1,11 @@
+
+bool IntermediateProgram::has_class(const std::string & cl_name) const{
+  for(auto cl : m_classes ){
+    if(cl->m_name == cl_name)
+      return true;
+  }
+  return false;
+}
 bool IntermediateProgram::has_function(const std::string & fn_name) const{
   for(size_t i=0;i<m_functions.size();i++){
     if(m_functions[i]->m_name == fn_name){
@@ -12,6 +20,15 @@ Function* IntermediateProgram::get_function(const std::string &name) const{
   for(size_t i=0;i<m_functions.size();i++){
     if(m_functions[i]->m_name==name)
       return m_functions[i];
+  }
+  
+  return nullptr;
+}
+
+MyClass* IntermediateProgram::get_class(const std::string &name) const{
+  for(size_t i=0;i<m_classes.size();i++){
+    if(m_classes[i]->m_name==name)
+      return m_classes[i];
   }
   
   return nullptr;
@@ -60,9 +77,8 @@ bool IntermediateProgram::check_all_returns(Function *fn,size_t start){
         }
       }
 
-      // here we'll jump or not
       if(jump_possible){
-        // its enough if one path has return at the end
+        // its enough if one path has a return statement at the end
         size_t index;
         if(fn->m_triples[i]->m_operation==Operation::JMP)
           index = fn->m_triples[i]->m_op_1.m_label->m_jump_to->m_index;

@@ -1,0 +1,17 @@
+void printBool(boolean b) {
+  if (b) {
+    printString("true");
+    return;
+  } else {
+    printString("false");
+    return;
+ }
+}
+
+int main(){
+    boolean [] t = new boolean [2];
+    printBool(t[0]);
+    t[1]=true;
+    printBool(t[1]);
+    return 0;
+}

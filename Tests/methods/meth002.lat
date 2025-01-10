@@ -1,0 +1,14 @@
+class Person{
+    string name;
+    void greet(){
+        printString("Hello! My name is "+name);
+    }
+}
+
+int main(){
+    Person p = new Person;
+    p.name = "John";
+    p.greet();
+    
+    return 0;
+}

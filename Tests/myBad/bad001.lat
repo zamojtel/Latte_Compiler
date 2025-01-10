@@ -1,4 +1,0 @@
-int main(){
-    boolean b = !1;
-    return 1;
-}

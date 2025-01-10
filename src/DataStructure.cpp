@@ -1,38 +1,104 @@
 #include "DataStructure.h"
 
-std::string data_type_to_string(const DataType &type){
-    std::string basic_type;
-    switch (type.basic_type)
-    {
-    case BasicType::INT:
-        basic_type= "int";
-        break;
-    case BasicType::BOOL:
-        basic_type= "bool";
-        break;
-    case BasicType::STRING:
-        basic_type= "string";
-        break;
-    case BasicType::VOID:
-        basic_type= "void";
-        break;
-    case BasicType::ERROR:
-        basic_type= "error";
-        break;
-    case BasicType::NULLPTR:
-        basic_type= "nullptr";
-        break;
-    default:
-        throw 0;;
+void MyClass::add_method(Function *fn){
+    m_methods.push_back(fn);
+}
+
+bool MyClass::has_method(const std::string &name) const {
+    for(auto *m : m_methods){
+        if(m->m_name==name)
+            return true;
     }
 
-    std::string arr="";
-    for(int i =0;i<type.dimensions;i++)
-        arr+="[]";
-    
-    std::string final_type = basic_type+arr;
+    return false;
+}
 
-    return final_type;
+Function *MyClass::get_method(const std::string &name) const{
+    for(auto *m : m_methods){
+        if(m->m_name == name)
+            return m;
+    }
+    
+    return nullptr;
+}
+
+
+Field *MyClass::get_field(const std::string &name) const{
+    for(size_t i=0;i<m_fields.size();i++){
+        if(m_fields[i]->m_name==name)
+            return m_fields[i];
+    }
+
+    return nullptr;
+}
+
+Field *MyClass::get_field_considering_inheritance(const std::string &name) const{
+    Field *f = get_field(name);
+    if(f)
+        return f;
+
+    return m_base_class ? m_base_class->get_field_considering_inheritance(name) : nullptr;
+}
+
+bool MyClass::inherits(MyClass * cl) const {
+    MyClass *current_cl = m_base_class;
+    while(current_cl!=nullptr){
+        if(current_cl==cl)
+            return true;
+        current_cl =current_cl->m_base_class;
+    }
+    
+    return false;
+}
+
+Function *MyClass::get_method_considering_inheritance(const std::string &name) const {
+    Function * method = get_method(name);
+    if(method)
+        return method;
+
+    return m_base_class ? m_base_class->get_method_considering_inheritance(name) : nullptr;
+}
+
+void MyClass::add_field(DataType type,const std::string &name){
+    m_fields.push_back(new Field {type,name,this,m_fields.size()});
+}
+
+std::string data_type_to_string(const DataType &type){
+    std::string basic_type;
+    if(type.category==DataTypeCategory::BASIC){
+        switch (type.basic_type)
+        {
+        case BasicType::INT:
+            basic_type= "int";
+            break;
+        case BasicType::BOOL:
+            basic_type= "bool";
+            break;
+        case BasicType::STRING:
+            basic_type= "string";
+            break;
+        case BasicType::VOID:
+            basic_type= "void";
+            break;
+        case BasicType::ERROR:
+            basic_type= "error";
+            break;
+        case BasicType::NULLPTR:
+            basic_type= "nullptr";
+            break;
+        default:
+            throw std::runtime_error("data_type_to_string");
+        }
+        std::string arr="";
+        for(int i =0;i<type.dimensions;i++)
+            arr+="[]";
+        
+        std::string final_type = basic_type+arr;
+
+        return final_type;
+    }else{
+        return type.class_type->m_name;
+    }
 }
 
 Constant::Constant(nullptr_t ptr):m_type{BasicType::NULLPTR}{
@@ -47,12 +113,11 @@ Constant::Constant(bool value):m_type{BasicType::BOOL}{
 }
 
 Constant::Constant(const std::string &s):m_type{BasicType::STRING}{
-    new (&u.str) std::string(s); // where and what  
+    new (&u.str) std::string(s);
     u.str=s;
 }
 
 Constant& Constant::operator=(const Constant &other){
-    // INT,BOOL,STRING,
     if(this == &other)
         return *this;
     if(this->m_type==BasicType::STRING)
@@ -136,6 +201,7 @@ void Function::add_label(Label *label){
 }
 
 DataType Operand::get_type() const{
+    
     switch (m_category)
     {
     case OperandCategory::CONSTANT:
@@ -152,10 +218,12 @@ DataType Operand::get_type() const{
         return BasicType::VOID;
     case OperandCategory::ARGUMENT:
         return m_argument->m_type;
+    case OperandCategory::FIELD:
+        return m_field->m_type;
     case OperandCategory::ERROR:
         return BasicType::ERROR;
     default:
-        throw 0;
+        throw std::runtime_error("Operand::get_type()");
     }
 }
 
@@ -174,6 +242,8 @@ std::string Operand::get_category_as_string() const{
         return "empty";
     case OperandCategory::FUNCTION:
         return "function";
+    case OperandCategory::FIELD:
+        return "field";
     default:
         return "error";
     }
@@ -191,15 +261,18 @@ bool SymbolTable::add(const std::string &entry_name,const SymbolTableEntry &entr
     if(m_entries.back().count(entry_name)>0){
         return false;
     }
-
+    
     m_entries.back()[entry_name]=entry;
     return true;
 }
 
-// to-do
+void SymbolTable::add_override(const std::string &entry_name,const SymbolTableEntry &entry){
+    m_entries.back()[entry_name]=entry;
+}
+
+// todo
 // std::optional 
 const SymbolTableEntry* SymbolTable::get_entry(const std::string &name){
-    // we go level by level 
     for(size_t i=m_entries.size();i-->0;){
         if(m_entries[i].count(name))
             return &m_entries[i].at(name);

@@ -1,0 +1,54 @@
+
+// shadowing of the variable
+class Parent {
+    int x; // variable to be shadowed
+
+    void setX(int val) {
+        x = val;
+    }
+
+    void printX() {
+        printString("Parent x:");
+        printInt(x);
+    }
+}
+
+class Child extends Parent {
+    int x; // this shadows the parent’s variable x
+
+    void setX(int val) {
+        x = val; // this sets the child’s x
+    }
+
+    void printX() {
+        printString("Child x:");
+        printInt(x);
+    }
+}
+
+int main() {
+    Parent p = new Parent;
+    Child c = new Child;
+    // trzeba naprawic defaultowa inicjalizacje
+    p.setX(10);
+    p.printX(); // Output: Parent x: 10
+    //Parent x:
+    //10
+    
+    c.setX(20);
+    c.printX();
+    //Child x:
+    //20
+
+    // Demonstrate that the parent’s x and child’s x are separate
+    c.setX(30);
+    p.printX(); // Output: Parent x: 10 (unchanged)
+    c.printX(); // Output: Child x: 30
+    //Parent x:
+    //10
+    //child x:
+    //30
+    
+
+    return 0;
+}

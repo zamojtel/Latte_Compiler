@@ -1,0 +1,16 @@
+class Dice{
+    int faces;
+}
+
+class List{
+    int next;
+    List list;
+}
+
+int main(){
+    Dice d = new Dice;
+    d.faces = 10;
+    printInt(d.faces);
+
+    return 0;
+}

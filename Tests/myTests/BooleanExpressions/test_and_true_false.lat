@@ -1,0 +1,9 @@
+int main(){
+    if (true && false) {
+        printString("Hello");
+    } else {
+        printString("there");
+    }
+
+    return 0;
+}

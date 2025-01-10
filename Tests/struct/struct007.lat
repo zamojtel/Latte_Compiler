@@ -1,0 +1,25 @@
+void printBool(boolean b) {
+  if (!b) {
+    printString("false");
+  } else {
+    printString("true");
+ }
+ return;
+}
+
+class Dice{
+  int m_faces;
+  boolean m_fair;
+}
+
+int main(){
+    Dice []dices = new Dice[1];
+    dices[0] = new Dice; 
+    dices[0].m_faces = 123;
+    dices[0].m_fair = true;
+
+    printInt(dices[0].m_faces);
+    printBool(dices[0].m_fair);
+    
+    return 0;
+}

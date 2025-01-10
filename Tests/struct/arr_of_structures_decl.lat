@@ -1,0 +1,9 @@
+class Dice{
+    int m_faces;
+}
+
+int main(){
+    Dice [] dices = new Dice[3];
+
+    return 0;
+}

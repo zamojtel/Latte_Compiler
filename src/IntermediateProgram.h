@@ -5,11 +5,14 @@ class IntermediateProgram{
 private:
 public:
   std::vector<Function*> m_functions;
+  std::vector<MyClass*> m_classes;
   IntermediateProgram(){}
   bool check_all_returns(Function *fn,size_t start);
   bool find_path_without_return(Function *fn,size_t start);
   bool has_function(const std::string & fn_name) const;
+  bool has_class(const std::string & cl_name) const;
   Function* get_function(const std::string &name) const;
+  MyClass* get_class(const std::string &name) const;
   ~IntermediateProgram(){
     for(auto *fn: m_functions)
       delete fn;
@@ -21,22 +24,6 @@ class IntermediateProgramPrinter{
 public:
 
   void print_constant(const Constant &constant){
-    // data_type_to_string(constant.m_type);
-    // constant.get_value_as_string();
-    // switch (constant.m_type)
-    // {
-    // case BasicType::INT:
-    //   std::cout<<"INT("<<constant.u.integer<<") ";
-    //   break;
-    // case DataType::BOOL:
-    //   std::cout<<"BOOL("<<constant.u.boolean<<")";
-    //   break;
-    // case DataType::STRING:
-    //   std::cout<<"STRING("<<constant.u.str<<")";
-    //   break;
-    // default:
-    //   break;
-    // }
     std::cout<<data_type_to_string(constant.m_type)+"("+constant.get_value_as_string()+")";
   }
 
@@ -67,11 +54,14 @@ public:
       case OperandCategory::ARGUMENT:
         std::cout<<operand.m_argument->m_identifier<<" ";
         break;
+      case OperandCategory::FIELD:
+        std::cout<<operand.m_field->m_name<<" ";
+        break;
       case OperandCategory::ERROR:
         std::cout<<"error ";
         break;
       default:
-        throw 0;
+        throw ;
         break;
     }
   }
@@ -91,10 +81,6 @@ public:
         return "SUB";
       case Operation::DIV:
         return "DIV";
-      case Operation::AND:
-        return "AND";
-      case Operation::OR:
-        return "OR";
       case Operation::LTH:
         return "LTH";
       case Operation::LE:
@@ -131,6 +117,12 @@ public:
         return "NEW_ARRAY";
       case Operation::ACCESS_ARRAY:
         return "ACCESS_ARRAY";
+      case Operation::ARRAY_LENGTH:
+        return "ARRAY_LENGTH";
+      case Operation::NEW_INSTANCE:
+        return "NEW_INSTANCE";
+      case Operation::MEMEBER_ACCESS:
+        return "MEMEBER_ACCESS";
       default:
         throw 1;
       }

@@ -67,34 +67,40 @@ extern int latte_cpp_debug;
     _COMMA = 268,                  /* _COMMA  */
     _MINUS = 269,                  /* _MINUS  */
     _DMINUS = 270,                 /* _DMINUS  */
-    _SLASH = 271,                  /* _SLASH  */
-    _SEMI = 272,                   /* _SEMI  */
-    _LT = 273,                     /* _LT  */
-    _LDARROW = 274,                /* _LDARROW  */
-    _EQ = 275,                     /* _EQ  */
-    _DEQ = 276,                    /* _DEQ  */
-    _GT = 277,                     /* _GT  */
-    _GTEQ = 278,                   /* _GTEQ  */
-    _LBRACK = 279,                 /* _LBRACK  */
-    _EMPTYBRACK = 280,             /* _EMPTYBRACK  */
-    _RBRACK = 281,                 /* _RBRACK  */
-    _KW_boolean = 282,             /* _KW_boolean  */
-    _KW_else = 283,                /* _KW_else  */
-    _KW_false = 284,               /* _KW_false  */
-    _KW_if = 285,                  /* _KW_if  */
-    _KW_int = 286,                 /* _KW_int  */
-    _KW_new = 287,                 /* _KW_new  */
-    _KW_return = 288,              /* _KW_return  */
-    _KW_string = 289,              /* _KW_string  */
-    _KW_true = 290,                /* _KW_true  */
-    _KW_void = 291,                /* _KW_void  */
-    _KW_while = 292,               /* _KW_while  */
-    _LBRACE = 293,                 /* _LBRACE  */
-    _DBAR = 294,                   /* _DBAR  */
-    _RBRACE = 295,                 /* _RBRACE  */
-    _STRING_ = 296,                /* _STRING_  */
-    _INTEGER_ = 297,               /* _INTEGER_  */
-    _IDENT_ = 298                  /* _IDENT_  */
+    _DOT = 271,                    /* _DOT  */
+    _SLASH = 272,                  /* _SLASH  */
+    _COLON = 273,                  /* _COLON  */
+    _SEMI = 274,                   /* _SEMI  */
+    _LT = 275,                     /* _LT  */
+    _LDARROW = 276,                /* _LDARROW  */
+    _EQ = 277,                     /* _EQ  */
+    _DEQ = 278,                    /* _DEQ  */
+    _GT = 279,                     /* _GT  */
+    _GTEQ = 280,                   /* _GTEQ  */
+    _LBRACK = 281,                 /* _LBRACK  */
+    _EMPTYBRACK = 282,             /* _EMPTYBRACK  */
+    _RBRACK = 283,                 /* _RBRACK  */
+    _KW_boolean = 284,             /* _KW_boolean  */
+    _KW_class = 285,               /* _KW_class  */
+    _KW_else = 286,                /* _KW_else  */
+    _KW_extends = 287,             /* _KW_extends  */
+    _KW_false = 288,               /* _KW_false  */
+    _KW_for = 289,                 /* _KW_for  */
+    _KW_if = 290,                  /* _KW_if  */
+    _KW_int = 291,                 /* _KW_int  */
+    _KW_new = 292,                 /* _KW_new  */
+    _KW_null = 293,                /* _KW_null  */
+    _KW_return = 294,              /* _KW_return  */
+    _KW_string = 295,              /* _KW_string  */
+    _KW_true = 296,                /* _KW_true  */
+    _KW_void = 297,                /* _KW_void  */
+    _KW_while = 298,               /* _KW_while  */
+    _LBRACE = 299,                 /* _LBRACE  */
+    _DBAR = 300,                   /* _DBAR  */
+    _RBRACE = 301,                 /* _RBRACE  */
+    _STRING_ = 302,                /* _STRING_  */
+    _INTEGER_ = 303,               /* _INTEGER_  */
+    _IDENT_ = 304                  /* _IDENT_  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -114,6 +120,8 @@ union YYSTYPE
   ListTopDef* listtopdef_;
   Arg* arg_;
   ListArg* listarg_;
+  ClassDecl* classdecl_;
+  ListClassDecl* listclassdecl_;
   Block* block_;
   ListStmt* liststmt_;
   Stmt* stmt_;
@@ -127,7 +135,7 @@ union YYSTYPE
   MulOp* mulop_;
   RelOp* relop_;
 
-#line 131 "Bison.H"
+#line 139 "Bison.H"
 
 };
 typedef union YYSTYPE YYSTYPE;

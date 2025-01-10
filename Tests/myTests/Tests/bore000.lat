@@ -1,0 +1,13 @@
+int main(){
+    string str1 = "abc";
+    string str2 = "xyz";
+    string str3 = str1+str2;
+    printString(str3); // abcxyz
+    printString("Mateusz "+"Damian"); // Mateusz Damian
+    string x = "cos";
+    printString(x+" Los"); // cos Los
+    string y = "Ktos";
+    printString("Cos "+y); // Cos Ktos
+    printString(("abc"+" "+"xyz ")+x); // abc xyz cos
+    return 0;
+}

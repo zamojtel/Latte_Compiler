@@ -83,60 +83,31 @@ def collect_all_files(path : str):
 if __name__ == '__main__':
     cwd = os.getcwd()
 
-    # input_file_names_ourBad =  collect_all_files(f'{cwd}/Tests/myBad')
-
-    # input_file_names_good = collect_all_files(f'{cwd}/Tests/good') 
-    # input_dir_good = f'{cwd}/Tests/good'
-    # output_dir_good = f'{cwd}/Tests/goodOutputs'
-
-    # os.system(f'mkdir -p {cwd}/Tests/goodOutputs')
-
-    # Test All provided basic tests:
     print("BadBasic tests:")
     input_file_names_bad = collect_all_files(f'{cwd}/Tests/bad/general')
     input_dir_bad = f'{cwd}/Tests/bad/general'
     output_dir_bad = f'{cwd}/Tests/badOutputs/general'
-
     os.system(f'mkdir -p {output_dir_bad}')
     check_bad_tests(input_file_names_bad,input_dir_bad,output_dir_bad)
 
-    # Test All bad/semantic tests: 
     print("BadSemantic tests:")
     input_file_names_bad_semantic = collect_all_files(f'{cwd}/Tests/bad/semantic')
     input_dir_bad_semantic = f'{cwd}/Tests/bad/semantic'
     output_dir_bad_semantic = f'{cwd}/Tests/badOutputs/semantic'
-
     os.system(f'mkdir -p {output_dir_bad_semantic}')
     check_bad_tests(input_file_names_bad_semantic,input_dir_bad_semantic,output_dir_bad_semantic)
-    # check_bad_tests(["declaration_in_if_condition"],input_dir_bad_semantic,output_dir_bad_semantic)
 
-    # Test bad/myBadTests tests:
     print("myBadTests tests:")
     input_file_names_bad_myBadTests = collect_all_files(f'{cwd}/Tests/bad/myBadTests')
     input_dir_bad_myBadTests = f'{cwd}/Tests/bad/myBadTests'
     output_dir_bad_myBadTests = f'{cwd}/Tests/badOutputs/myBadTests'
-
     os.system(f'mkdir -p {output_dir_bad_myBadTests}')
     check_bad_tests(input_file_names_bad_myBadTests,input_dir_bad_myBadTests,output_dir_bad_myBadTests)
 
-    # input_dir_myGood = f'{cwd}/Tests/myGood'
-    # input_file_names_myGood = collect_all_files(input_dir_myGood)
-    # output_dir_myGood = f'{cwd}/Tests/myGoodOutputs'
+    print("Tests After Frontend Review: ")
+    input_file_names_after_review = collect_all_files(f'{cwd}/Tests/testsAfterFrontendReview')
+    input_dir_after_review = f'{cwd}/Tests/testsAfterFrontendReview'
+    output_dir_after_review = f'{cwd}/Tests/testsAfterFrontendReviewOutputs'
+    os.system(f'mkdir -p {output_dir_after_review}')
+    check_bad_tests(input_file_names_after_review,input_dir_after_review,output_dir_after_review)
 
-    # os.system(f'mkdir -p {output_dir_myGood}')
-
-    # input_dir_myBad = f'{cwd}/Tests/myBad'
-    # input_file_names_myBad = collect_all_files(input_dir_myBad)
-    # output_dir_myBad = f'{cwd}/Tests/myBadOutputs'
-
-    # os.system(f'mkdir -p {output_dir_myBad}')
-    
-    # Test good
-    # check_good_tests(input_file_names_good,input_dir_good,output_dir_good)
-    # Test myGood
-    # print("myGood tests:")
-    # check_good_tests(input_file_names_myGood,input_dir_myGood,output_dir_myGood)
-    # Test bad
-    # Test myBad
-    # print("myBad tests:")
-    # check_bad_tests(input_file_names_myBad,input_dir_myBad,output_dir_myBad)

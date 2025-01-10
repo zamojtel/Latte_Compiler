@@ -1,0 +1,13 @@
+
+class Dice{
+    int m_faces;
+}
+
+int main(){
+    Dice d;
+    d = new Dice;
+    d.m_faces = readInt();
+    printInt(d.m_faces);
+
+    return 0;
+}

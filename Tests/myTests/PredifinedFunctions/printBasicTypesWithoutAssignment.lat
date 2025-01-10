@@ -1,0 +1,19 @@
+int main(){
+    string x;
+    int y;
+    boolean z;
+    printString(x);
+    printInt(y);
+    printBool(z);
+    return 0;
+}
+
+void printBool(boolean b) {
+  if (b) {
+    printString("true");
+    return;
+  } else {
+    printString("false");
+    return;
+  }
+}

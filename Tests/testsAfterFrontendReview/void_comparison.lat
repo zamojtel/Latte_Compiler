@@ -1,0 +1,13 @@
+void foo(){
+    printString("Foo");
+}
+
+void boo(){
+    printString("Boo");
+}
+
+int main(){
+    if(foo()==boo())
+        printString("Hello");
+    return 0;
+}

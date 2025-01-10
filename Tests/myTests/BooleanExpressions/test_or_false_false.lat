@@ -1,0 +1,8 @@
+int main(){
+    if (false || false) {
+        printInt(0);
+    } else {
+        printInt(1);
+    }
+    return 0;
+}

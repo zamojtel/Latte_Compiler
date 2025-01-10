@@ -1,0 +1,12 @@
+int main(){
+
+    int x= 10;
+    int y= 10;
+    boolean z = x==y;
+    if(z){
+        printString("Jest true");
+    }else{
+        printString("Jest false");
+    }
+    return 0;
+}

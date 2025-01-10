@@ -1,0 +1,25 @@
+
+int main(){
+    int []t1 = new int[3];
+    int []t2 = new int[3];
+    
+    int j=0;
+    while (j<t1.length) {
+     t1[j] = j;
+     j++;
+    }
+    // 0 1 2 
+    int i=0;
+    while (i<t1.length) {
+     t2[i] = t1[i];
+     i++;
+    }
+
+    int k=0;
+    while (k<t1.length) {
+     printInt(t1[k]+t2[k]);
+     k++;
+    }
+    
+    return 0;
+}

@@ -1,0 +1,14 @@
+class Dice{
+    int m_faces;
+    int roll(){
+        return (m_faces+1)%6;
+    }
+}
+
+int main(){
+    Dice d = new Dice;
+    d.m_faces=3;
+    int x = d.roll();
+    printInt(x);
+    return 0;
+}

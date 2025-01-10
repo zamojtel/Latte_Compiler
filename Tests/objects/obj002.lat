@@ -1,0 +1,12 @@
+class Calculator {
+    int add(int a, int b) {
+        return a + b;
+    }
+}
+
+int main() {
+    Calculator calc = new Calculator;
+    int result = calc.add(5, 10);
+    printInt(result);
+    return 0;
+}

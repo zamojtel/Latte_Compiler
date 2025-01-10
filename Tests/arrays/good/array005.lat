@@ -1,0 +1,13 @@
+int main(){
+    int []t = new int[3];
+    printInt(t[0]);
+    printInt(t[1]);
+    printInt(t[2]);
+    t[0]=100;
+    t[1]=200;
+    t[2]=300;
+    printInt(t[0]);
+    printInt(t[1]);
+    printInt(t[2]);
+    return 0;    
+}

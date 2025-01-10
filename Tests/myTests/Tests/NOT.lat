@@ -1,0 +1,6 @@
+int main(){
+    if(!false){
+        printString("Say yes");
+    }
+    return 0;
+}

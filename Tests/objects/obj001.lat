@@ -1,0 +1,19 @@
+
+class Person{
+    string name;
+    int age;
+    void greet(){
+        printString("Hello my name is "+name+" I'm");
+        printInt(age);
+        printString("years old");
+    }
+}
+
+int main(){
+    Person p = new Person;
+    p.name = "Michael";
+    p.age = 21;
+    p.greet();
+    
+    return 0;
+}

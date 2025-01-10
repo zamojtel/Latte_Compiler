@@ -1,0 +1,37 @@
+class A{
+    int a;
+}
+
+class B extends A {
+    int b;
+}
+
+void foo(A a){
+    printInt(a.a);
+}
+
+A boo(){
+    B b = new B;
+    b.a=20;
+    b.b=10;
+    return b;
+}
+
+int main () {
+    A a = new B;
+    B b = new B;
+
+    foo(b);
+    // A temp = boo();
+    foo(boo());
+
+    if(a==b){
+        printString("Tu nie wejde");
+    }
+
+    if(a!=b){
+        printString("Tutaj wejde");
+    }
+
+    return 0;
+}

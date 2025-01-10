@@ -70,13 +70,18 @@ IDENT [a-zA-Z0-9'_]
 
 <INITIAL>"("      	 return _LPAREN;
 <INITIAL>")"      	 return _RPAREN;
-<INITIAL>","      	 return _COMMA;
 <INITIAL>"{"      	 return _LBRACE;
 <INITIAL>"}"      	 return _RBRACE;
+<INITIAL>","      	 return _COMMA;
 <INITIAL>";"      	 return _SEMI;
 <INITIAL>"="      	 return _EQ;
 <INITIAL>"++"      	 return _DPLUS;
 <INITIAL>"--"      	 return _DMINUS;
+<INITIAL>":"      	 return _COLON;
+<INITIAL>"[]"      	 return _EMPTYBRACK;
+<INITIAL>"["      	 return _LBRACK;
+<INITIAL>"]"      	 return _RBRACK;
+<INITIAL>"."      	 return _DOT;
 <INITIAL>"-"      	 return _MINUS;
 <INITIAL>"!"      	 return _BANG;
 <INITIAL>"&&"      	 return _DAMP;
@@ -92,10 +97,15 @@ IDENT [a-zA-Z0-9'_]
 <INITIAL>"=="      	 return _DEQ;
 <INITIAL>"!="      	 return _BANGEQ;
 <INITIAL>"boolean"      	 return _KW_boolean;
+<INITIAL>"class"      	 return _KW_class;
 <INITIAL>"else"      	 return _KW_else;
+<INITIAL>"extends"      	 return _KW_extends;
 <INITIAL>"false"      	 return _KW_false;
+<INITIAL>"for"      	 return _KW_for;
 <INITIAL>"if"      	 return _KW_if;
 <INITIAL>"int"      	 return _KW_int;
+<INITIAL>"new"      	 return _KW_new;
+<INITIAL>"null"      	 return _KW_null;
 <INITIAL>"return"      	 return _KW_return;
 <INITIAL>"string"      	 return _KW_string;
 <INITIAL>"true"      	 return _KW_true;

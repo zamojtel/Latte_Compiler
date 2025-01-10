@@ -1,0 +1,27 @@
+class Dice{
+    int faces;
+    string shape;
+    boolean fair;
+}
+
+int main(){
+    Dice d;
+    d = new Dice;
+    d.faces=6;
+    d.shape = "Octahedron";
+    d.fair = true;
+    printInt(d.faces);
+    printString(d.shape);
+    printBool(d.fair);
+
+    return 0;
+}
+
+void printBool(boolean b) {
+  if (!b) {
+    printString("false");
+  } else {
+    printString("true");
+ }
+ return;
+}

@@ -1,0 +1,18 @@
+class Animal{
+    int weight;
+}
+
+class Hippo extends Animal{
+    int weight(){
+        return self.weight;
+    }
+}
+
+int main(){
+    Hippo h = new Hippo;
+    h.weight=1000;
+    int w = h.weight();
+    printInt(w);
+    
+    return 0;
+}

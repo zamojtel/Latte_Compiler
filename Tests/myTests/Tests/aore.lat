@@ -1,0 +1,11 @@
+int main(){
+    int i =0;
+    while(i<10){
+        string s;
+        printString(s);
+        s="abc";
+        i++;
+    }
+
+    return 0;
+}

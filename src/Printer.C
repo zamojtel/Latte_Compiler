@@ -165,6 +165,38 @@ void PrintAbsyn::visitFnDef(FnDef *p)
   _i_ = oldi;
 }
 
+void PrintAbsyn::visitClassDef(ClassDef *p)
+{
+  int oldi = _i_;
+  if (oldi > 0) render(_L_PAREN);
+
+  render("class");
+  visitIdent(p->ident_);
+  render('{');
+  _i_ = 0; visitListClassDecl(p->listclassdecl_);
+  render('}');
+
+  if (oldi > 0) render(_R_PAREN);
+  _i_ = oldi;
+}
+
+void PrintAbsyn::visitClassExtDef(ClassExtDef *p)
+{
+  int oldi = _i_;
+  if (oldi > 0) render(_L_PAREN);
+
+  render("class");
+  visitIdent(p->ident_1);
+  render("extends");
+  visitIdent(p->ident_2);
+  render('{');
+  _i_ = 0; visitListClassDecl(p->listclassdecl_);
+  render('}');
+
+  if (oldi > 0) render(_R_PAREN);
+  _i_ = oldi;
+}
+
 void PrintAbsyn::visitListTopDef(ListTopDef *listtopdef)
 {
   iterListTopDef(listtopdef->begin(), listtopdef->end());
@@ -212,6 +244,55 @@ void PrintAbsyn::iterListArg(ListArg::const_iterator i, ListArg::const_iterator 
   else
   { /* cons */
     (*i)->accept(this); render(','); iterListArg(i+1, j);
+  }
+}
+
+void PrintAbsyn::visitClassDecl(ClassDecl *p) {} //abstract class
+
+void PrintAbsyn::visitMethodDef(MethodDef *p)
+{
+  int oldi = _i_;
+  if (oldi > 0) render(_L_PAREN);
+
+  _i_ = 0; p->type_->accept(this);
+  visitIdent(p->ident_);
+  render('(');
+  _i_ = 0; visitListArg(p->listarg_);
+  render(')');
+  _i_ = 0; p->block_->accept(this);
+
+  if (oldi > 0) render(_R_PAREN);
+  _i_ = oldi;
+}
+
+void PrintAbsyn::visitFieldDef(FieldDef *p)
+{
+  int oldi = _i_;
+  if (oldi > 0) render(_L_PAREN);
+
+  _i_ = 0; p->type_->accept(this);
+  visitIdent(p->ident_);
+  render(';');
+
+  if (oldi > 0) render(_R_PAREN);
+  _i_ = oldi;
+}
+
+void PrintAbsyn::visitListClassDecl(ListClassDecl *listclassdecl)
+{
+  iterListClassDecl(listclassdecl->begin(), listclassdecl->end());
+}
+
+void PrintAbsyn::iterListClassDecl(ListClassDecl::const_iterator i, ListClassDecl::const_iterator j)
+{
+  if (i == j) return;
+  if (i == j-1)
+  { /* last */
+    (*i)->accept(this);
+  }
+  else
+  { /* cons */
+    (*i)->accept(this); iterListClassDecl(i+1, j);
   }
 }
 
@@ -285,9 +366,9 @@ void PrintAbsyn::visitAss(Ass *p)
   int oldi = _i_;
   if (oldi > 0) render(_L_PAREN);
 
-  visitIdent(p->ident_);
+  _i_ = 0; p->expr_1->accept(this);
   render('=');
-  _i_ = 0; p->expr_->accept(this);
+  _i_ = 0; p->expr_2->accept(this);
   render(';');
 
   if (oldi > 0) render(_R_PAREN);
@@ -299,7 +380,7 @@ void PrintAbsyn::visitIncr(Incr *p)
   int oldi = _i_;
   if (oldi > 0) render(_L_PAREN);
 
-  visitIdent(p->ident_);
+  _i_ = 0; p->expr_->accept(this);
   render("++");
   render(';');
 
@@ -312,7 +393,7 @@ void PrintAbsyn::visitDecr(Decr *p)
   int oldi = _i_;
   if (oldi > 0) render(_L_PAREN);
 
-  visitIdent(p->ident_);
+  _i_ = 0; p->expr_->accept(this);
   render("--");
   render(';');
 
@@ -404,6 +485,24 @@ void PrintAbsyn::visitSExp(SExp *p)
   _i_ = oldi;
 }
 
+void PrintAbsyn::visitFor(For *p)
+{
+  int oldi = _i_;
+  if (oldi > 0) render(_L_PAREN);
+
+  render("for");
+  render('(');
+  _i_ = 0; p->type_->accept(this);
+  visitIdent(p->ident_);
+  render(':');
+  _i_ = 0; p->expr_->accept(this);
+  render(')');
+  _i_ = 0; p->stmt_->accept(this);
+
+  if (oldi > 0) render(_R_PAREN);
+  _i_ = oldi;
+}
+
 void PrintAbsyn::visitItem(Item *p) {} //abstract class
 
 void PrintAbsyn::visitNoInit(NoInit *p)
@@ -457,6 +556,17 @@ void PrintAbsyn::visitArray(Array *p)
 
   _i_ = 0; p->type_->accept(this);
   render("[]");
+
+  if (oldi > 0) render(_R_PAREN);
+  _i_ = oldi;
+}
+
+void PrintAbsyn::visitClass(Class *p)
+{
+  int oldi = _i_;
+  if (oldi > 0) render(_L_PAREN);
+
+  visitIdent(p->ident_);
 
   if (oldi > 0) render(_R_PAREN);
   _i_ = oldi;
@@ -584,15 +694,54 @@ void PrintAbsyn::visitELitFalse(ELitFalse *p)
   _i_ = oldi;
 }
 
+void PrintAbsyn::visitELitNull(ELitNull *p)
+{
+  int oldi = _i_;
+  if (oldi > 6) render(_L_PAREN);
+
+  render("null");
+
+  if (oldi > 6) render(_R_PAREN);
+  _i_ = oldi;
+}
+
 void PrintAbsyn::visitArrAcc(ArrAcc *p)
 {
   int oldi = _i_;
   if (oldi > 6) render(_L_PAREN);
 
-  visitIdent(p->ident_);
+  _i_ = 6; p->expr_1->accept(this);
   render('[');
-  _i_ = 0; p->expr_->accept(this);
+  _i_ = 0; p->expr_2->accept(this);
   render(']');
+
+  if (oldi > 6) render(_R_PAREN);
+  _i_ = oldi;
+}
+
+void PrintAbsyn::visitEClass(EClass *p)
+{
+  int oldi = _i_;
+  if (oldi > 6) render(_L_PAREN);
+
+  render("new");
+  visitIdent(p->ident_);
+
+  if (oldi > 6) render(_R_PAREN);
+  _i_ = oldi;
+}
+
+void PrintAbsyn::visitEMethod(EMethod *p)
+{
+  int oldi = _i_;
+  if (oldi > 6) render(_L_PAREN);
+
+  _i_ = 6; p->expr_->accept(this);
+  render('.');
+  visitIdent(p->ident_);
+  render('(');
+  _i_ = 0; visitListExpr(p->listexpr_);
+  render(')');
 
   if (oldi > 6) render(_R_PAREN);
   _i_ = oldi;
@@ -618,6 +767,33 @@ void PrintAbsyn::visitEString(EString *p)
   if (oldi > 6) render(_L_PAREN);
 
   visitString(p->string_);
+
+  if (oldi > 6) render(_R_PAREN);
+  _i_ = oldi;
+}
+
+void PrintAbsyn::visitENull(ENull *p)
+{
+  int oldi = _i_;
+  if (oldi > 6) render(_L_PAREN);
+
+  render('(');
+  visitIdent(p->ident_);
+  render(')');
+  render("null");
+
+  if (oldi > 6) render(_R_PAREN);
+  _i_ = oldi;
+}
+
+void PrintAbsyn::visitMemberAcc(MemberAcc *p)
+{
+  int oldi = _i_;
+  if (oldi > 6) render(_L_PAREN);
+
+  _i_ = 6; p->expr_->accept(this);
+  render('.');
+  visitIdent(p->ident_);
 
   if (oldi > 6) render(_R_PAREN);
   _i_ = oldi;
@@ -958,6 +1134,34 @@ void ShowAbsyn::visitFnDef(FnDef *p)
   bufAppend(']');
   bufAppend(')');
 }
+void ShowAbsyn::visitClassDef(ClassDef *p)
+{
+  bufAppend('(');
+  bufAppend("ClassDef");
+  bufAppend(' ');
+  visitIdent(p->ident_);
+  bufAppend(' ');
+  bufAppend('[');
+  if (p->listclassdecl_)  p->listclassdecl_->accept(this);
+  bufAppend(']');
+  bufAppend(' ');
+  bufAppend(')');
+}
+void ShowAbsyn::visitClassExtDef(ClassExtDef *p)
+{
+  bufAppend('(');
+  bufAppend("ClassExtDef");
+  bufAppend(' ');
+  visitIdent(p->ident_1);
+  bufAppend(' ');
+  visitIdent(p->ident_2);
+  bufAppend(' ');
+  bufAppend('[');
+  if (p->listclassdecl_)  p->listclassdecl_->accept(this);
+  bufAppend(']');
+  bufAppend(' ');
+  bufAppend(')');
+}
 void ShowAbsyn::visitListTopDef(ListTopDef *listtopdef)
 {
   for (ListTopDef::const_iterator i = listtopdef->begin() ; i != listtopdef->end() ; ++i)
@@ -987,6 +1191,50 @@ void ShowAbsyn::visitListArg(ListArg *listarg)
   {
     (*i)->accept(this);
     if (i != listarg->end() - 1) bufAppend(", ");
+  }
+}
+
+void ShowAbsyn::visitClassDecl(ClassDecl *p) {} //abstract class
+
+void ShowAbsyn::visitMethodDef(MethodDef *p)
+{
+  bufAppend('(');
+  bufAppend("MethodDef");
+  bufAppend(' ');
+  bufAppend('[');
+  if (p->type_)  p->type_->accept(this);
+  bufAppend(']');
+  bufAppend(' ');
+  visitIdent(p->ident_);
+  bufAppend(' ');
+  bufAppend('[');
+  if (p->listarg_)  p->listarg_->accept(this);
+  bufAppend(']');
+  bufAppend(' ');
+  bufAppend('[');
+  if (p->block_)  p->block_->accept(this);
+  bufAppend(']');
+  bufAppend(')');
+}
+void ShowAbsyn::visitFieldDef(FieldDef *p)
+{
+  bufAppend('(');
+  bufAppend("FieldDef");
+  bufAppend(' ');
+  bufAppend('[');
+  if (p->type_)  p->type_->accept(this);
+  bufAppend(']');
+  bufAppend(' ');
+  visitIdent(p->ident_);
+  bufAppend(' ');
+  bufAppend(')');
+}
+void ShowAbsyn::visitListClassDecl(ListClassDecl *listclassdecl)
+{
+  for (ListClassDecl::const_iterator i = listclassdecl->begin() ; i != listclassdecl->end() ; ++i)
+  {
+    (*i)->accept(this);
+    if (i != listclassdecl->end() - 1) bufAppend(", ");
   }
 }
 
@@ -1048,11 +1296,9 @@ void ShowAbsyn::visitAss(Ass *p)
   bufAppend('(');
   bufAppend("Ass");
   bufAppend(' ');
-  visitIdent(p->ident_);
+  p->expr_1->accept(this);
   bufAppend(' ');
-  bufAppend('[');
-  if (p->expr_)  p->expr_->accept(this);
-  bufAppend(']');
+  p->expr_2->accept(this);
   bufAppend(' ');
   bufAppend(')');
 }
@@ -1061,7 +1307,9 @@ void ShowAbsyn::visitIncr(Incr *p)
   bufAppend('(');
   bufAppend("Incr");
   bufAppend(' ');
-  visitIdent(p->ident_);
+  bufAppend('[');
+  if (p->expr_)  p->expr_->accept(this);
+  bufAppend(']');
   bufAppend(' ');
   bufAppend(')');
 }
@@ -1070,7 +1318,9 @@ void ShowAbsyn::visitDecr(Decr *p)
   bufAppend('(');
   bufAppend("Decr");
   bufAppend(' ');
-  visitIdent(p->ident_);
+  bufAppend('[');
+  if (p->expr_)  p->expr_->accept(this);
+  bufAppend(']');
   bufAppend(' ');
   bufAppend(')');
 }
@@ -1142,6 +1392,26 @@ void ShowAbsyn::visitSExp(SExp *p)
   bufAppend(' ');
   bufAppend(')');
 }
+void ShowAbsyn::visitFor(For *p)
+{
+  bufAppend('(');
+  bufAppend("For");
+  bufAppend(' ');
+  bufAppend('[');
+  if (p->type_)  p->type_->accept(this);
+  bufAppend(']');
+  bufAppend(' ');
+  visitIdent(p->ident_);
+  bufAppend(' ');
+  bufAppend('[');
+  if (p->expr_)  p->expr_->accept(this);
+  bufAppend(']');
+  bufAppend(' ');
+  bufAppend('[');
+  if (p->stmt_)  p->stmt_->accept(this);
+  bufAppend(']');
+  bufAppend(')');
+}
 void ShowAbsyn::visitItem(Item *p) {} //abstract class
 
 void ShowAbsyn::visitNoInit(NoInit *p)
@@ -1184,6 +1454,14 @@ void ShowAbsyn::visitArray(Array *p)
   if (p->type_)  p->type_->accept(this);
   bufAppend(']');
   bufAppend(' ');
+  bufAppend(')');
+}
+void ShowAbsyn::visitClass(Class *p)
+{
+  bufAppend('(');
+  bufAppend("Class");
+  bufAppend(' ');
+  visitIdent(p->ident_);
   bufAppend(')');
 }
 void ShowAbsyn::visitInt(Int *p)
@@ -1252,15 +1530,42 @@ void ShowAbsyn::visitELitFalse(ELitFalse *p)
 {
   bufAppend("ELitFalse");
 }
+void ShowAbsyn::visitELitNull(ELitNull *p)
+{
+  bufAppend("ELitNull");
+}
 void ShowAbsyn::visitArrAcc(ArrAcc *p)
 {
   bufAppend('(');
   bufAppend("ArrAcc");
   bufAppend(' ');
+  p->expr_1->accept(this);
+  bufAppend(' ');
+  p->expr_2->accept(this);
+  bufAppend(' ');
+  bufAppend(')');
+}
+void ShowAbsyn::visitEClass(EClass *p)
+{
+  bufAppend('(');
+  bufAppend("EClass");
+  bufAppend(' ');
   visitIdent(p->ident_);
+  bufAppend(')');
+}
+void ShowAbsyn::visitEMethod(EMethod *p)
+{
+  bufAppend('(');
+  bufAppend("EMethod");
   bufAppend(' ');
   bufAppend('[');
   if (p->expr_)  p->expr_->accept(this);
+  bufAppend(']');
+  bufAppend(' ');
+  visitIdent(p->ident_);
+  bufAppend(' ');
+  bufAppend('[');
+  if (p->listexpr_)  p->listexpr_->accept(this);
   bufAppend(']');
   bufAppend(' ');
   bufAppend(')');
@@ -1284,6 +1589,27 @@ void ShowAbsyn::visitEString(EString *p)
   bufAppend("EString");
   bufAppend(' ');
   visitString(p->string_);
+  bufAppend(')');
+}
+void ShowAbsyn::visitENull(ENull *p)
+{
+  bufAppend('(');
+  bufAppend("ENull");
+  bufAppend(' ');
+  visitIdent(p->ident_);
+  bufAppend(' ');
+  bufAppend(')');
+}
+void ShowAbsyn::visitMemberAcc(MemberAcc *p)
+{
+  bufAppend('(');
+  bufAppend("MemberAcc");
+  bufAppend(' ');
+  bufAppend('[');
+  if (p->expr_)  p->expr_->accept(this);
+  bufAppend(']');
+  bufAppend(' ');
+  visitIdent(p->ident_);
   bufAppend(')');
 }
 void ShowAbsyn::visitNeg(Neg *p)

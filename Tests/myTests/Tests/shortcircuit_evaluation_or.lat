@@ -1,0 +1,14 @@
+
+boolean foo(boolean b,string x){
+    printString(x);
+    return b;
+}
+
+// druga metoda nie powinna sie wywolac
+int main(){
+    if(foo(true,"Hey") || foo(false,"But Not you")){
+        printString("You");
+    }
+
+    return 0;
+}

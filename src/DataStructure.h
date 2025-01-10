@@ -7,32 +7,61 @@
 #include <map>
 #include <vector>
 #include "IRCoderListener.h"
+#include <stdexcept>
 
 class Variable;
 class Triple;
 class Function;
+class MyClass;
+class Field;
 
 enum class BasicType{
     INT,BOOL,STRING,VOID,ERROR,NULLPTR
-    // Arrays
+};
+
+enum class DataTypeCategory{
+    BASIC,CLASS
 };
 
 struct DataType {
+ MyClass * class_type=nullptr;
  BasicType basic_type;
  int dimensions;
-//  BasicType::BOOL
- DataType(BasicType t):basic_type{t},dimensions{0}{}
- DataType(BasicType b_t,int d):basic_type{b_t},dimensions{d}{}
+ DataTypeCategory category;
+ DataType(MyClass *cl):class_type{cl},dimensions{0},category{DataTypeCategory::CLASS}{}
+ DataType(MyClass *cl,int d):class_type{cl},dimensions{d},category{DataTypeCategory::CLASS}{}
+ DataType(BasicType t):basic_type{t},dimensions{0},category{DataTypeCategory::BASIC}{}
+ DataType(BasicType b_t,int d):basic_type{b_t},dimensions{d},category{DataTypeCategory::BASIC}{}
  DataType(){}
- bool operator==(const DataType &other) const = default;
- bool operator==(BasicType other) const {
-    return basic_type==other && dimensions == 0;
+ bool operator==(const DataType &other) const{
+    if(category==other.category && dimensions==other.dimensions){
+        if(category==DataTypeCategory::BASIC)
+            return basic_type==other.basic_type;
+        else
+            return class_type == other.class_type;
+    }else{
+        return false;
+    }
  };
 
- bool operator!=(const DataType &other) const = default;
- bool operator!=(BasicType other) const {
-   return basic_type!=other || dimensions != 0;
+ bool operator==(BasicType other) const {
+    return category==DataTypeCategory::BASIC && basic_type==other && dimensions == 0;
  };
+
+ bool operator!=(const DataType &other) const {
+    return !(*this==other);
+ };
+
+ bool operator!=(BasicType other) const {
+    return !(*this==other);
+ };
+
+  bool isNullable() const {
+    return category==DataTypeCategory::CLASS || dimensions>=1 || (*this)==BasicType::STRING;
+  }
+
+ DataType decrement_dimensions() const { return category==DataTypeCategory::BASIC ? DataType{basic_type,dimensions-1} : DataType{class_type,dimensions-1};}
+ DataType increment_dimensions() const { return category==DataTypeCategory::BASIC ? DataType{basic_type,dimensions+1} : DataType{class_type,dimensions+1};}
 };
 
 class Argument{
@@ -46,11 +75,18 @@ public:
 std::string data_type_to_string(const DataType &type);
 
 enum class Operation{
-    MUL,ADD,SUB,DIV,AND,OR,NEG,NOT,ASSIGN,
+    MUL,ADD,SUB,DIV,
+    NEG,NOT,ASSIGN,
     MOD,LTH,LE,GTH,GE,EQU,NE,INIT,
     // Arrays
     NEW_ARRAY,
     ACCESS_ARRAY,
+    ARRAY_LENGTH,
+    // Classes
+    NEW_INSTANCE,
+    MEMEBER_ACCESS,
+    // CASTING
+    CAST,
     //Special Operations
     JT,JF, // jump if true ,jump if false
     MARKER, // It will indicate a special triple
@@ -63,7 +99,8 @@ enum class Operation{
 };
 
 enum class OperandCategory{
-    CONSTANT,VARIABLE,TRIPLE,EMPTY,LABEL,FUNCTION,ARGUMENT,ERROR
+    CONSTANT,VARIABLE,TRIPLE,EMPTY,LABEL,FUNCTION,ARGUMENT,ERROR,
+    ARRAY,FIELD
 };
 
 template<class T>
@@ -125,6 +162,7 @@ public:
         Label* m_label;
         Function* m_function;
         Argument* m_argument;
+        Field* m_field;
     };
    
     Operand(const Constant &c):m_category{OperandCategory::CONSTANT},m_constant{c}{}
@@ -133,6 +171,7 @@ public:
     Operand(Label *l):m_category{OperandCategory::LABEL},m_label{l}{}
     Operand(Function *f):m_category{OperandCategory::FUNCTION},m_function{f}{}
     Operand(Argument *arg):m_category{OperandCategory::ARGUMENT},m_argument{arg}{}
+    Operand(Field *f):m_category{OperandCategory::FIELD},m_field{f}{}
     Operand():m_category{OperandCategory::EMPTY}{}
 
     Operand(const Operand &other){
@@ -161,12 +200,14 @@ public:
             break;
         case OperandCategory::ERROR:
             break;
+        case OperandCategory::FIELD:
+            m_field=other.m_field;
+            break;
         default:
             throw("No Operand Category");
             break;
         }
     }
-    //  CONSTANT,VARIABLE,TRIPLE,EMPTY,LABEL,FUNCTION,ARGUMENT,ERROR
     Operand& operator=(const Operand &other){
         m_category=other.m_category;
         switch (other.m_category)
@@ -189,12 +230,14 @@ public:
         case OperandCategory::LABEL:
             this->m_label=other.m_label;
             break;
+        case OperandCategory::FIELD:
+            this->m_field=other.m_field;
+            break;
         case OperandCategory::ERROR:
         case OperandCategory::EMPTY:
             break;
         default:
-            throw 0;
-            break;
+            throw std::runtime_error("Operand::operator=");
         }
         return *this;
     }
@@ -204,6 +247,7 @@ public:
         operand.m_category=OperandCategory::ERROR;
         return operand;
     }
+    
     DataType get_type() const;
     std::string get_category_as_string() const;
     ~Operand(){
@@ -214,6 +258,7 @@ class Triple{
 public:
     int m_code_line_number;
     bool m_visited;
+    DataType m_cast_type;
     DataType m_data_type;
     DataType m_data_type_for_new;
     size_t m_index;
@@ -221,8 +266,7 @@ public:
     Operand m_op_1;
     Operand m_op_2;
     std::vector<Label*> m_pointing_labels;
-    // Operands as arguemnts
-    std::list<Operand> m_call_args;
+    std::vector<Operand> m_call_args;
     Triple(int line_number,size_t index,Operation operation,const Operand &op_1={},const Operand &op_2={}):m_code_line_number{line_number},m_visited{false}, m_index{index},m_operation{operation},m_op_1{op_1},m_op_2{op_2}{}
 };
 
@@ -244,12 +288,49 @@ enum class PredefinedFunction{
 };
 
 enum class SymbolTableCategory{
-    ARGUMENT,VARIABLE,FUNCTION,EMPTY
+    ARGUMENT,VARIABLE,FUNCTION,EMPTY,FIELD
+};
+
+class Field{
+private:
+    int m_index;
+    MyClass *m_owner;
+public:
+    std::string m_name;
+    DataType m_type;
+    int get_index() const { return m_index; }
+    MyClass * get_class() const { return m_owner; }
+    Field(DataType type,const std::string &name,MyClass *cl,int index):m_index{index},m_owner{cl},m_name{name},m_type{type}{}
+};
+
+class MyClass{
+private:
+public:
+    int m_implicit_declaration_line = -1; 
+    bool m_defined=false; 
+    MyClass *m_base_class = nullptr;
+    std::string m_name;
+    std::vector<Field*> m_fields;
+    std::vector<Function*> m_methods;
+    Field * get_field(const std::string &name) const;
+    void add_field(DataType type,const std::string &name);
+    void add_method(Function *fn);
+    bool has_method(const std::string &name) const;
+    bool inherits(MyClass * cl) const;
+    Function * get_method(const std::string &name) const;
+    Field *get_field_considering_inheritance(const std::string &name) const;
+    Function *get_method_considering_inheritance(const std::string &name) const;
+    MyClass(const std::string name):m_name{name}{};
+    ~MyClass(){
+        for(auto *f : m_fields)
+            delete f;
+    }
 };
 
 class Function{
 private:
 public:
+    MyClass * m_class = nullptr;
     PredefinedFunction m_type;
     bool m_used;
     std::string m_name;
@@ -257,7 +338,6 @@ public:
     std::vector<Variable*> m_variables;
     std::vector<Triple*> m_triples;
     std::vector<Argument*> m_arguments;
-    // funkcja skacze tylko w swoim obrebie 
     std::vector<Label*> m_labels;
     Function(PredefinedFunction p=PredefinedFunction::USERDEFINED):m_type{p},m_used{false}{}
     void add_label(Label *label);
@@ -275,11 +355,13 @@ public:
         Argument *m_argument;
         Variable *m_variable;
         Function *m_function;
+        Field    *m_field;
     };
 
     SymbolTableEntry(Variable *var):m_category{SymbolTableCategory::VARIABLE},m_variable{var}{}
     SymbolTableEntry(Function *fun):m_category{SymbolTableCategory::FUNCTION},m_function{fun}{}
     SymbolTableEntry(Argument *arg):m_category{SymbolTableCategory::ARGUMENT},m_argument{arg}{}
+    SymbolTableEntry(Field *field):m_category{SymbolTableCategory::FIELD},m_field{field}{}
     SymbolTableEntry():m_category{SymbolTableCategory::EMPTY}{}
 };
 
@@ -291,8 +373,9 @@ public:
     void push();
     void pop();
     bool add(const std::string &entry_name,const SymbolTableEntry &entry);
+    void add_override(const std::string &entry_name,const SymbolTableEntry &entry);
     void set_listener(IRCoderListener *listener);
-    // to-do
+    // todo
     // std::optional 
     const SymbolTableEntry* get_entry(const std::string &name);
     Variable* get_variable(const std::string &name);

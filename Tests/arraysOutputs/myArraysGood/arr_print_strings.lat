@@ -1,0 +1,8 @@
+int main(){
+    string []t = new string[2];
+    t[0]="abc"; 
+    t[1]="xyz";
+    printString(t[0]+t[1]);
+
+    return 0; 
+}

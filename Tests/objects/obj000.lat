@@ -1,0 +1,19 @@
+class A{
+    void a(){
+        printString("Inside A");
+    }
+}
+
+class B extends A{
+    void b(){
+        printString("Inside B");
+    }
+}
+
+int main(){
+    B b = new B;
+    b.a();
+    b.b();
+    
+    return 0;
+}

@@ -1,0 +1,45 @@
+
+class Point {
+  int x;
+  int y;
+}
+
+Point createPoint(int x, int y) {
+  Point p = new Point;
+  p.x = x;
+  p.y = y;
+  return p;
+}
+
+void printPoint(Point p) {
+  printString("(");
+  printInt(p.x);
+  printString(",");
+  printInt(p.y);
+  printString(")");
+}
+
+Point addPoints(Point p1, Point p2) {
+  Point p3 = new Point;
+  p3.x = p1.x+p2.x;
+  p3.y = p1.y+p2.y;
+  return p3;
+}
+
+int main() {
+  Point p1 = createPoint(2, 3);
+  Point p2 = createPoint(4, 5);
+
+  printString("Point 1:"); // Point 1: 
+  printPoint(p1); //(2,3)
+
+  printString("Point 2:"); // Point 2: 
+  printPoint(p2); //(4,5)
+
+  Point p3 = addPoints(p1, p2);
+
+  printString("Sum of Points:");
+  printPoint(p3);//(6,8)
+
+  return 0;
+}

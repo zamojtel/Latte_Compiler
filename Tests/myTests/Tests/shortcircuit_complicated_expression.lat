@@ -1,0 +1,14 @@
+
+int main(){
+    boolean x = false;
+    int y = 0;
+    //           true       &&         false                        
+    //   false   ==  false  &&   false     ==  true
+    if(x == (y>1 && y<2) && (y>3 && y<4) == (y<10 || y>0)){
+        printString("Not this ");
+    }else{
+        printString("Hello");
+    }
+
+    return 0;
+}

@@ -23,22 +23,48 @@ FrontendTests:
 BackendTests:
 	python3 Tests/TestBackend.py
 
-testsClean:
-	rm -rf ./Tests/badOutputs ./Tests/goodOutputs  ./Tests/myTests/someTestsOutputs ./Tests/myTests/BasicPredifinedFunctionsFunctionalitiesOutputs
+testsClean: cleanArrays cleanExtensions cleanGood cleanMethods cleanMyTests cleanObjects cleanStruct cleanVirtual
+
+cleanArrays:
+	rm -rf ./Tests/arrays/good/*.bc ./Tests/arrays/good/*_intermediate.bc ./Tests/arrays/good/*.ll  ./Tests/arrays/good/*.output \
+	./Tests/arrays/arraysAdditional/*.bc ./Tests/arrays/arraysAdditional/*_intermediate.bc ./Tests/arrays/arraysAdditional/*.ll  ./Tests/arrays/arraysAdditional/*.output \
+	./Tests/arrays/myArraysGood/*.bc ./Tests/arrays/myArraysGood/*_intermediate.bc ./Tests/arrays/myArraysGood/*.ll ./Tests/arrays/myArraysGood/*.output
+
+cleanExtensions:
+	rm -rf ./Tests/extensions/arrays1/*.bc ./Tests/extensions/arrays1/*_intermediate.bc ./Tests/extensions/arrays1/*.ll ./Tests/extensions/arrays1/*.output \
+	./Tests/extensions/objects1/*.bc ./Tests/extensions/objects1/*_intermediate.bc ./Tests/extensions/objects1/*.ll ./Tests/extensions/objects1/*.output \
+	./Tests/extensions/objects2/*.bc ./Tests/extensions/objects2/*_intermediate.bc ./Tests/extensions/objects2/*.ll ./Tests/extensions/objects2/*.output
+
+cleanGood:
+	rm -rf ./Tests/good/basic/*.bc ./Tests/good/basic/*.ll ./Tests/good/basic/*_intermediate.bc  ./Tests/good/basic/*.output \
+	./Tests/good/general/*.bc ./Tests/good/general/*.ll ./Tests/good/general/*_intermediate.bc ./Tests/good/general/*.output \
+	./Tests/good/gr5/*.bc ./Tests/good/gr5/*.ll ./Tests/good/gr5/*_intermediate.bc ./Tests/good/gr5/*.output
+
+cleanMethods:
+	rm -rf ./Tests/methods/*.bc ./Tests/methods/*.ll ./Tests/methods/*_intermediate.bc ./Tests/methods/*.output
+
+cleanMyTests:
+	rm -rf ./Tests/myTests/BooleanExpressions/*.bc ./Tests/myTests/BooleanExpressions/*.ll ./Tests/myTests/BooleanExpressions/*_intermediate.bc ./Tests/myTests/BooleanExpressions/*.output \
+	./Tests/myTests/PredifinedFunctions/*.bc ./Tests/myTests/PredifinedFunctions/*.ll ./Tests/myTests/PredifinedFunctions/*_intermediate.bc ./Tests/myTests/PredifinedFunctions/*.output \
+	./Tests/myTests/Tests/*.bc ./Tests/myTests/Tests/*.ll ./Tests/myTests/Tests/*_intermediate.bc ./Tests/myTests/Tests/*.output 
+
+cleanObjects:
+	rm -rf ./Tests/objects/*.bc ./Tests/objects/*.ll ./Tests/objects/*_intermediate.bc ./Tests/objects/*.output 
+
+cleanStruct:
+	rm -rf ./Tests/struct/*.bc ./Tests/struct/*.ll ./Tests/struct/*._intermediate.bc ./Tests/struct/*.output
+
+cleanVirtual:
+	rm -rf ./Tests/virtual/*.bc ./Tests/virtual/*.ll ./Tests/virtual/*_intermediate.bc ./Tests/virtual/*.output 
 
 CreateDirectory:
 	@mkdir -p build
 
 clean :
-	rm -rf ./build ./latc_llvm ./Tests/myBadOutputs ./Tests/myGoodOutputs ./Tests/goodOutputs ./Tests/badOutputs \
-	./Tests/myGood/*.bc ./Tests/myGood/*.ll \
-	./Tests/good/*.bc ./Tests/good/*.ll	\
-	./Ready/good/* \
-	./Tests/myTests/NewTestsOutputs
+	rm -rf ./build ./latc_llvm 
 
-
-cleanBison:
-	rm -f ./src/Parser.C ./src/Bison.H
+# cleanBison:
+# 	rm -f ./src/Parser.C ./src/Bison.H
 
 distclean : clean
 	rm -f Absyn.C Absyn.H Buffer.C Buffer.H Test.C Bison.H Parser.C Parser.H ParserError.H LatteCPP.y Lexer.C LatteCPP.l Skeleton.C Skeleton.H Printer.C Printer.H Makefile LatteCPP.tex

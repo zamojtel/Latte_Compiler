@@ -1,0 +1,13 @@
+int main(){
+    int x = readInt();
+    string a = readString();
+    int y = readInt();
+    string b = readString();
+
+    printInt(x);
+    printString(a);
+    printInt(y);
+    printString(b);
+
+    return 0;
+}

@@ -1,0 +1,9 @@
+
+int main(){
+    string a = "abc";
+    string b = "edf";
+
+    string c = a-b;
+    printString(c);
+    return 0;
+}

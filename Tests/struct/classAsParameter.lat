@@ -1,0 +1,14 @@
+class Dice{
+    int m_faces;
+}
+
+void foo(Dice d){
+    printInt(d.m_faces);
+}
+
+int main(){
+    Dice d = new Dice;
+    d.m_faces = 5;
+    foo(d);
+    return 0;
+}

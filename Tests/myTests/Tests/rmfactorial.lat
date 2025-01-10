@@ -1,0 +1,19 @@
+int mfac(int n) {
+	if (n == 0)
+	  return 1;
+	else
+	  return n * nfac(n-1);
+}
+
+int nfac(int n) {
+	if (n != 0)
+	  return mfac(n-1) * n;
+	else
+	  return 1;
+}
+
+int main(){
+    int x = mfac(5);
+    printInt(x);
+    return 0;
+}

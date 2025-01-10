@@ -1,0 +1,9 @@
+class Dice{
+    int faces;
+    string fair;
+}
+
+int main(){
+    Dice d = new Dice;
+    return 0;
+}

@@ -1,0 +1,19 @@
+class MagicBall{
+    string []quotes;
+}
+
+// moze tu jest blad 
+int main(){
+    MagicBall m_ball = new MagicBall;
+    m_ball.quotes = new string[3];
+
+    m_ball.quotes[0] = "Try different approach";
+    m_ball.quotes[1] = "You can count on it";
+    m_ball.quotes[2] = "Doubtful";
+
+    for(string s : m_ball.quotes){
+        printString(s);
+    }
+
+    return 0;
+}

@@ -1,0 +1,13 @@
+
+int main(){
+
+    string [] names = new string[3];
+    names[0] = "Brad";
+    names[1] = "Mike";
+    names[2] = "Ben";
+    for(string name : names){
+        printString(name);
+    }
+    
+    return 0;
+}

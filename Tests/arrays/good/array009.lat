@@ -1,0 +1,41 @@
+class Person{
+    string name;
+    int age;
+    boolean adult;
+}
+
+int main(){
+    Person [] people = new Person[3];
+
+    people[0]= new Person;
+    people[1]= new Person;
+    people[2]= new Person;
+
+    people[0].name = "Brad";
+    people[1].name = "Mike";
+    people[2].name = "Trisha";
+    people[0].age = 17;
+    people[1].age = 34;
+    people[2].age = 40;
+    people[0].adult = false;
+    people[1].adult = true;
+    people[2].adult = true;
+
+    for(Person p : people){
+        printString(p.name);
+        printInt(p.age);
+        printBool(p.adult);
+    }
+
+    return 0;
+}
+
+void printBool(boolean b) {
+  if (b) {
+    printString("true");
+    return;
+  } else {
+    printString("false");
+    return;
+ }
+}

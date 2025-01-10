@@ -1,0 +1,25 @@
+
+boolean f(boolean value){
+    return value;
+}
+
+int g(boolean value){
+    if(value==true){
+        return 20;
+    }
+    else{
+        return 1;
+    }
+}
+
+int main(){
+    int x = 6;
+    if(f(x<1 && x>0) || f(x>5 && x<g(x>10 && x<11)))
+    {
+        printString("I'm here : A");
+    }else{
+        printString("I'm here : B");
+    }
+    
+    return 0;
+}

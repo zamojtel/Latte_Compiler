@@ -1,0 +1,22 @@
+class Counter {
+    int count;
+
+    void increment() {
+        count++;
+    }
+
+    int getCount() {
+        return count;
+    }
+}
+
+// Test case
+int main() {
+    Counter c = new Counter;
+    // c.count = 0; // naprawic inicjowanie 0 inta i pozostalych wartosci 
+    
+    c.increment();
+    c.increment();
+    printInt(c.getCount()); // 2
+    return 0;
+}

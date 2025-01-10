@@ -1,12 +1,33 @@
 #include "IRCoder.h"
 #include "Libraries.h"
 
-bool IRCoder::equal_data_types_or_error(DataType t1,DataType t2){
-  // 1st for arrays
-  return (t1.dimensions!=0 && t2==BasicType::NULLPTR) || t1 == BasicType::ERROR || t2 == BasicType::ERROR || t1==t2;
+IRCoder::TypeCompatibility IRCoder::equal_data_types_or_error(DataType t1,DataType t2){
+  if(t1==t2)
+    return TypeCompatibility::COMPATIBLE;
+  
+  if(t1==BasicType::ERROR || t2==BasicType::ERROR)
+    return TypeCompatibility::COMPATIBLE;
+  
+  if(t1==BasicType::NULLPTR)
+    std::swap(t1,t2);
+
+  if(t2==BasicType::NULLPTR)
+    return t1.isNullable() ? TypeCompatibility::COMPATIBLE : TypeCompatibility::INCOMPATIBLE;
+
+  if(t1.category!=DataTypeCategory::CLASS || t2.category!=DataTypeCategory::CLASS)
+    return TypeCompatibility::INCOMPATIBLE;
+
+  if(t2.class_type->inherits(t1.class_type))
+    return TypeCompatibility::CAST_RIGHT_TO_LEFT;
+
+  if(t1.class_type->inherits(t2.class_type))
+    return TypeCompatibility::CAST_LEFT_TO_RIGHT;
+  
+  return TypeCompatibility::INCOMPATIBLE;
 }
 
-// dodac obsluge jak bedzie null 
+
+// Todo handle in case of a null value 
 void IRCoder::set_listener(IRCoderListener *listener){
   m_listener = listener;
 }
@@ -27,6 +48,29 @@ void IRCoder::set_position_before(Function *fn,Triple * triple ){
   m_position=triple->m_index; 
 };
 
+void IRCoder::set_position_after(Triple * triple){
+  m_position=triple->m_index+1;
+};
+
+void IRCoder::set_position_before(Triple * triple ){
+  m_position=triple->m_index; 
+};
+
+void IRCoder::insert_cast_and_replace_op(Triple *triple,Operand &op, DataType type){
+    size_t p = m_position;
+    set_position_before(triple);
+    bool add_one = m_position<=p; 
+    Triple * t = push_no_check(triple->m_code_line_number,Operation::CAST,op);
+    t->m_cast_type = type;
+    analyze_triple(t);
+    if(add_one)
+      m_position=p+1;
+    else
+      m_position=p;
+    
+    op=t;
+}
+
 std::string IRCoder::operation_to_string(Operation operation){
     switch (operation)
     {
@@ -42,10 +86,6 @@ std::string IRCoder::operation_to_string(Operation operation){
         return "SUB";
       case Operation::DIV:
         return "DIV";
-      case Operation::AND:
-        return "AND";
-      case Operation::OR:
-        return "OR";
       case Operation::LTH:
         return "LTH";
       case Operation::LE:
@@ -78,67 +118,134 @@ std::string IRCoder::operation_to_string(Operation operation){
     }
 }
 
+void IRCoder::analyze_triple(Triple *triple){
+  DataType type =  deduce_type(triple);
+  triple->m_data_type=type;
+  check_triple(triple);
+}
+
 void IRCoder::check_triple(Triple * triple){
     switch (triple->m_operation)
     {
-    case Operation::ASSIGN:{
+    case Operation::ARRAY_LENGTH:{
+      DataType t1 = triple->m_op_1.get_type();
+      if(t1.dimensions==0){
+        std::string msg = fmt::format("Expected array type");
+        m_listener->ircoder_error(triple->m_code_line_number,msg);
+      }
+      break;
+    }
+    case Operation::ACCESS_ARRAY:{
       DataType t1 = triple->m_op_1.get_type();
       DataType t2 = triple->m_op_2.get_type();
-      //  ident"["expr"]" -> expr "["expr"]"  -> t[x0]
-      if(!equal_data_types_or_error(t1,t2)){
-        std::string msg = fmt::format("Incompatible type");
+      if(t1.dimensions==0){
+        std::string msg = fmt::format("Expected array type");
+        m_listener->ircoder_error(triple->m_code_line_number,msg);
+      }
+      if(t2.basic_type!=BasicType::INT){
+        std::string msg = fmt::format("Expected integer type");
         m_listener->ircoder_error(triple->m_code_line_number,msg);
       }
       break;
     }
     case Operation::INIT:
-    {
+    case Operation::ASSIGN:{
       DataType t1 = triple->m_op_1.get_type();
       DataType t2 = triple->m_op_2.get_type();
-      if(!equal_data_types_or_error(t1,t2)){
-        std::string msg = fmt::format("Incompatible type");
+      switch (equal_data_types_or_error(t1,t2))
+      {
+      case TypeCompatibility::INCOMPATIBLE:
+      case TypeCompatibility::CAST_LEFT_TO_RIGHT:
+      {
+        int index = triple->m_index;
+        std::string op_1 = data_type_to_string(triple->m_op_1.get_type());
+        std::string op_2 = data_type_to_string(triple->m_op_2.get_type());
+        // todo triple index should be shown in debug version only 
+        std::string msg = fmt::format("Incompatible types | op1 type {} op2 type {} triple index = {}",op_1,op_2,index);
         m_listener->ircoder_error(triple->m_code_line_number,msg);
+        break;
       }
+      case TypeCompatibility::CAST_RIGHT_TO_LEFT:{
+        insert_cast_and_replace_op(triple,triple->m_op_2,triple->m_op_1.get_type());
+        break;
+      }
+      case TypeCompatibility::COMPATIBLE:
+        break;
+      default:
+        break;
+      }
+
       break;
     }
     case Operation::RETURN:
     {
-      if(triple->m_op_1.m_category==OperandCategory::EMPTY){
-        if(m_current_fn->m_return_type!=BasicType::VOID){
-          std::string msg = fmt::format("Incompatible return type");
-          m_listener->ircoder_error(triple->m_code_line_number,msg);
-        }
-      }else if(m_current_fn->m_return_type!=triple->m_op_1.get_type()){
+      // Obejrzec
+      DataType type = triple->m_op_1.get_type();
+
+      switch (equal_data_types_or_error(m_current_fn->m_return_type,type))
+      {
+      case TypeCompatibility::COMPATIBLE:
+        break;
+      case TypeCompatibility::CAST_RIGHT_TO_LEFT:
+      {
+        insert_cast_and_replace_op(triple,triple->m_op_1,m_current_fn->m_return_type);
+        break; 
+      }
+      default:
         std::string msg = fmt::format("Incompatible return type");
         m_listener->ircoder_error(triple->m_code_line_number,msg);
-      }
+        break;
+      } 
       break;
     }
     case Operation::ADD:{
       DataType t1 = triple->m_op_1.get_type();
       DataType t2 = triple->m_op_2.get_type();
-       if(!equal_data_types_or_error(t1,t2) || t1 == BasicType::BOOL){
-        std::string msg = fmt::format("Incompatible types");
+
+       if(equal_data_types_or_error(t1,t2)==TypeCompatibility::COMPATIBLE){
+        if(t1 == BasicType::INT || t1 == BasicType::STRING || (t1 == BasicType::ERROR && t2 == BasicType::ERROR))
+          break;
+
+        int index = triple->m_index;
+        std::string op_1 =data_type_to_string(triple->m_op_1.get_type());
+        std::string op_2 =data_type_to_string(triple->m_op_2.get_type());
+        std::string msg = fmt::format("Incompatible type | op1 type {} op2 type {} triple index = {}",op_1,op_2,index);
         m_listener->ircoder_error(triple->m_code_line_number,msg);
       }
       break;
     }
+    case Operation::NE:
     case Operation::EQU:
     {
       DataType t1 = triple->m_op_1.get_type();
       DataType t2 = triple->m_op_2.get_type();
-      if(!equal_data_types_or_error(t1,t2)){
-        std::string msg = fmt::format("Incompatible types");
-        m_listener->ircoder_error(triple->m_code_line_number,msg);
-      }
-      
-      if(t1==BasicType::VOID)
-        m_listener->ircoder_error(triple->m_code_line_number,"Void types can't be compared");
-      
-      break;
-    }
-    case Operation::NE:{
 
+      switch (equal_data_types_or_error(t1,t2))
+      {
+      case TypeCompatibility::INCOMPATIBLE:{
+        int index = triple->m_index;
+        std::string op_1 =data_type_to_string(triple->m_op_1.get_type());
+        std::string op_2 =data_type_to_string(triple->m_op_2.get_type());
+        std::string msg = fmt::format("Incompatible type | op1 type {} op2 type {} triple index = {}",op_1,op_2,index);
+        m_listener->ircoder_error(triple->m_code_line_number,msg);
+        break;
+      }
+      case TypeCompatibility::CAST_LEFT_TO_RIGHT:{
+        insert_cast_and_replace_op(triple,triple->m_op_1,t2);
+        break;
+      }
+      case TypeCompatibility::CAST_RIGHT_TO_LEFT:{
+        insert_cast_and_replace_op(triple,triple->m_op_2,t1);
+        break;
+      }
+      case TypeCompatibility::COMPATIBLE:{
+        if(t1==BasicType::VOID)
+          m_listener->ircoder_error(triple->m_code_line_number,"Void types can't be compared");
+        break;
+      }
+      default:
+        break;
+      }
       break;
     }
     case Operation::SUB:
@@ -152,8 +259,11 @@ void IRCoder::check_triple(Triple * triple){
     {
       DataType t1 = triple->m_op_1.get_type();
       DataType t2 = triple->m_op_2.get_type();
-      if(!equal_data_types_or_error(t1,t2)){
-        std::string msg = fmt::format("Incompatible types");
+      if(equal_data_types_or_error(t1,t2)==TypeCompatibility::INCOMPATIBLE){
+        int index = triple->m_index;
+        std::string op_1 =data_type_to_string(triple->m_op_1.get_type());
+        std::string op_2 =data_type_to_string(triple->m_op_2.get_type());
+        std::string msg = fmt::format("Incompatible type | op1 type {} op2 type {} triple index = {}",op_1,op_2,index);
         m_listener->ircoder_error(triple->m_code_line_number,msg);
       }else if(triple->m_op_1.get_type()!=BasicType::INT){
         std::string msg = fmt::format("Can't perform operation {} on operands of type {}",operation_to_string(triple->m_operation),data_type_to_string(triple->m_op_1.get_type()));
@@ -164,7 +274,7 @@ void IRCoder::check_triple(Triple * triple){
     case Operation::NOT:
     {
       DataType t1 = triple->m_op_1.get_type();
-      if(t1!=BasicType::BOOL)
+      if(t1!=BasicType::BOOL && t1==BasicType::ERROR)
       {
         std::string msg = fmt::format("Can't negate non boolean types");
         m_listener->ircoder_error(triple->m_code_line_number,msg);
@@ -176,24 +286,6 @@ void IRCoder::check_triple(Triple * triple){
     { 
       DataType t1 = triple->m_op_1.get_type();
       if(t1 != BasicType::BOOL && t1 != BasicType::ERROR){
-        std::string msg = fmt::format("Expected boolean expression");
-        m_listener->ircoder_error(triple->m_code_line_number,msg);
-      }
-      break;
-    }
-    case Operation::AND:
-    case Operation::OR:
-    {
-      DataType t1 = triple->m_op_1.get_type();
-      DataType t2 = triple->m_op_2.get_type();
-
-      if(t1!=BasicType::BOOL && t1!=BasicType::ERROR)
-      {
-        std::string msg = fmt::format("Expected boolean expression");
-        m_listener->ircoder_error(triple->m_code_line_number,msg);
-      }
-      if(t2!=BasicType::BOOL && t2!=BasicType::ERROR)
-      {
         std::string msg = fmt::format("Expected boolean expression");
         m_listener->ircoder_error(triple->m_code_line_number,msg);
       }
@@ -212,7 +304,43 @@ void IRCoder::check_triple(Triple * triple){
       break;
     }
     case Operation::NEW_ARRAY:{
+      if(triple->m_data_type_for_new==BasicType::VOID){
+        std::string msg = fmt::format("Cannot create an array of void");
+        m_listener->ircoder_error(triple->m_code_line_number,msg);
+      }
+      break;
+    }
+    case Operation::CALL:{
+      auto fn = triple->m_op_1.m_function;
 
+      int number_of_arguments = fn->m_arguments.size();
+      if(triple->m_call_args.size() == number_of_arguments){
+          for(size_t i=0;i<fn->m_arguments.size(); i++){
+            switch( equal_data_types_or_error(triple->m_call_args[i].get_type(),fn->m_arguments[i]->m_type))
+            {
+            case TypeCompatibility::COMPATIBLE:
+              continue;
+            case TypeCompatibility::INCOMPATIBLE:
+            case TypeCompatibility::CAST_RIGHT_TO_LEFT:
+            {
+              std::string msg = fmt::format("Incompatible argument number {} in function {}",i,fn->m_name);
+              m_listener->ircoder_error(triple->m_code_line_number,msg);
+              break;
+            }
+            case TypeCompatibility::CAST_LEFT_TO_RIGHT:{
+            {
+              insert_cast_and_replace_op(triple,triple->m_call_args[i],fn->m_arguments[i]->m_type);
+              break;
+            }
+            default:
+              break;
+            }
+          }
+        }
+      }else{
+        std::string msg = fmt::format("Incorrect number of arguments");
+        m_listener->ircoder_error(triple->m_code_line_number,msg);
+      }
       break;
     }
     default:
@@ -227,13 +355,29 @@ DataType IRCoder::deduce_bool_type_one_argument(DataType op_1_type){
     return BasicType::ERROR;
 }
 
-DataType IRCoder::deduce_bool_type(DataType op_1_type,DataType op_2_type){
-  if(op_1_type==BasicType::INT && op_2_type==BasicType::INT)
-    return BasicType::BOOL;
-  else if(op_1_type==BasicType::BOOL && op_2_type==BasicType::BOOL)
+
+DataType IRCoder::deduce_bool_type_for_inequality_operators(DataType op_1_type,DataType op_2_type){
+  if(op_1_type.basic_type==BasicType::INT && op_2_type.basic_type==BasicType::INT)
     return BasicType::BOOL;
   else
     return BasicType::ERROR;
+}
+
+DataType IRCoder::deduce_bool_type_for_equality(DataType op_1_type,DataType op_2_type){
+  if(op_1_type==op_2_type){
+    if(op_1_type.basic_type==BasicType::VOID)
+      return BasicType::ERROR;
+    else
+      return BasicType::BOOL;
+  }
+  
+  if(op_1_type==BasicType::NULLPTR)
+    std::swap(op_1_type,op_2_type);
+
+  if(op_1_type.isNullable() && op_2_type==BasicType::NULLPTR)
+    return BasicType::BOOL;
+
+  return BasicType::ERROR;
 }
 
 
@@ -256,12 +400,15 @@ DataType IRCoder::deduce_arithmetic_type_one_argument(DataType op_1_type){
       return BasicType::ERROR;
 }
 
+
 DataType IRCoder::deduce_type(Triple *triple){
   DataType op_1_type=triple->m_op_1.get_type();
   DataType op_2_type=triple->m_op_2.get_type();
-  
+  // obejrzec
   switch (triple->m_operation)
   {
+  case Operation::CAST:
+    return triple->m_cast_type;
   case Operation::ADD:
   case Operation::MUL:
   case Operation::MOD:
@@ -275,15 +422,14 @@ DataType IRCoder::deduce_type(Triple *triple){
     return op_1_type;
   case Operation::NEG:
     return deduce_arithmetic_type_one_argument(op_1_type);
-  case Operation::AND:
-  case Operation::OR:
   case Operation::LTH:
   case Operation::LE:
   case Operation::GTH:
   case Operation::GE:
+    return deduce_bool_type_for_inequality_operators(op_1_type,op_2_type);
   case Operation::EQU:
   case Operation::NE:
-    return deduce_bool_type(op_1_type,op_2_type);
+    return deduce_bool_type_for_equality(op_1_type,op_2_type);
   case Operation::JT:
   case Operation::JF:
   case Operation::JMP:
@@ -300,23 +446,37 @@ DataType IRCoder::deduce_type(Triple *triple){
   case Operation::DEC:
     return deduce_arithmetic_type_one_argument(op_1_type);
   case Operation::NEW_ARRAY: // int [] t
-    return {triple->m_data_type_for_new.basic_type,triple->m_data_type_for_new.dimensions+1};
+    return triple->m_data_type_for_new.increment_dimensions();
+  case Operation::ACCESS_ARRAY:{
+    if(op_1_type.dimensions>0)
+      return op_1_type.decrement_dimensions(); // okreslanie typu elementu do ktorego uzyskujemy dostep 
+    else
+      return BasicType::ERROR;
+  }
+  case Operation::ARRAY_LENGTH:
+    return BasicType::INT;
+  case Operation::NEW_INSTANCE:
+    return triple->m_data_type_for_new;
+  case Operation::MEMEBER_ACCESS:
+    return op_2_type;
   default:
-    throw 0;
+    throw std::runtime_error("IRCoder::deduce_type(Triple *triple)");
   }
 }
 
 Triple* IRCoder::push(int line_number,Operation operation,const Operand &op_1,const Operand &op_2){
+  Triple * triple = push_no_check(line_number,operation,op_1,op_2);
+  analyze_triple(triple);
+  return triple;
+}
+
+Triple* IRCoder::push_no_check(int line_number,Operation operation,const Operand &op_1,const Operand &op_2){
     Triple *triple = new Triple{line_number,m_position,operation,op_1,op_2};
-    DataType deduced_type = deduce_type(triple);
-    triple->m_data_type=deduced_type;
 
     m_current_fn->m_triples.insert(m_current_fn->m_triples.begin()+ m_position,triple);
-    
+
     for(size_t i=m_position+1;i<m_current_fn->m_triples.size();i++)
       m_current_fn->m_triples[i]->m_index=i;
-
-    check_triple(triple);
 
     m_position++;
     

@@ -1,0 +1,29 @@
+class Person{
+    int age;
+    string name;
+}
+
+Person [] getPeople(){
+    Person [] people = new Person[2];
+    people[0] = new Person;
+    people[1] = new Person;
+    
+    people[0].name="John";
+    people[0].age=43;
+    people[1].name="Mike";
+    people[1].age=32;
+
+    return people;
+}
+
+int main(){
+    Person [] people;
+    people = getPeople();
+    
+    printString(people[0].name);
+    printInt(people[0].age);
+    printString(people[1].name);
+    printInt(people[1].age);
+    
+    return 0;
+}

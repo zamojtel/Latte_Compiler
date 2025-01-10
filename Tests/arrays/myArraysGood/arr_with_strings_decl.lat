@@ -1,0 +1,5 @@
+
+int main(){
+    string [] t = new string [3];
+    return 0;
+}

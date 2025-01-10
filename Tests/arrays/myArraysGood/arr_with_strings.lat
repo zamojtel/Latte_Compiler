@@ -1,0 +1,8 @@
+
+int main(){
+    string [] t = new string[1];
+    printString(t[0]);
+    t[0]="a";
+    printString(t[0]);
+    return 0;
+}

@@ -1,0 +1,11 @@
+
+int main(){
+    int x = readInt();
+    printInt(x);
+    string str_1 = readString();
+    printString(str_1);
+    string str_2 = readString();
+    printString(str_2);
+
+    return 0;
+}

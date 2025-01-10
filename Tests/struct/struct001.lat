@@ -1,0 +1,17 @@
+
+
+int main(){
+    string str = null;
+    int []t = null;
+    if(str==null)
+    {
+        printString("String is null");
+    }
+
+    if(t==null)
+    {
+        printString("t is null");
+    }
+    
+    return 0;    
+}

@@ -1,0 +1,12 @@
+int main(){
+    int []t = new int[3];
+    t[0]=120;
+    t[1]=220;
+    t[2]=320;
+
+    for(int x : t){
+        printInt(x);
+    }
+    
+    return 0;
+}

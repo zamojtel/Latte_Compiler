@@ -6,11 +6,27 @@ Prog.   Program ::= [TopDef] ;
 
 FnDef.	   TopDef ::= Type Ident "(" [Arg] ")" Block ;
 
+ClassDef. TopDef ::= "class" Ident "{" [ClassDecl] "}";
+
+--- Extended Definiton --------------------------------------
+
+ClassExtDef. TopDef ::= "class" Ident "extends" Ident "{" [ClassDecl] "}" ;
+
 separator nonempty TopDef "" ;
 
 Ar. 	   Arg ::= Type Ident;
 
 separator  Arg "," ;
+
+-- struct/classes ------------------------------------------
+
+-- MethodDef. ClassDecl ::= TopDef ; -- We wont be able to create classes within classes---
+
+MethodDef. ClassDecl ::= Type Ident "(" [Arg] ")" Block ;
+
+FieldDef. ClassDecl ::= Type Ident ";" ;
+
+separator nonempty ClassDecl "" ;
 
 -- statements ----------------------------------------------
 
@@ -30,11 +46,15 @@ Init.      Item ::= Ident "=" Expr ;
 
 separator nonempty Item "," ;
 
-Ass.       Stmt ::= Ident "=" Expr  ";" ;
+-- change to expr -------------------------- in these 3 places
+-- before Ident-----------------------------------------------
+Ass.       Stmt ::= Expr "=" Expr  ";" ;
 
-Incr.      Stmt ::= Ident "++"  ";" ;
+Incr.      Stmt ::= Expr "++"  ";" ;
 
-Decr.      Stmt ::= Ident "--"  ";" ;
+Decr.      Stmt ::= Expr "--"  ";" ;
+
+---------------------------------------------------------------
 
 Ret.       Stmt ::= "return" Expr ";" ;
 
@@ -48,10 +68,19 @@ While.     Stmt ::= "while" "(" Expr ")" Stmt ;
 
 SExp.      Stmt ::= Expr  ";" ;
 
+--added-----------------------------------------------------
+
+For.       Stmt ::= "for" "(" Type Ident ":" Expr ")" Stmt ;
+
 -- Types ---------------------------------------------------
+
 -- Arrays --------------------------------------------------
 
 Array.     Type ::= Type "[]";
+
+-- Classes -------------------------------------------------
+
+Class.     Type ::= Ident ;
 
 Int.       Type ::= "int" ;
 
@@ -74,12 +103,26 @@ ELitInt.   Expr6 ::= Integer ;
 ELitTrue.  Expr6 ::= "true" ;
 
 ELitFalse. Expr6 ::= "false" ;
--- added -----
-ArrAcc.    Expr6 ::= Ident "[" Expr "]" ;
+
+ELitNull.  Expr6 ::= "null" ;
+
+-- added ---------------------------------------------------
+
+ArrAcc.    Expr6 ::= Expr6 "[" Expr "]" ;
+
+EClass.    Expr6 ::= "new" Ident ;
+
+-- EFieldGet. Expr6 ::= Expr6 "." Ident ;
+
+EMethod.   Expr6 ::= Expr6 "." Ident "(" [Expr] ")" ;
+
+------------------------------------------------------------
 
 EApp.      Expr6 ::= Ident "(" [Expr] ")" ;
 
 EString.   Expr6 ::= String ;
+
+ENull.     Expr6 ::="(" Ident ")" "null" ;
 
 Neg.       Expr5 ::= "-" Expr6 ;
 
@@ -102,6 +145,10 @@ separator  Expr "," ;
 ----Arrays--------------------------------------------------
 
 NewArray.  Expr ::= "new" Type "[" Expr "]" ;
+
+---Classes--------------------------------------------------
+
+MemberAcc. Expr6 ::= Expr6 "." Ident ;
 
 -- operators -----------------------------------------------
 
