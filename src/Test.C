@@ -20,15 +20,7 @@
 #include <stdexcept>
 #include <filesystem>
 #include <fstream>
-
-// originalny plik ktory jest zmodyfikowany
-// void usage() {
-//   printf("usage: Call with one of the following argument combinations:\n");
-//   printf("\t--help\t\tDisplay this help message.\n");
-//   printf("\t(no arguments)\tParse stdin verbosely.\n");
-//   printf("\t(files)\t\tParse content of files verbosely.\n");
-//   printf("\t-s (files)\tSilent mode. Parse content of files silently.\n");
-// }
+#include <cctype>
 
 class ErrorList {
 public:
@@ -96,6 +88,15 @@ private:
 public:
   ErrorList m_error_list;
 
+  bool contains_special_symbols(std::string &name){
+    for (char c : name) {
+      if (!std::isalnum(c) && c!='_')
+        return true;
+    }
+
+    return false;
+  }
+
   void visitNewArray(NewArray *p) override {
     p->type_->accept(this);
     DataType type = m_last_visited_type;
@@ -141,6 +142,7 @@ public:
 
     m_symbol_table.pop();
   }
+
   // --Arrays
   // declaration
   void visitArray(Array *p) override {
@@ -168,7 +170,6 @@ public:
   }
 
   void visitClass(Class *p) override{
-    
     if(!m_program->has_class(p->ident_)){
       MyClass * new_class = new MyClass{p->ident_};
       m_program->m_classes.push_back(new_class);
@@ -370,12 +371,17 @@ public:
     p->listtopdef_->accept(this);
     LOG_DEBUG("End Program");
   }
-
+  // here 
   void visitFnDef(FnDef *p) override {
     if(m_pass_number==1){
       LOG_DEBUG("Begin function definition");
       LOG_DEBUG("Function name: {}",p->ident_);
       
+      if(contains_special_symbols(p->ident_)){
+        m_error_list.add_error(p->line_number,fmt::format("The function name {} can't contain special sybmols",p->ident_));
+        return;
+      }
+
       if(m_program->has_function(p->ident_)){
         auto *fn = m_program->get_function(p->ident_);
 
@@ -493,9 +499,14 @@ public:
     }
   }
 
-
   void visitMethodDef(MethodDef *p) override {
     if(m_pass_number==1){
+      // Przejrzec 2
+      if(contains_special_symbols(p->ident_)){
+        m_error_list.add_error(p->line_number,fmt::format("The method name {} can't contain special sybmols",p->ident_));
+        return;
+      }
+
       if(m_current_class->has_method(p->ident_)){
         m_error_list.add_error(p->line_number,fmt::format("The method with name '{}' has been already defined in the class {}.",p->ident_,m_current_class->m_name));
         return;
@@ -577,7 +588,7 @@ public:
     Triple * triple = m_IRCoder.push_no_check(p->line_number,Operation::NEW_INSTANCE);
     triple->m_data_type_for_new = m_program->get_class(p->ident_);
     m_IRCoder.analyze_triple(triple);
-
+    
     m_nodes_to_operands[p] = triple;
   }
 
@@ -1096,6 +1107,7 @@ int main(int argc, char ** argv)
   LLVMCodeGenerator llvm_generator{&int_program};
   
   my_visitor.pass(parse_tree);
+  int_program.create_virtual_tables();
   
   for(auto *fn : int_program.m_functions){
     if(fn->m_return_type==BasicType::VOID)

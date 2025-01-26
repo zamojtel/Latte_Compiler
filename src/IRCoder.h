@@ -11,6 +11,7 @@
 
 class IRCoder{
 private:
+    bool m_debug=false;
     enum class TypeCompatibility{
         COMPATIBLE,INCOMPATIBLE,CAST_LEFT_TO_RIGHT,CAST_RIGHT_TO_LEFT
     };

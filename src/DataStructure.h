@@ -293,19 +293,20 @@ enum class SymbolTableCategory{
 
 class Field{
 private:
-    int m_index;
+    size_t m_index;
     MyClass *m_owner;
 public:
     std::string m_name;
     DataType m_type;
     int get_index() const { return m_index; }
     MyClass * get_class() const { return m_owner; }
-    Field(DataType type,const std::string &name,MyClass *cl,int index):m_index{index},m_owner{cl},m_name{name},m_type{type}{}
+    Field(DataType type,const std::string &name,MyClass *cl,size_t index):m_index{index},m_owner{cl},m_name{name},m_type{type}{}
 };
 
 class MyClass{
 private:
 public:
+    std::vector<Function*> m_vtable;
     int m_implicit_declaration_line = -1; 
     bool m_defined=false; 
     MyClass *m_base_class = nullptr;
@@ -330,6 +331,7 @@ public:
 class Function{
 private:
 public:
+    size_t m_vtable_index;
     MyClass * m_class = nullptr;
     PredefinedFunction m_type;
     bool m_used;

@@ -2,7 +2,6 @@
 #define INTERMEDIATE_PROGRAM_STRUCTURE_H
 
 class IntermediateProgram{
-private:
 public:
   std::vector<Function*> m_functions;
   std::vector<MyClass*> m_classes;
@@ -13,6 +12,8 @@ public:
   bool has_class(const std::string & cl_name) const;
   Function* get_function(const std::string &name) const;
   MyClass* get_class(const std::string &name) const;
+  void create_virtual_tables();
+  void create_vtable(MyClass *cl);
   ~IntermediateProgram(){
     for(auto *fn: m_functions)
       delete fn;

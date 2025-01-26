@@ -157,11 +157,16 @@ void IRCoder::check_triple(Triple * triple){
       case TypeCompatibility::INCOMPATIBLE:
       case TypeCompatibility::CAST_LEFT_TO_RIGHT:
       {
-        int index = triple->m_index;
         std::string op_1 = data_type_to_string(triple->m_op_1.get_type());
         std::string op_2 = data_type_to_string(triple->m_op_2.get_type());
-        // todo triple index should be shown in debug version only 
-        std::string msg = fmt::format("Incompatible types | op1 type {} op2 type {} triple index = {}",op_1,op_2,index);
+        // todo triple index should be shown in debug version only
+        std::string msg;
+        if(m_debug){
+          int index = triple->m_index;
+          msg = fmt::format("Incompatible types | op1 type {} op2 type {} triple index = {}",op_1,op_2,index);
+        }else
+          msg = fmt::format("Incompatible types");
+        
         m_listener->ircoder_error(triple->m_code_line_number,msg);
         break;
       }
@@ -201,15 +206,22 @@ void IRCoder::check_triple(Triple * triple){
     case Operation::ADD:{
       DataType t1 = triple->m_op_1.get_type();
       DataType t2 = triple->m_op_2.get_type();
+      // Przejrzec #1
+      //  if(equal_data_types_or_error(t1,t2)==TypeCompatibility::COMPATIBLE){
+       if(equal_data_types_or_error(t1,t2)==TypeCompatibility::INCOMPATIBLE){
+        // if(t1 == BasicType::INT || t1 == BasicType::STRING || (t1 == BasicType::ERROR && t2 == BasicType::ERROR))
+        //   break;
 
-       if(equal_data_types_or_error(t1,t2)==TypeCompatibility::COMPATIBLE){
-        if(t1 == BasicType::INT || t1 == BasicType::STRING || (t1 == BasicType::ERROR && t2 == BasicType::ERROR))
-          break;
-
-        int index = triple->m_index;
         std::string op_1 =data_type_to_string(triple->m_op_1.get_type());
         std::string op_2 =data_type_to_string(triple->m_op_2.get_type());
-        std::string msg = fmt::format("Incompatible type | op1 type {} op2 type {} triple index = {}",op_1,op_2,index);
+        std::string msg;
+        if(m_debug){
+          int index = triple->m_index;
+          msg = fmt::format("Incompatible types | op1 type {} op2 type {} triple index = {}",op_1,op_2,index);
+        }else
+          msg = fmt::format("Incompatible types");
+        
+        // std::string msg = fmt::format("Incompatible type | op1 type {} op2 type {} triple index = {}",op_1,op_2,index);
         m_listener->ircoder_error(triple->m_code_line_number,msg);
       }
       break;
@@ -227,6 +239,12 @@ void IRCoder::check_triple(Triple * triple){
         std::string op_1 =data_type_to_string(triple->m_op_1.get_type());
         std::string op_2 =data_type_to_string(triple->m_op_2.get_type());
         std::string msg = fmt::format("Incompatible type | op1 type {} op2 type {} triple index = {}",op_1,op_2,index);
+        if(m_debug){
+          int index = triple->m_index;
+          msg = fmt::format("Incompatible types | op1 type {} op2 type {} triple index = {}",op_1,op_2,index);
+        }else
+          msg = fmt::format("Incompatible types");
+        
         m_listener->ircoder_error(triple->m_code_line_number,msg);
         break;
       }
@@ -260,10 +278,16 @@ void IRCoder::check_triple(Triple * triple){
       DataType t1 = triple->m_op_1.get_type();
       DataType t2 = triple->m_op_2.get_type();
       if(equal_data_types_or_error(t1,t2)==TypeCompatibility::INCOMPATIBLE){
-        int index = triple->m_index;
         std::string op_1 =data_type_to_string(triple->m_op_1.get_type());
         std::string op_2 =data_type_to_string(triple->m_op_2.get_type());
-        std::string msg = fmt::format("Incompatible type | op1 type {} op2 type {} triple index = {}",op_1,op_2,index);
+
+        std::string msg;
+        if(m_debug){
+          int index = triple->m_index;
+          msg = fmt::format("Incompatible types | op1 type {} op2 type {} triple index = {}",op_1,op_2,index);
+        }else
+          msg = fmt::format("Incompatible types");
+
         m_listener->ircoder_error(triple->m_code_line_number,msg);
       }else if(triple->m_op_1.get_type()!=BasicType::INT){
         std::string msg = fmt::format("Can't perform operation {} on operands of type {}",operation_to_string(triple->m_operation),data_type_to_string(triple->m_op_1.get_type()));
@@ -313,8 +337,7 @@ void IRCoder::check_triple(Triple * triple){
     case Operation::CALL:{
       auto fn = triple->m_op_1.m_function;
 
-      int number_of_arguments = fn->m_arguments.size();
-      if(triple->m_call_args.size() == number_of_arguments){
+      if(triple->m_call_args.size() == fn->m_arguments.size()){
           for(size_t i=0;i<fn->m_arguments.size(); i++){
             switch( equal_data_types_or_error(triple->m_call_args[i].get_type(),fn->m_arguments[i]->m_type))
             {
@@ -355,7 +378,6 @@ DataType IRCoder::deduce_bool_type_one_argument(DataType op_1_type){
     return BasicType::ERROR;
 }
 
-
 DataType IRCoder::deduce_bool_type_for_inequality_operators(DataType op_1_type,DataType op_2_type){
   if(op_1_type.basic_type==BasicType::INT && op_2_type.basic_type==BasicType::INT)
     return BasicType::BOOL;
@@ -380,7 +402,6 @@ DataType IRCoder::deduce_bool_type_for_equality(DataType op_1_type,DataType op_2
   return BasicType::ERROR;
 }
 
-
 DataType IRCoder::deduce_arithmetic_type(Operation operation,DataType op_1_type,DataType op_2_type){
   if(op_1_type!=op_2_type)
     return BasicType::ERROR;
@@ -389,7 +410,7 @@ DataType IRCoder::deduce_arithmetic_type(Operation operation,DataType op_1_type,
     return BasicType::INT;
   else if(op_1_type==BasicType::STRING && operation==Operation::ADD)
     return BasicType::STRING;
-  else 
+  else
     return BasicType::ERROR;
 }
 
@@ -399,7 +420,6 @@ DataType IRCoder::deduce_arithmetic_type_one_argument(DataType op_1_type){
     else
       return BasicType::ERROR;
 }
-
 
 DataType IRCoder::deduce_type(Triple *triple){
   DataType op_1_type=triple->m_op_1.get_type();

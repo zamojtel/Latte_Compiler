@@ -35,6 +35,9 @@ public:
 
 class LLVMCodeGenerator{
 private:
+    int COUNTER_SIZE=4;
+    int MODIFIABLE_FLAG=1;
+    int END_OF_STRING=1;
     bool scanf_added=false;
     bool printf_added=false;
     size_t m_last_marker_number;
@@ -63,6 +66,11 @@ public:
     void add_used_predefined_functions();
     void add_classes_declarations();
     void enumerate_all_markers(Function *fn);
+    void add_virtual_tables();
+    int calculate_instance_size(MyClass *cl);
+    int get_string_length(const std::string str);
+    std::string generate_llvm_function_to_vtable(Function *fn);
+    std::string generate_llvm_vtable(MyClass * cl);
     std::string get_all_data_types(MyClass *cl);
     std::string make_alloca_string(DataType type);
     std::string make_store_string(Argument *arg,int from,int to);
