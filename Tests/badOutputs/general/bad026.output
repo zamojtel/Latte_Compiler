@@ -1,0 +1,2 @@
+ERROR
+Line 5: Incompatible types | op1 type int op2 type string triple index = 2

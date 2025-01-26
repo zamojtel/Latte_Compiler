@@ -1,0 +1,23 @@
+// Ten błąd jest nieprawidłowy
+
+// * Problem z kompilacją
+//  Błąd kompilacji
+// ERROR
+// Line 4: Incorrect number of arguments
+// ----
+// Author: Krzysztof Małysa (2020)
+class X {
+	void foo() {
+    	bar(42);
+	}
+
+	void bar(int x) {}
+}
+
+int main() {
+	(new X).foo();
+	return 0;
+}
+// ------
+// - czy jak zamiast (new X).foo() zrobimy X x = new X; x.foo() to będzie tak samo?
+

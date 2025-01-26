@@ -67,28 +67,28 @@ if __name__ == '__main__':
     output_dir_good = f'{cwd}/Tests/goodOutputs/general'
     check_tests(input_file_names_good,input_dir_good,output_dir_good)
     
-    #TODO TESTY DODATKOWE DO PODSTAWY BACKENDU: OK
+    ## TODO TESTY DODATKOWE DO PODSTAWY BACKENDU: OK
     print("Basic Tests: ")
     input_file_names_basic = collect_all_files(f'{cwd}/Tests/good/basic') 
     input_dir_basic = f'{cwd}/Tests/good/basic'
     output_dir_basic = f'{cwd}/Tests/goodOutputs/basic'
     check_tests(input_file_names_basic,input_dir_basic,output_dir_basic)
     
-    #TODO Testowanie Predefiniowanych funkcji: OK
+    ##TODO Testowanie Predefiniowanych funkcji: OK
     print("BasicPredifinedFunctions: ")
     input_file_names_func = collect_all_files(f'{cwd}/Tests/myTests/PredifinedFunctions') 
     input_dir_func = f'{cwd}/Tests/myTests/PredifinedFunctions'
     output_dir_func = f'{cwd}/Tests/myTests/PredifinedFunctionsOutputs'
     check_tests(input_file_names_func,input_dir_func,output_dir_func)
 
-    #TODO myTests/Tests OK
+    ## TODO myTests/Tests OK
     print("My Tests: ")
     input_file_names_newtests = collect_all_files(f'{cwd}/Tests/myTests/Tests') 
     input_dir_newtests = f'{cwd}/Tests/myTests/Tests'
     output_dir_newtests = f'{cwd}/Tests/myTests/TestsOutputs'
     check_tests(input_file_names_newtests,input_dir_newtests,output_dir_newtests)
 
-    #TODO Testowanie Wyrazen Boolowskich: OK
+    ## TODO Testowanie Wyrazen Boolowskich: OK
     print("BooleanExpressions: ")
     input_file_names_booleans = collect_all_files(f'{cwd}/Tests/myTests/BooleanExpressions') 
     input_dir_booleans = f'{cwd}/Tests/myTests/BooleanExpressions'
@@ -102,21 +102,21 @@ if __name__ == '__main__':
     input_file_names_arrays = collect_all_files(f'{cwd}/Tests/extensions/arrays1')
     check_tests(input_file_names_arrays,input_dir_arrays,output_dir_arrays)
     
-    #TODO Testowanie Tablic: OK
+    # #TODO Testowanie Tablic: OK
     print("Test Arrays: ") 
     input_dir_goodArrays = f'{cwd}/Tests/arrays/good'
     output_dir_goodArrays = f'{cwd}/Tests/arraysOutputs/good'
     input_file_names_goodArrays = collect_all_files(f'{cwd}/Tests/arrays/good')
     check_tests(input_file_names_goodArrays,input_dir_goodArrays,output_dir_goodArrays)
 
-    #TODO Testowanie Struktur moje testy: OK all
+    ###TODO Testowanie Struktur moje testy: OK all
     print("Test structs: ")
     input_dir_goodStructs = f'{cwd}/Tests/struct'
     output_dir_goodStructs = f'{cwd}/Tests/structOutputs'
     input_file_names_goodStructs = collect_all_files(f'{cwd}/Tests/struct')
     check_tests(input_file_names_goodStructs,input_dir_goodStructs,output_dir_goodStructs)
 
-    #TODO Podstawowe testy do struktur TESTY BENKE: OK 2 dorzucone dodatkowo all 
+    # ###TODO Podstawowe testy do struktur TESTY BENKE: OK 2 dorzucone dodatkowo all 
     print("Test Structs Required")
     input_dir_structs = f'{cwd}/Tests/extensions/struct'
     output_dir_structs = f'{cwd}/Tests/extensionsOutputs/struct'
@@ -124,28 +124,28 @@ if __name__ == '__main__':
     input_file_names_structs = collect_all_files(input_dir_structs)
     check_tests(input_file_names_structs,input_dir_structs,output_dir_structs)
 
-    #TODO Moje testy do tablic: OK all
+    # ##TODO Moje testy do tablic: OK all
     print("Test myArraysGood: ") 
     input_dir_myArrays = f'{cwd}/Tests/arrays/myArraysGood'
     output_dir_myArrays = f'{cwd}/Tests/arraysOutputs/myArraysGood'
     input_file_names_myArrays = collect_all_files(f'{cwd}/Tests/arrays/myArraysGood')
     check_tests(input_file_names_myArrays,input_dir_myArrays,output_dir_myArrays)
 
-    #TODO Dodatkowe testy do tablic: OK all
+    # # #TODO Dodatkowe testy do tablic: OK all
     print("Test additionalArrays: ") 
     input_dir_myArrays = f'{cwd}/Tests/arrays/arraysAdditional'
     output_dir_myArrays = f'{cwd}/Tests/arraysOutputs/arraysAdditional'
     input_file_names_myArrays = collect_all_files(f'{cwd}/Tests/arrays/arraysAdditional')
     check_tests(input_file_names_myArrays,input_dir_myArrays,output_dir_myArrays)
 
-    #TODO [MOJE TESTY] TESTOWANIE OBIEKTOW: OK 9/10 -> 10/10
+    # # TODO [MOJE TESTY] TESTOWANIE OBIEKTOW: OK 9/10 -> 10/10
     print("Test Objects with methods : ")
     input_dir_objects = f'{cwd}/Tests/objects'
     output_dir_objects = f'{cwd}/Tests/objectsOutputs'
     input_file_names_objects = collect_all_files(f'{cwd}/Tests/objects')
     check_tests(input_file_names_objects,input_dir_objects,output_dir_objects)
 
-    #TODO TESTS STRINGS: OK
+    #####TODO TESTS STRINGS: OK
     print("Test strings : ") 
     input_dir_objects = f'{cwd}/Tests/strings'
     output_dir_objects = f'{cwd}/Tests/stringsOutputs'
@@ -159,16 +159,24 @@ if __name__ == '__main__':
     input_file_names_objects = collect_all_files(input_dir_objects)
     check_tests(input_file_names_objects,input_dir_objects,output_dir_objects)
 
-    #TODO TESTY OD BENKE OBJECTS2: 0/1 nie przechodzi 
+
+    # TODO TESTY OD BENKE OBJECTS2: 0/1 nie przechodzi 
     print("Test objects2  : ") 
     input_dir_objects2 = f'{cwd}/Tests/extensions/objects2'
     output_dir_objects2 = f'{cwd}/Tests/extensionsOutputs/objects2'
     input_file_names_objects2 = collect_all_files(input_dir_objects2)
     check_tests(input_file_names_objects2,input_dir_objects2,output_dir_objects2)
 
-    #TODO DODATKOWE TESTY ZE STRONY DO METOD WIRTUALNYCH: 0/1
-    # print("Test virtual:")
-    # input_dir_virtual = f'{cwd}/Tests/virtual'
-    # output_dir_virtual = f'{cwd}/Tests/virtualOutputs'
-    # input_file_names_virtual = collect_all_files(input_dir_virtual)
-    # check_tests(input_file_names_virtual,input_dir_virtual,output_dir_virtual)
+    # #TODO DODATKOWE TESTY ZE STRONY DO METOD WIRTUALNYCH: 0/1
+    print("Test virtual:")
+    input_dir_virtual = f'{cwd}/Tests/virtual'
+    output_dir_virtual = f'{cwd}/Tests/virtualOutputs'
+    input_file_names_virtual = collect_all_files(input_dir_virtual)
+    check_tests(input_file_names_virtual,input_dir_virtual,output_dir_virtual)
+
+    # print("Test Poprawki:")
+    # input_dir_poprawki = f'{cwd}/Tests/Poprawki'
+    # output_dir_poprawki = f'{cwd}/Tests/PoprawkiOutputs'
+    # input_file_names_poprawki = collect_all_files(input_dir_poprawki)
+    
+    # check_tests(input_file_names_poprawki,input_dir_poprawki,output_dir_poprawki)

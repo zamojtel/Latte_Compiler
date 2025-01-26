@@ -1,0 +1,29 @@
+int[][] makeArray(int n, int m) {
+    int[][] r = new int[][n];
+    int i;
+    while (i < n) {
+        int j;
+        r[i] = new int[m];
+        while (j < m) {
+            r[i][j] = (i + 1) * (j + 1);
+            j++;
+        }
+        i++;
+    }
+    return r;
+}
+
+void printArray(int[][] a) {
+    for (int[] b : a)
+        for (int x : b)
+            printInt(x);
+}
+
+void run() {
+    printArray(makeArray(readInt(), readInt()));
+}
+
+int main() {
+    run();
+    return 0;
+}

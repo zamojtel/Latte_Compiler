@@ -1,0 +1,14 @@
+
+
+int main(){
+    string str1 ="abcxyz";
+    string str2 ="something";
+
+    if(str1+str2 == "abc"+"xyz"+"somethin"){
+        printString("Strings are equal");
+    }else{
+        printString("Strings are not equal");
+    }
+
+    return 0;
+}

@@ -1,0 +1,20 @@
+// * Problem z kompilacją
+//  Zaakceptowany zły plik!
+// OK
+// ----
+class A {
+  string x;
+}
+
+class B extends A {
+  int x;
+}
+
+int main()
+{
+  B b = new B;
+  b.x = 42;
+  A a = b;
+  printString(a.x);
+  return 0;
+}

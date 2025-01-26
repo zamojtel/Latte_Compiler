@@ -48,9 +48,6 @@ class Rectangle extends Shape {
   void tellAgain() {
     printString("I'm really a rectangle");
   }
-  void calcArea(){
-    int x =10;
-  }
 }
 
 class Circle extends Shape {

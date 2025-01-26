@@ -1,0 +1,17 @@
+// * Problem z kompilacją
+//  Błąd kompilacji - brak pliku wykonywalnego
+// OK
+// llvm-as-14: /home/staff/iinf/chrzaszcz/MRJ/Latte/Rozszerzenia/Studenci/Bartłomiej_Żamojtel/testy/good/Nowak-null/func_call_arg_conversion_null_to_class.ll:3:11: error: invalid forward reference to function 'foo' with wrong type: expected 'void (%class.X*)*' but was 'void (i8*)*'
+// call void @foo(i8* noundef null)
+//      	^
+// llvm-link-14: No such file or directory
+// ----
+// Author: Krzysztof Małysa (2020)
+int main() {
+	foo(null);
+	return 0;
+}
+
+class X {}
+void foo(X a) {}
+// ------

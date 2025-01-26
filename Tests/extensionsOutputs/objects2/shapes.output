@@ -6,20 +6,3 @@ I'm a shape
 I'm really a rectangle
 I'm a shape
 I'm just a shape
-
-vTableShape{
-    Pointer *fn1 =Shape::tell();
-    Pointer *fn2 = Shape::tellAgain();
-}
-
-vTableRectangle{
-    Pointer *fn1 =Shape::tell();
-    Pointer *fn2 = Rectangle::tellAgain();
-    Pointer *fn3 = Rectangle::calcArea();
-}
-
-vTableRectangle{
-    Pointer *fn1 =Shape::tell();
-    Pointer *fn2 = Rectangle::tellAgain();
-    Pointer *fn3 = Rectangle::calcArea();
-}

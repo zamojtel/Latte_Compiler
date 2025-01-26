@@ -74,6 +74,11 @@ define dso_local i32 @getStringCount() #0 {
   ret i32 %1
 }
 
+; Function Attrs: mustprogress noinline nounwind optnone uwtable
+define dso_local void @error() #0 {
+  ret void
+}
+
 ; Function Attrs: mustprogress noinline optnone uwtable
 define dso_local void @printString(i8* noundef %0) #3 {
   %2 = alloca i8*, align 8
@@ -439,7 +444,7 @@ define dso_local zeroext i1 @compareStrings(i8* noundef %0, i8* noundef %1) #0 {
   %22 = getelementptr inbounds i8, i8* %21, i64 4
   %23 = getelementptr inbounds i8, i8* %22, i64 1
   %24 = call i32 @strcmp(i8* noundef %20, i8* noundef %23) #8
-  %25 = icmp ne i32 %24, 0
+  %25 = icmp eq i32 %24, 0
   store i1 %25, i1* %3, align 1
   br label %26
 
@@ -509,20 +514,40 @@ define dso_local i32 @myFunc(i32* noundef %0, i32 noundef %1) #3 {
 }
 
 ; Function Attrs: mustprogress noinline nounwind optnone uwtable
-define dso_local i8* @allocateInstance(i32 noundef %0) #0 {
-  %2 = alloca i32, align 4
-  %3 = alloca i8*, align 8
-  store i32 %0, i32* %2, align 4
-  %4 = load i32, i32* %2, align 4
-  %5 = sext i32 %4 to i64
-  %6 = call noalias i8* @malloc(i64 noundef %5) #7
-  store i8* %6, i8** %3, align 8
-  %7 = load i8*, i8** %3, align 8
-  %8 = load i32, i32* %2, align 4
-  %9 = sext i32 %8 to i64
-  call void @llvm.memset.p0i8.i64(i8* align 1 %7, i8 0, i64 %9, i1 false)
-  %10 = load i8*, i8** %3, align 8
-  ret i8* %10
+define dso_local i8* @allocateInstance(i8** noundef %0, i32 noundef %1) #0 {
+  %3 = alloca i8**, align 8
+  %4 = alloca i32, align 4
+  %5 = alloca i8*, align 8
+  store i8** %0, i8*** %3, align 8
+  store i32 %1, i32* %4, align 4
+  %6 = load i32, i32* %4, align 4
+  %7 = add nsw i32 8, %6
+  %8 = sext i32 %7 to i64
+  %9 = call noalias i8* @malloc(i64 noundef %8) #7
+  store i8* %9, i8** %5, align 8
+  %10 = load i8*, i8** %5, align 8
+  %11 = getelementptr inbounds i8, i8* %10, i64 8
+  %12 = load i32, i32* %4, align 4
+  %13 = sext i32 %12 to i64
+  call void @llvm.memset.p0i8.i64(i8* align 1 %11, i8 0, i64 %13, i1 false)
+  %14 = load i8**, i8*** %3, align 8
+  %15 = load i8*, i8** %5, align 8
+  %16 = bitcast i8* %15 to i8***
+  store i8** %14, i8*** %16, align 8
+  %17 = load i8*, i8** %5, align 8
+  %18 = getelementptr inbounds i8, i8* %17, i64 8
+  ret i8* %18
+}
+
+; Function Attrs: mustprogress noinline nounwind optnone uwtable
+define dso_local i8** @get_vtable(i8* noundef %0) #0 {
+  %2 = alloca i8*, align 8
+  store i8* %0, i8** %2, align 8
+  %3 = load i8*, i8** %2, align 8
+  %4 = getelementptr inbounds i8, i8* %3, i64 -8
+  %5 = bitcast i8* %4 to i8***
+  %6 = load i8**, i8*** %5, align 8
+  ret i8** %6
 }
 
 ; Function Attrs: mustprogress noinline nounwind optnone uwtable

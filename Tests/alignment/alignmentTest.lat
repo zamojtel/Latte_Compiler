@@ -1,0 +1,42 @@
+class A{
+//    boolean b;
+    int i;
+    A a;
+    void setA(A other){
+        a=other;
+    }
+}
+
+void printA(A a){
+    A current = a;
+    while(current!=null){
+        // printBool(current.b);
+        printInt(current.i);
+        current=current.a;
+    }
+}
+
+int main(){
+    A obj_1 = new A;
+    A obj_2 = new A;
+    // obj_1.b=true;
+    obj_1.i=100;
+    obj_1.a=null;
+
+    // obj_2.b = false;
+    obj_2.i = 200;
+    obj_2.setA(obj_1);
+    printA(obj_2);
+    
+    return 0;
+}
+
+void printBool(boolean b) {
+  if (b) {
+    printString("true");
+    return;
+  } else {
+    printString("false");
+    return;
+ }
+}

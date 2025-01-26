@@ -1,0 +1,2 @@
+ERROR
+Line 4: Incompatible type | op1 type string op2 type bool triple index = 0

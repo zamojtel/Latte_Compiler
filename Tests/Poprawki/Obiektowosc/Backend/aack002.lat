@@ -1,0 +1,24 @@
+class C {
+    	string s;
+
+    	boolean empty() {
+            	return s == "";
+    	}
+}
+
+int main(){
+  C c = new C;
+  string s;
+  if(s==""){
+    printString("String s is empty");
+  }
+  
+  if(c.s==""){
+    printString("String c.s is empty");
+  }
+
+  if(c.empty()){
+    printString("String c.s is empty by bool condition");
+  }
+  return 0;
+}

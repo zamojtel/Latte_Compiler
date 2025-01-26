@@ -1,0 +1,26 @@
+// * KŁOPOTY Z INICJALIZACJĄ:
+class C {
+    	string s;
+
+    	boolean empty() {
+            	return s == "";
+    	}
+}
+
+
+int main(){
+  C c = new C;
+  string s;
+
+  printString(c.s);
+  printString("Po .s");
+  if (c.empty()) printString("Jest empty");
+  if (c.s == "") printString("c.s jest empty");
+  if (s == "") printString("s jest empty");
+  return 0;
+}
+// ----
+// Po .s
+// s jest empty
+// ----
+// Czyli c.s nie jest pusty - niespójność z s -> do wyjaśnienia i poprawki!

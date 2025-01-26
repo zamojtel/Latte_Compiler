@@ -1,0 +1,23 @@
+// * Problem z kompilacją
+//  Błąd kompilacji - brak pliku wykonywalnego
+// OK
+// llvm-as-14: /home/staff/iinf/chrzaszcz/MRJ/Latte/Rozszerzenia/Studenci/Bartłomiej_Żamojtel/testy/good/aFrontend/ciapki.ll:1:25: error: expected '(' in function argument list
+// define dso_local void @a'''() {
+//                        ^
+// llvm-link-14: No such file or directory
+// ----
+// /*
+// * Blad kompilacji funkcji z ciapkami w nazwach
+// * To powinien zglosic frontend, albo powinno sie skompilowac poprawnie
+// */
+
+void a'''() {}
+
+void a''() {
+}
+
+int main() {
+    a'''();
+    a''();
+    return 0;
+}

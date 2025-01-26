@@ -33,7 +33,8 @@ cleanArrays:
 cleanExtensions:
 	rm -rf ./Tests/extensions/arrays1/*.bc ./Tests/extensions/arrays1/*_intermediate.bc ./Tests/extensions/arrays1/*.ll ./Tests/extensions/arrays1/*.output \
 	./Tests/extensions/objects1/*.bc ./Tests/extensions/objects1/*_intermediate.bc ./Tests/extensions/objects1/*.ll ./Tests/extensions/objects1/*.output \
-	./Tests/extensions/objects2/*.bc ./Tests/extensions/objects2/*_intermediate.bc ./Tests/extensions/objects2/*.ll ./Tests/extensions/objects2/*.output
+	./Tests/extensions/objects2/*.bc ./Tests/extensions/objects2/*_intermediate.bc ./Tests/extensions/objects2/*.ll ./Tests/extensions/objects2/*.output \
+	./Tests/extensions/struct/*.bc ./Tests/extensions/struct/*_intermediate.bc ./Tests/extensions/struct/*.ll ./Tests/extensions/struct/*.output \
 
 cleanGood:
 	rm -rf ./Tests/good/basic/*.bc ./Tests/good/basic/*.ll ./Tests/good/basic/*_intermediate.bc  ./Tests/good/basic/*.output \
@@ -55,7 +56,11 @@ cleanStruct:
 	rm -rf ./Tests/struct/*.bc ./Tests/struct/*.ll ./Tests/struct/*._intermediate.bc ./Tests/struct/*.output
 
 cleanVirtual:
-	rm -rf ./Tests/virtual/*.bc ./Tests/virtual/*.ll ./Tests/virtual/*_intermediate.bc ./Tests/virtual/*.output 
+	rm -rf ./Tests/virtual/*.bc ./Tests/virtual/*.ll ./Tests/virtual/*_intermediate.bc ./Tests/virtual/*.output \
+	rm -rf ./Tests/myVirtual/*.bc ./Tests/myVirtual/*.ll ./Tests/myVirtual/*_intermediate.bc ./Tests/myVirtual/*.output
+
+cleanStrings:
+	rm -rf ./Tests/strings/*.bc ./Tests/strings/*.ll ./Tests/strings/*_intermediate.bc ./Tests/strings/*.output
 
 CreateDirectory:
 	@mkdir -p build
@@ -63,8 +68,8 @@ CreateDirectory:
 clean :
 	rm -rf ./build ./latc_llvm 
 
-# cleanBison:
-# 	rm -f ./src/Parser.C ./src/Bison.H
+cleanBison:
+	rm -f ./src/Parser.C ./src/Bison.H
 
 distclean : clean
 	rm -f Absyn.C Absyn.H Buffer.C Buffer.H Test.C Bison.H Parser.C Parser.H ParserError.H LatteCPP.y Lexer.C LatteCPP.l Skeleton.C Skeleton.H Printer.C Printer.H Makefile LatteCPP.tex

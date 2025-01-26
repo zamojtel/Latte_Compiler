@@ -1,0 +1,11 @@
+
+int main(){
+    string s;
+
+    if(s=="")
+    {
+        printString("is empty");
+    }
+
+    return 0;
+}

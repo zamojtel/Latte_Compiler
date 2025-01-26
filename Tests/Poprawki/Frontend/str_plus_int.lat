@@ -1,0 +1,16 @@
+// * EWIDENTNY BŁĄD FRONTENDU:
+
+// * Problem z kompilacją
+//  Zaakceptowany zły plik!
+// OK
+// llvm-as-14: /home/staff/iinf/chrzaszcz/MRJ/Latte/Rozszerzenia/Studenci/Bartłomiej_Żamojtel/testy/bad/bad013_string_plus_int.ll:8:22: error: integer constant must have integer type
+// %4 = add nsw i8* %3, 3
+//                     ^
+// llvm-link-14: No such file or directory
+
+int main() {
+    string x ;
+    x = "pa" + 3 ;
+    printString(x);
+    return 0 ;
+}

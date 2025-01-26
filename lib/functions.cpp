@@ -7,27 +7,6 @@
 extern "C"{
 
 int string_count = 0;
-struct A{
-    int a;
-    bool b;
-    bool c;
-    const char * str;
-};
-
-class Dice{
-public:
-    int m_faces;
-    int roll(int x){
-        return (this->m_faces+1)%6;
-    }
-};
-
-class B{
-    int x;
-    int y;
-    bool z;
-    int *t;
-};
 
 // Arrays
 // tablica na dane, a na jej poczatku licznik/rozmiar
@@ -62,6 +41,10 @@ void * allocString(int size);
 // Nastepne 4 bajty to counter
 // reszta str literal
 
+void error(){
+
+}
+
 // first 4 bytes -- a counter 
 void printString(void * str){
     if(str==nullptr)
@@ -71,7 +54,6 @@ void printString(void * str){
     }
 
     char * my_string = (char*)(str);
-    // printf("%s\n",(my_string+4));
     printf("%s\n",(my_string+5));
 }
 
@@ -145,19 +127,24 @@ void * addStrings(void *str_1,void *str_2){
 
     return str;
 }
+
 // compare_strings
+// return 1 if there are equal
+// return 0 if there are not equal
 bool compareStrings(int8_t *str_1,int8_t *str_2){
     if(str_1==str_2)
         return true;
     if(str_1==nullptr || str_2==nullptr)
         return false;
 
-    return strcmp((char *)(str_1+4+1),(char *)(str_2+4+1));
+    // return strcmp((char *)(str_1+4+1),(char *)(str_2+4+1));
+    return strcmp((char *)(str_1+4+1),(char *)(str_2+4+1))==0;
 }
 
 void * allocString(int size){
     // 1 -> \0 , 4-> counter, 1 -> flaga
     char * str = (char*)malloc(sizeof(char)*(4+size+1+1));
+    // memset(ptr,0,data_size);
     // ustawienie flagi
     str[0]=1;
     // ustawienie licznika
@@ -187,13 +174,23 @@ int myFunc(int t[],int size){
     return 1;
 }
 
-// size is in bytes 
-int8_t * allocateInstance(int size){
+// VirtualTables
+// size is in bytes
+int8_t * allocateInstance(int8_t **vtable,int data_size){
     // memset(arr+1,0,item_count*item_size);
     // return (int8_t *)malloc(size);
-    int8_t *ptr = (int8_t *)malloc(size);
-    memset(ptr,0,size);
-    return ptr;
+    // Chcemy przewidziec dodatkowe miejsce na wskaznik do vtable bedzie on na koncu
+    // +8 bytes for a pointer to vtable
+
+    int8_t *ptr = (int8_t *)malloc(8+data_size);
+    memset(ptr+8,0,data_size);
+    (*(int8_t***)ptr)=vtable;
+    
+    return ptr+8;
+}
+
+int8_t ** get_vtable(int8_t *instance){
+    return *(int8_t***) (instance-8);
 }
 
 int8_t * getField(int8_t *object,int offset){
