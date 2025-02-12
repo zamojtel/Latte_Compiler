@@ -6,14 +6,20 @@
 #include <forward_list>
 #include <map>
 #include <vector>
+#include <set>
 #include "IRCoderListener.h"
 #include <stdexcept>
+#include <algorithm>
+#include <iostream>
 
 class Variable;
 class Triple;
 class Function;
 class MyClass;
 class Field;
+class BasicBlock;
+class IntermediateProgram;
+
 
 enum class BasicType{
     INT,BOOL,STRING,VOID,ERROR,NULLPTR
@@ -90,12 +96,13 @@ enum class Operation{
     //Special Operations
     JT,JF, // jump if true ,jump if false
     MARKER, // It will indicate a special triple
-    JMP, 
+    JMP,
     CALL, // Function Invocation
     PARAM,
     RETURN,
     INC,
-    DEC
+    DEC,
+    PHI
 };
 
 enum class OperandCategory{
@@ -119,13 +126,13 @@ public:
         Value(){}
         ~Value(){}
     }u;
-    
+
     Constant(int value);
     Constant(bool value);
     Constant(const std::string &s);
 
     Constant(nullptr_t ptr);
-    
+
     Constant(const Constant &constant);
 
     Constant& operator=(const Constant &other);
@@ -145,15 +152,15 @@ public:
 
 class Variable{
 public:
-    std::string m_ident;     
+    std::string m_ident;
     DataType m_type;
-
     Variable(const std::string &ident,DataType type):m_ident{ident},m_type{type}{}
 };
 
 class Operand{
 public:
     OperandCategory m_category;
+    int m_version = 12345;
     union
     {
         Constant m_constant;
@@ -164,13 +171,13 @@ public:
         Argument* m_argument;
         Field* m_field;
     };
-   
+
     Operand(const Constant &c):m_category{OperandCategory::CONSTANT},m_constant{c}{}
-    Operand(Variable *v):m_category{OperandCategory::VARIABLE},m_var{v}{}
     Operand(Triple *t):m_category{OperandCategory::TRIPLE},m_triple{t}{}
     Operand(Label *l):m_category{OperandCategory::LABEL},m_label{l}{}
     Operand(Function *f):m_category{OperandCategory::FUNCTION},m_function{f}{}
-    Operand(Argument *arg):m_category{OperandCategory::ARGUMENT},m_argument{arg}{}
+    Operand(Variable *v):m_category{OperandCategory::VARIABLE},m_version{0},m_var{v}{}
+    Operand(Argument *arg):m_category{OperandCategory::ARGUMENT},m_version{0},m_argument{arg}{}
     Operand(Field *f):m_category{OperandCategory::FIELD},m_field{f}{}
     Operand():m_category{OperandCategory::EMPTY}{}
 
@@ -182,10 +189,13 @@ public:
             m_constant=other.m_constant;
             break;
         case OperandCategory::VARIABLE:
+        {
             m_var=other.m_var;
+            m_version=other.m_version;
             break;
+        }
         case OperandCategory::TRIPLE:
-            m_triple = other.m_triple; 
+            m_triple = other.m_triple;
             break;
         case OperandCategory::LABEL:
             m_label=other.m_label;
@@ -195,9 +205,11 @@ public:
         case OperandCategory::FUNCTION:
             m_function=other.m_function;
             break;
-        case OperandCategory::ARGUMENT:
+        case OperandCategory::ARGUMENT:{
             m_argument=other.m_argument;
+            m_version=other.m_version;
             break;
+        }
         case OperandCategory::ERROR:
             break;
         case OperandCategory::FIELD:
@@ -208,6 +220,48 @@ public:
             break;
         }
     }
+
+    // dodane Obejrzec
+    bool operator==(const Operand &other){
+        if(m_category!=other.m_category)
+            return false;
+
+        switch (m_category)
+        {
+        case OperandCategory::VARIABLE:
+            return m_var==other.m_var;
+        case OperandCategory::ARGUMENT:
+            return m_argument==other.m_argument;
+        default:
+            throw std::runtime_error("asd");
+            break;
+        }
+    }
+
+    bool operator==(const Operand &other) const {
+        if(m_category!=other.m_category)
+            return false;
+
+        switch (m_category)
+        {
+        case OperandCategory::VARIABLE:
+            return m_var==other.m_var;
+        case OperandCategory::ARGUMENT:
+            return m_argument==other.m_argument;
+        default:
+            throw std::runtime_error("asd");
+            break;
+        }
+    }
+
+    bool operator!=(const Operand &other) {
+       return *this==other;
+    }
+
+    bool operator!=(const Operand &other) const {
+       return *this==other;
+    }
+
     Operand& operator=(const Operand &other){
         m_category=other.m_category;
         switch (other.m_category)
@@ -217,6 +271,7 @@ public:
             break;
         case OperandCategory::VARIABLE:
             this->m_var=other.m_var;
+            this->m_version=other.m_version;
             break;
         case OperandCategory::TRIPLE:
             this->m_triple=other.m_triple;
@@ -226,6 +281,7 @@ public:
             break;
         case OperandCategory::ARGUMENT:
             this->m_argument=other.m_argument;
+            this->m_version=other.m_version;
             break;
         case OperandCategory::LABEL:
             this->m_label=other.m_label;
@@ -242,22 +298,52 @@ public:
         return *this;
     }
 
+    bool operator<(const Operand &other) const {
+        // m_category=other.m_category;
+        if(m_category!=other.m_category){
+            return m_category<other.m_category;
+        }else{
+            switch (m_category)
+            {
+            case OperandCategory::ARGUMENT:
+                return m_argument<other.m_argument;
+            case OperandCategory::VARIABLE:
+                return m_var<other.m_var;
+            case OperandCategory::EMPTY:
+                return false;
+            default:
+                throw "Operand::operator<::UNSUPPORTED CATEGORY";
+            }
+        }
+        return false;
+    }
+
     static Operand error(){
         Operand operand;
         operand.m_category=OperandCategory::ERROR;
         return operand;
     }
-    
+
     DataType get_type() const;
     std::string get_category_as_string() const;
     ~Operand(){
     }
 };
 
+std::ostream& operator<<(std::ostream &os,const Operand &op);
+
+class PHIArgument{
+public:
+    BasicBlock * m_basic_block;
+    Operand m_operand;
+    PHIArgument(BasicBlock *blk,Operand op):m_basic_block{blk},m_operand{op}{}
+};
+
 class Triple{
 public:
     int m_code_line_number;
     bool m_visited;
+    BasicBlock * m_basic_block;
     DataType m_cast_type;
     DataType m_data_type;
     DataType m_data_type_for_new;
@@ -265,8 +351,10 @@ public:
     Operation m_operation;
     Operand m_op_1;
     Operand m_op_2;
+    std::vector<PHIArgument> m_phi_arguments;
     std::vector<Label*> m_pointing_labels;
     std::vector<Operand> m_call_args;
+    std::vector<Operand> collect_args_and_vars();
     Triple(int line_number,size_t index,Operation operation,const Operand &op_1={},const Operand &op_2={}):m_code_line_number{line_number},m_visited{false}, m_index{index},m_operation{operation},m_op_1{op_1},m_op_2{op_2}{}
 };
 
@@ -304,11 +392,11 @@ public:
 };
 
 class MyClass{
-private:
 public:
+    IntermediateProgram * m_int_program=nullptr;
     std::vector<Function*> m_vtable;
-    int m_implicit_declaration_line = -1; 
-    bool m_defined=false; 
+    int m_implicit_declaration_line = -1;
+    bool m_defined=false;
     MyClass *m_base_class = nullptr;
     std::string m_name;
     std::vector<Field*> m_fields;
@@ -321,7 +409,9 @@ public:
     Function * get_method(const std::string &name) const;
     Field *get_field_considering_inheritance(const std::string &name) const;
     Function *get_method_considering_inheritance(const std::string &name) const;
-    MyClass(const std::string name):m_name{name}{};
+    // Obejrzec 2
+    // MyClass(const std::string name,IntermediateProgram *ip):m_int_program{m_int_program},m_name{name}{};
+    MyClass(const std::string name,IntermediateProgram *ip):m_int_program{ip},m_name{name}{};
     ~MyClass(){
         for(auto *f : m_fields)
             delete f;
@@ -329,19 +419,20 @@ public:
 };
 
 class Function{
-private:
 public:
+    IntermediateProgram * m_int_program=nullptr;
     size_t m_vtable_index;
     MyClass * m_class = nullptr;
     PredefinedFunction m_type;
     bool m_used;
     std::string m_name;
     DataType m_return_type;
+    std::vector<BasicBlock*> m_basic_blocks;
     std::vector<Variable*> m_variables;
     std::vector<Triple*> m_triples;
     std::vector<Argument*> m_arguments;
     std::vector<Label*> m_labels;
-    Function(PredefinedFunction p=PredefinedFunction::USERDEFINED):m_type{p},m_used{false}{}
+    Function(IntermediateProgram *ip,PredefinedFunction p=PredefinedFunction::USERDEFINED):m_int_program{ip},m_type{p},m_used{false}{}
     void add_label(Label *label);
     ~Function(){
         for(auto *arg: m_arguments)
@@ -378,7 +469,7 @@ public:
     void add_override(const std::string &entry_name,const SymbolTableEntry &entry);
     void set_listener(IRCoderListener *listener);
     // todo
-    // std::optional 
+    // std::optional
     const SymbolTableEntry* get_entry(const std::string &name);
     Variable* get_variable(const std::string &name);
     Argument* get_argument(const std::string &name);
@@ -387,4 +478,4 @@ public:
     SymbolTable();
 };
 
-#endif 
+#endif

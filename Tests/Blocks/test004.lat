@@ -1,0 +1,24 @@
+int main(){
+    int x,y,z;
+    x=10;
+    y=20;
+    z=30;
+
+    while(x<100){
+        if(x<10){
+            int temp =y+z;
+            x= x+temp;
+        }else{
+            if(y<z){
+                z--;
+            }else{
+                y++;
+            }
+            x++;
+        }
+        int k = x+y+z;
+    }
+
+    int t=x+y+z;
+    return 0;
+}

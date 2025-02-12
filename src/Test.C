@@ -21,6 +21,7 @@
 #include <filesystem>
 #include <fstream>
 #include <cctype>
+#include "LiveAnalyzer.h"
 
 class ErrorList {
 public:
@@ -101,30 +102,30 @@ public:
     p->type_->accept(this);
     DataType type = m_last_visited_type;
     p->expr_->accept(this);
-    
+
     Triple * triple = m_IRCoder.push_no_check(p->line_number,Operation::NEW_ARRAY,m_nodes_to_operands.at(p->expr_));
     triple->m_data_type_for_new = type;
     m_IRCoder.analyze_triple(triple);
 
     m_nodes_to_operands[p] = triple;
   }
-  
+
   void visitFor(For *p){
     m_symbol_table.push();
-    
+
     Variable * index_var = create_variable(BasicType::INT,"i.i",nullptr,p->line_number);
     p->type_->accept(this);
 
     Variable * x = create_variable(m_last_visited_type,p->ident_,nullptr,p->line_number);
     p->expr_->accept(this);
-    Triple * arr_length = m_IRCoder.push(0,Operation::ARRAY_LENGTH,m_nodes_to_operands.at(p->expr_)); 
+    Triple * arr_length = m_IRCoder.push(0,Operation::ARRAY_LENGTH,m_nodes_to_operands.at(p->expr_));
 
     Label * cond_label = create_label();
     bind_label(cond_label,m_IRCoder.push(0,Operation::MARKER));
 
     Label *end_label = create_label();
 
-    Triple *condition = m_IRCoder.push(0,Operation::LTH,index_var,arr_length); 
+    Triple *condition = m_IRCoder.push(0,Operation::LTH,index_var,arr_length);
     m_IRCoder.push(0,Operation::JF,condition,{end_label});
 
     Triple * arr_elem = m_IRCoder.push(0,Operation::ACCESS_ARRAY,m_nodes_to_operands.at(p->expr_),index_var);
@@ -135,7 +136,7 @@ public:
     m_IRCoder.push(0,Operation::INC,index_var);
 
     m_IRCoder.push(0,Operation::JMP,{cond_label});
-   
+
     Triple *after_for = m_IRCoder.push(0,Operation::MARKER);
 
     bind_label(end_label,after_for);
@@ -159,7 +160,7 @@ public:
 
     if(m_last_visited_type!=BasicType::ERROR)
       m_last_visited_type.dimensions++;
-    
+
   }
 
   void visitArrAcc(ArrAcc *p) override{
@@ -171,12 +172,12 @@ public:
 
   void visitClass(Class *p) override{
     if(!m_program->has_class(p->ident_)){
-      MyClass * new_class = new MyClass{p->ident_};
+      MyClass * new_class = new MyClass{p->ident_,m_program};
       m_program->m_classes.push_back(new_class);
-      // we rememeber the line where an error might occur 
+      // we rememeber the line where an error might occur
       new_class->m_implicit_declaration_line= p->line_number;
     }
-    
+
     m_last_visited_type = m_program->get_class(p->ident_);
   }
 
@@ -201,7 +202,7 @@ public:
           return;
         }else
           m_nodes_to_operands[p] = m_IRCoder.push(p->line_number,Operation::MEMEBER_ACCESS,op_1,field);
-        
+
       }else{
         std::string msg = fmt::format("Basic type does not have member {}",p->ident_);
         m_error_list.add_error(p->line_number,msg);
@@ -217,7 +218,7 @@ public:
 
   bool check_predifined_function(const std::string &name){
     if(
-      name == "printInt" || name == "printString" || 
+      name == "printInt" || name == "printString" ||
       name == "readInt"  || name == "readString"  ||
       name == "error"    || name == "error"
       ){
@@ -242,7 +243,7 @@ public:
       m_error_list.add_error(line,msg);
       return nullptr;
     }
-  
+
     if(type==BasicType::VOID){
       m_error_list.add_error(line,"Variable can't be of type void");
       return nullptr;
@@ -252,7 +253,7 @@ public:
     if(initializer!=nullptr){
       initializer->accept(this);
       LOG_DEBUG("Initialized Identifier: {}",name);
-      
+
       m_nodes_to_operands[initializer] = m_IRCoder.push(line,Operation::INIT,variable,m_nodes_to_operands.at(initializer));
     }else{
       if(variable->m_type.dimensions==0){
@@ -282,7 +283,7 @@ public:
 
     m_current_fn->m_variables.push_back(variable);
     m_symbol_table.add(name,variable);
-    
+
     return variable;
   }
 
@@ -294,8 +295,8 @@ public:
 
   void pass(Program *parse_tree){
     m_pass_number=1;
-    
-    add_predefined_functions(); 
+
+    add_predefined_functions();
     parse_tree->accept(this);
     if(!m_program->has_function("main"))
       m_error_list.add_error(parse_tree->line_number,"The 'main' function is required but not found.");
@@ -319,7 +320,7 @@ public:
       m_symbol_table.add(fn->m_name,fn);
     }
     parse_tree->accept(this);
-    
+
     m_symbol_table.pop();
   }
 
@@ -332,25 +333,25 @@ public:
   }
 
   void add_predefined_functions(){
-    Function * print_int = new Function{PredefinedFunction::PRINTINT};
+    Function * print_int = new Function{m_program,PredefinedFunction::PRINTINT};
     print_int->m_name = "printInt";
     print_int->m_return_type = BasicType::VOID;
     print_int->m_arguments.push_back(new Argument{BasicType::INT,"value"});
 
-    Function * print_string = new Function{PredefinedFunction::PRINTSTRING};
+    Function * print_string = new Function{m_program,PredefinedFunction::PRINTSTRING};
     print_string->m_name = "printString";
     print_string->m_return_type=BasicType::VOID;
     print_string->m_arguments.push_back(new Argument{BasicType::STRING,"value"});
 
-    Function * error = new Function{PredefinedFunction::ERROR};
+    Function * error = new Function{m_program,PredefinedFunction::ERROR};
     error->m_name = "error";
     error->m_return_type=BasicType::VOID;
 
-    Function * read_int = new Function{PredefinedFunction::READINT};
+    Function * read_int = new Function{m_program,PredefinedFunction::READINT};
     read_int->m_name = "readInt";
     read_int->m_return_type = BasicType::INT;
 
-    Function * read_string = new Function{PredefinedFunction::READSTRING};
+    Function * read_string = new Function{m_program,PredefinedFunction::READSTRING};
     read_string->m_name="readString";
     read_string->m_return_type=BasicType::STRING;
 
@@ -371,12 +372,12 @@ public:
     p->listtopdef_->accept(this);
     LOG_DEBUG("End Program");
   }
-  // here 
+  // here
   void visitFnDef(FnDef *p) override {
     if(m_pass_number==1){
       LOG_DEBUG("Begin function definition");
       LOG_DEBUG("Function name: {}",p->ident_);
-      
+
       if(contains_special_symbols(p->ident_)){
         m_error_list.add_error(p->line_number,fmt::format("The function name {} can't contain special sybmols",p->ident_));
         return;
@@ -389,11 +390,11 @@ public:
           m_error_list.add_error(p->line_number,fmt::format("The predefined function '{}' cannot be overridden.",p->ident_));
         else
           m_error_list.add_error(p->line_number,fmt::format("Function {} already defined",p->ident_));
-        
+
         return;
       }
 
-      m_current_fn = new Function;
+      m_current_fn = new Function{m_program};
       m_current_fn->m_name=p->ident_;
       p->type_->accept(this);
       m_current_fn->m_return_type=m_last_visited_type;
@@ -408,7 +409,7 @@ public:
 
       for(size_t i=0;i<m_current_fn->m_arguments.size();i++)
           m_symbol_table.add(m_current_fn->m_arguments[i]->m_identifier,m_current_fn->m_arguments[i]);
-      
+
       p->block_->accept(this);
       m_symbol_table.pop();
     }
@@ -420,19 +421,19 @@ public:
     if(cl_obj){
       if(cl_obj->m_defined){
         m_error_list.add_error(line_number,fmt::format("The class with name '{}' already defined.",cl_name));
-        return;   
+        return;
       }
     }else{
-      cl_obj = new MyClass{cl_name};
+      cl_obj = new MyClass{cl_name,m_program};
       m_program->m_classes.push_back(cl_obj);
     }
-    
+
     cl_obj->m_defined=true;
     m_current_class=cl_obj;
     listclassdecl_->accept(this);
   }
 
-  // classes ----------------------------  
+  // classes ----------------------------
   void visitClassDef(ClassDef *p) override {
     if(m_pass_number==1){
       processClassDef(p->line_number,p->ident_,p->listclassdecl_);
@@ -453,16 +454,16 @@ public:
     if(m_pass_number==1){
       processClassDef(p->line_number,p->ident_1,p->listclassdecl_);
     }else if(m_pass_number==2){
-    
+
       m_current_class = m_program->get_class(p->ident_1);
       m_current_class->m_base_class = m_program->get_class(p->ident_2);
-      
+
       // Cycle detection in the inheritence line
       if(m_program->get_class(p->ident_2)==nullptr){
         m_error_list.add_error(p->line_number,fmt::format("Class '{}' does not exits",p->ident_2));
         return;
       }
-      
+
       if(m_current_class==m_current_class->m_base_class){
         m_error_list.add_error(p->line_number,fmt::format("Class '{}' can't inherit from ",p->ident_1));
         return;
@@ -511,8 +512,8 @@ public:
         m_error_list.add_error(p->line_number,fmt::format("The method with name '{}' has been already defined in the class {}.",p->ident_,m_current_class->m_name));
         return;
       }
-      
-      m_current_fn = new Function;
+
+      m_current_fn = new Function{m_program};
       m_current_fn->m_name=p->ident_;
       m_current_fn->m_class=m_current_class;
 
@@ -522,7 +523,7 @@ public:
       p->listarg_->accept(this);
       m_current_class->add_method(m_current_fn);
     }else if(m_pass_number==2){
-      
+
       Function * method = m_current_class->get_method(p->ident_);
       m_IRCoder.set_function(method);
       m_current_fn=method;
@@ -530,11 +531,11 @@ public:
 
       for(size_t i=0;i<method->m_arguments.size();i++)
         m_symbol_table.add(method->m_arguments[i]->m_identifier,method->m_arguments[i]);
-      
+
       p->block_->accept(this);
       m_symbol_table.pop();
       m_current_fn = nullptr;
-    } 
+    }
   }
 
   void visitEMethod(EMethod *p) override {
@@ -547,7 +548,7 @@ public:
     }
 
     Function * fn = type.class_type->get_method_considering_inheritance(p->ident_);
-    
+
     if(!fn){
       m_error_list.add_error(p->line_number,fmt::format("Class {} has no method {}",type.class_type->m_name,p->ident_));
       return;
@@ -557,7 +558,7 @@ public:
     m_nodes_to_operands[p] = m_IRCoder.push_no_check(p->line_number,Operation::CALL,fn);
 
     m_nodes_to_operands[p].m_triple->m_call_args.push_back(m_nodes_to_operands.at(p->expr_));
-    
+
 
     for(auto *expr: *p->listexpr_){
       Operand op = m_nodes_to_operands.at(expr);
@@ -579,16 +580,16 @@ public:
   }
 
   void visitEClass(EClass *p) override{
-    
+
     if(!m_program->has_class(p->ident_)){
       m_error_list.add_error(p->line_number,fmt::format("The class with name {} does not exist",p->ident_));
       return;
     }
-    
+
     Triple * triple = m_IRCoder.push_no_check(p->line_number,Operation::NEW_INSTANCE);
     triple->m_data_type_for_new = m_program->get_class(p->ident_);
     m_IRCoder.analyze_triple(triple);
-    
+
     m_nodes_to_operands[p] = triple;
   }
 
@@ -596,20 +597,20 @@ public:
   void visitEApp(EApp *p) override{
     Function * fn = m_symbol_table.get_function(p->ident_);
     if(fn==nullptr){
-      std::string msg=fmt::format("Undefined function {}",p->ident_); 
+      std::string msg=fmt::format("Undefined function {}",p->ident_);
       m_error_list.add_error(p->line_number,msg);
 
       m_nodes_to_operands[p] = Operand::error();
       return;
     }
-    
+
     if(p->listexpr_!=nullptr)
       p->listexpr_->accept(this);
-    
+
     m_current_fn->m_used=true;
 
     m_nodes_to_operands[p] = m_IRCoder.push_no_check(p->line_number,Operation::CALL,m_symbol_table.get_function(p->ident_));
-    
+
     for(auto *expr: *p->listexpr_){
       Operand op = m_nodes_to_operands.at(expr);
       m_nodes_to_operands[p].m_triple->m_call_args.push_back(op);
@@ -639,7 +640,7 @@ public:
   }
 
   void visitStr(Str *p) override {
-    m_last_visited_type=BasicType::STRING; 
+    m_last_visited_type=BasicType::STRING;
   }
 
   void visitListArg(ListArg *p) override{
@@ -650,7 +651,7 @@ public:
 
   void visitAr(Ar *p) override{
     if(m_current_fn->contains_argument(p->ident_)){
-      std::string msg = fmt::format("Argument with name {} already defined",p->ident_); 
+      std::string msg = fmt::format("Argument with name {} already defined",p->ident_);
       m_error_list.add_error(p->line_number,msg);
       return;
     }
@@ -675,13 +676,13 @@ public:
 
     for(auto item : *p->listitem_)
       item->accept(this);
-    
+
   }
 
   void visitInit(Init *p) override {
     create_variable(m_new_variable_type,p->ident_,p->expr_,p->line_number);
   }
-  
+
   void bind_label(Label *label,Triple *triple){
     label->m_jump_to=triple;
     triple->m_pointing_labels.push_back(label);
@@ -692,14 +693,14 @@ public:
 
     Label *jump_to = create_label();
     Triple *jf_triple = m_IRCoder.push(p->line_number,Operation::JF,m_nodes_to_operands.at(p->expr_),{jump_to});
-    
+
     if(is_single_declaration(p->stmt_)){
       std::string msg = fmt::format("Single unused declaration inside if");
       m_error_list.add_error(p->stmt_->line_number,msg);
     }
 
     p->stmt_->accept(this);
-    
+
 
     Triple *special_triple=m_IRCoder.push(p->line_number,Operation::MARKER);
     bind_label(jf_triple->m_op_2.m_label,special_triple);
@@ -720,7 +721,7 @@ public:
       std::string msg = fmt::format("Single unused declaration inside else");
       m_error_list.add_error(p->stmt_2->line_number,msg);
     }
-    
+
     Triple *jf_triple = m_IRCoder.push(0,Operation::JF,m_nodes_to_operands.at(p->expr_),{jump_to_else});
     p->stmt_1->accept(this);
     Triple *jmp_triple = m_IRCoder.push(0,Operation::JMP,{jump_out_if});
@@ -742,27 +743,27 @@ public:
     incr->expr_->accept(this);
 
     Operand op = m_nodes_to_operands.at(incr->expr_);
-    
+
     m_IRCoder.push(incr->line_number,Operation::INC,op);
   }
 
   void visitDecr(Decr *decr){
     decr->expr_->accept(this);
-    
+
     Operand op = m_nodes_to_operands.at(decr->expr_);
-    m_nodes_to_operands[decr] = m_IRCoder.push(decr->line_number,Operation::DEC,op); 
+    m_nodes_to_operands[decr] = m_IRCoder.push(decr->line_number,Operation::DEC,op);
   }
 
   void visitWhile(While *p) override {
     Label * cond_label = create_label();
     Triple * cond_marker = m_IRCoder.push(0,Operation::MARKER);
-  
+
     bind_label(cond_label,cond_marker);
 
     p->expr_->accept(this);
     Label *end_label = create_label();
     m_IRCoder.push(0,Operation::JF,m_nodes_to_operands.at(p->expr_),{end_label});
-     
+
     if(is_single_declaration(p->stmt_)){
       std::string msg = fmt::format("Single unused declaration inside while");
       m_error_list.add_error(p->stmt_->line_number,msg);
@@ -771,17 +772,17 @@ public:
     p->stmt_->accept(this);
     m_IRCoder.push(0,Operation::JMP,{cond_label});
     Triple *end_marker = m_IRCoder.push(0,Operation::MARKER);
-    
+
     bind_label(end_label,end_marker);
   }
   // Obejrzec 1
   void visitAss(Ass *ass) override {
     ass->expr_1->accept(this);
     ass->expr_2->accept(this);
- 
+
     if(m_error_list.errors_occured())
       return;
- 
+
     Operand op_1 = m_nodes_to_operands.at(ass->expr_1);
     Operand op_2 = m_nodes_to_operands.at(ass->expr_2);
 
@@ -798,7 +799,7 @@ public:
     m_IRCoder.push(p->line_number,Operation::RETURN,m_nodes_to_operands[p->expr_]);
   }
 
-  void visitVRet(VRet *p) override{ 
+  void visitVRet(VRet *p) override{
     m_IRCoder.push(p->line_number,Operation::RETURN);
   }
 
@@ -814,11 +815,11 @@ public:
   void visitELitFalse(ELitFalse *p) override{
     m_nodes_to_operands[p]= {false};
   }
-  
+
   void visitEString(EString *p) override {
     m_nodes_to_operands[p]= {p->string_};
   }
-  
+
   void visitELitNull(ELitNull *p) override {
     m_nodes_to_operands[p] = Constant{nullptr};
   }
@@ -841,7 +842,7 @@ public:
   Label* create_label(){
     Label *label = new Label{m_current_fn->m_labels.size()};
     m_current_fn->add_label(label);
-    
+
     return label;
   }
 
@@ -849,14 +850,14 @@ public:
     const SymbolTableEntry *entry = m_symbol_table.get_entry(p->ident_);
 
     if(!entry){
-      std::string msg=fmt::format("Undefined identifier {}",p->ident_); 
+      std::string msg=fmt::format("Undefined identifier {}",p->ident_);
       m_error_list.add_error(p->line_number,msg);
       return;
     }
     switch (entry->m_category)
     {
     case SymbolTableCategory::VARIABLE:
-      m_nodes_to_operands[p] = entry->m_variable; 
+      m_nodes_to_operands[p] = entry->m_variable;
       return;
     case SymbolTableCategory::ARGUMENT:
       m_nodes_to_operands[p] = entry->m_argument;
@@ -875,18 +876,18 @@ public:
     p->expr_1->accept(this);
     p->expr_2->accept(this);
     p->addop_->accept(this);
-    auto r1 = m_nodes_to_operands.at(p->expr_1);    
-    auto r2 = m_nodes_to_operands.at(p->expr_2);    
+    auto r1 = m_nodes_to_operands.at(p->expr_1);
+    auto r2 = m_nodes_to_operands.at(p->expr_2);
 
     m_nodes_to_operands[p] = m_IRCoder.push(p->line_number,m_current_operation,m_nodes_to_operands.at(p->expr_1),m_nodes_to_operands.at(p->expr_2));
   }
 
   void visitEMul(EMul *p) override{
-    // the order of operations is really important 
+    // the order of operations is really important
     p->expr_1->accept(this);
     p->expr_2->accept(this);
     p->mulop_->accept(this);
-    
+
     m_nodes_to_operands[p] = m_IRCoder.push(0,m_current_operation,m_nodes_to_operands.at(p->expr_1),m_nodes_to_operands.at(p->expr_2));
   }
 
@@ -909,37 +910,37 @@ public:
   void visitEQU(EQU *p) override{
     m_current_operation = Operation::EQU;
   }
-  
+
   void visitNE(NE *p) override{
     m_current_operation=Operation::NE;
   }
 
   void visitERel(ERel *p) override {
-    // the order is important 
+    // the order is important
     p->expr_1->accept(this);
     p->expr_2->accept(this);
     p->relop_->accept(this);
 
     Operand op_1 = m_nodes_to_operands.at(p->expr_1);
     Operand op_2 = m_nodes_to_operands.at(p->expr_2);
-    
+
     m_nodes_to_operands[p]=m_IRCoder.push(p->line_number,m_current_operation,m_nodes_to_operands.at(p->expr_1),m_nodes_to_operands.at(p->expr_2));
   }
 
   void visitEAnd(EAnd *p) override{
     Label* label_1 = create_label();
-    Label* label_2 = create_label(); 
+    Label* label_2 = create_label();
     Variable* boolean_1 = create_special_boolean_variable();
     p->expr_1->accept(this);
-    
-    m_IRCoder.push(p->line_number,Operation::JF,m_nodes_to_operands.at(p->expr_1),label_1); 
+
+    m_IRCoder.push(p->line_number,Operation::JF,m_nodes_to_operands.at(p->expr_1),label_1);
     p->expr_2->accept(this);
     m_IRCoder.push(p->line_number,Operation::ASSIGN,boolean_1,m_nodes_to_operands.at(p->expr_2));
 
     m_IRCoder.push(p->line_number,Operation::JMP,label_2);
-    Triple * marker_1 = m_IRCoder.push(p->line_number,Operation::MARKER); 
+    Triple * marker_1 = m_IRCoder.push(p->line_number,Operation::MARKER);
 
-    m_IRCoder.push(p->line_number,Operation::ASSIGN,boolean_1,{false}); 
+    m_IRCoder.push(p->line_number,Operation::ASSIGN,boolean_1,{false});
 
     Triple * marker_2 = m_IRCoder.push(p->line_number,Operation::MARKER);
 
@@ -950,7 +951,7 @@ public:
   }
 
   void visitEOr(EOr *p){
-    Label *label_1 = create_label(); 
+    Label *label_1 = create_label();
     Label *label_2 = create_label();
 
     Variable *boolean_1 = create_special_boolean_variable();
@@ -963,17 +964,17 @@ public:
     Triple * marker_1 = m_IRCoder.push(p->line_number,Operation::MARKER);
     m_IRCoder.push(p->line_number,Operation::ASSIGN,boolean_1,{true});
     Triple * marker_2 = m_IRCoder.push(p->line_number,Operation::MARKER);
-    
+
     bind_label(label_1,marker_1);
     bind_label(label_2,marker_2);
-    
+
     m_nodes_to_operands[p] = boolean_1;
   }
-  
+
   void visitNot(Not *p) override {
     Label * label_1 = create_label();
     Label * label_2 = create_label();
-    p->expr_->accept(this);  
+    p->expr_->accept(this);
 
     Variable * boolean_var = create_special_boolean_variable();
     m_IRCoder.push(p->line_number,Operation::JF,m_nodes_to_operands.at(p->expr_),label_1);
@@ -995,7 +996,7 @@ public:
   void visitDiv(Div *p) override{
     m_current_operation=Operation::DIV;
   }
-  
+
   void visitMinus(Minus *p) override{
     m_current_operation=Operation::SUB;
   }
@@ -1024,9 +1025,9 @@ public:
       break;
     }
   }
-  
+
   void print_operand(const Operand &operand){
-    
+
     switch (operand.m_category)
       {
       case OperandCategory::CONSTANT:
@@ -1085,7 +1086,7 @@ int main(int argc, char ** argv)
       exit(1);
     }
   } else input = stdin;
-  
+
   std::string path_to_file = argv[1];
   path_to_file = path_to_file.substr(0,path_to_file.length()-4); // to remove a file extension
 
@@ -1105,10 +1106,61 @@ int main(int argc, char ** argv)
 
   MyVisitor my_visitor{&int_program};
   LLVMCodeGenerator llvm_generator{&int_program};
-  
+
   my_visitor.pass(parse_tree);
   int_program.create_virtual_tables();
-  
+
+
+  // --------------------OPTYMALIZACJE-----------------------
+  // std::cout<<std::endl;
+
+  // for(auto *fn : int_program.m_functions){
+  //   if(fn->m_type!=PredefinedFunction::USERDEFINED)
+  //     continue;
+  //   int_program.optimize(fn);
+  // }
+  IntermediateProgramPrinter int_program_printer;
+  int_program.create_basic_blocks();
+  int_program.optimize();
+  // int_program_printer.print_program(int_program);
+
+  // LiveAnalyzer analyzer{&int_program};
+  // analyzer.run();
+
+  // std::cout<<"After optimizations:"<<std::endl;
+  // int_program_printer.print_program(int_program);
+  // std::cout<<std::endl;
+  // std::cout<<std::endl;
+  // std::cout<<std::endl;
+  // int_program_printer.
+  // int_program.print_blocks();
+  // int_program.print_predecessors();
+  // int_program.print_dominator_sets();
+
+  // for(auto *fn : int_program.m_functions){
+  //   if(fn->m_type!=PredefinedFunction::USERDEFINED)
+  //     continue;
+  //   std::cout<<"Printing idoms for the function: "<<fn->m_name<<std::endl;
+  //   int_program.print_idoms_for_function(fn);
+  // }
+
+  // dominance frontiers
+  // for(auto *fn : int_program.m_functions){
+  //   if(fn->m_type!=PredefinedFunction::USERDEFINED)
+  //     continue;
+
+  //   int_program_printer.print_dominance_frontiers(fn);
+  // }
+
+  // for(auto *fn : int_program.m_functions){
+  //   if(fn->m_type!=PredefinedFunction::USERDEFINED)
+  //     continue;
+
+  //   int_program_printer.print_blocks_with_phi(fn);
+  // }
+  // --------------------OPTYMALIZACJE-----------------------
+
+
   for(auto *fn : int_program.m_functions){
     if(fn->m_return_type==BasicType::VOID)
       continue;
@@ -1151,7 +1203,6 @@ int main(int argc, char ** argv)
 
     return 0;
   }
-  
+
   return 1;
 }
-

@@ -1,0 +1,17 @@
+int main(){
+    int x=5;
+    x=x-3;
+    int y;
+    int w;
+    if(x<3){
+        y=x*2;
+        w=y;
+    }else{
+        y=x-3;
+    }
+
+    w=x-y;
+    int z=x+y;
+
+    return 0;
+}

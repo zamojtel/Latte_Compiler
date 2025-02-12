@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include "DataStructure.h"
+#include "IntermediateProgram.h"
 #include <map>
 #include "IRCoderListener.h"
 #include <stdexcept>
@@ -19,10 +20,12 @@ public:
     size_t m_position;
     IRCoderListener *m_listener = nullptr;
     Function * m_current_fn=nullptr;
+    BasicBlock * m_current_blk=nullptr;
     Triple* push(int line_number,Operation operation,const Operand &op_1={},const Operand &op_2={});
     Triple* push_no_check(int line_number,Operation operation,const Operand &op_1={},const Operand &op_2={});
     void set_listener(IRCoderListener *listener);
     void set_function(Function *fn);
+    void set_basic_block(BasicBlock * blk);
     void set_position_after(Function *fn,Triple *triple);
     void set_position_before(Function *fn,Triple *triple);
     void set_position_before(Triple * triple );

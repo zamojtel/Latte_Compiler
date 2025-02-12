@@ -23,14 +23,14 @@ public:
 };
 
 class TripleData{
-public:  
+public:
     size_t m_number=123456; // line number in llvm
     size_t m_marker_index;
 };
 
 class FunctionData{
 public:
-    
+
 };
 
 class LLVMCodeGenerator{
@@ -85,6 +85,7 @@ public:
     std::string process_argument_list(Triple *triple);
     std::string get_string_literal_name(int index);
     void initialize_variables(const Function *fn);
+    std::string process_phi_argument(const PHIArgument &arg);
     LLVMCodeGenerator(IntermediateProgram *i_p):m_intermediate_program{i_p}{}
 };
 
@@ -94,4 +95,4 @@ std::string struct_decl =R"abc(
 %struct._IO_codecvt = type opaque
 %struct._IO_wide_data = type opaque)abc";
 
-#endif 
+#endif

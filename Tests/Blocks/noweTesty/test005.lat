@@ -1,0 +1,19 @@
+
+
+int f(int []a,int n){
+    int i = 0;
+    int r = a[i];
+
+    while(i<n){
+        if(r>a[n]){
+            r=a[i];
+        }
+        i=i+1;
+    }
+    return r;
+}
+
+int main(){
+
+    return 0;
+}
