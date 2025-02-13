@@ -44,7 +44,7 @@ def check_bad_tests(input_file_names : List[str],input_dir : str,output_dir : st
             print(f'Test: {input_file_name} passed!!!')
 
         f1.close()
-        
+
     print(f"Total number of tests passed {passed}/{len(input_file_names)}")
     print()
 
@@ -66,7 +66,7 @@ def check_good_tests(input_file_names : List[str],input_dir : str,output_dir : s
             print(f'Test: {input_file_name} not passed!!!')
         else:
             print(f'Test: {input_file_name} passed!!!')
-    
+
     print()
 
 def collect_all_files(path : str):
@@ -77,7 +77,7 @@ def collect_all_files(path : str):
     for j in range(len(all_files)):
         if all_files[j][-3:]=='lat':
             input_file_names.append(all_files[j][:-4])
-    
+
     return input_file_names
 
 if __name__ == '__main__':
@@ -110,4 +110,3 @@ if __name__ == '__main__':
     output_dir_after_review = f'{cwd}/Tests/testsAfterFrontendReviewOutputs'
     os.system(f'mkdir -p {output_dir_after_review}')
     check_bad_tests(input_file_names_after_review,input_dir_after_review,output_dir_after_review)
-

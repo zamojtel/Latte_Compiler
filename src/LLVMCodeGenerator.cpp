@@ -109,24 +109,27 @@ std::string LLVMCodeGenerator::get_operand_value_with_load(const Operand &op){
         }
     }
     case OperandCategory::VARIABLE:{
-        DataType type = op.get_type();
-        std::string data_type_name = get_data_type_name(type);
+        // DataType type = op.get_type();
+        // std::string data_type_name = get_data_type_name(type);
 
-        if(type==BasicType::BOOL)
-            data_type_name="i8";
+        // if(type==BasicType::BOOL)
+        //     data_type_name="i8";
 
-        std::string line = fmt::format("%{} = load {}, {}* %{}, align {}",m_llvm_line_index,data_type_name,data_type_name,m_variable_data.at(op.m_var).m_index,get_align(type));
-        size_t loaded_variable_index = m_llvm_line_index;
-        increase();
-        m_code_lines.push_back(line);
+        // std::string line = fmt::format("%{} = load {}, {}* %{}, align {}",m_llvm_line_index,data_type_name,data_type_name,m_variable_data.at(op.m_var).m_index,get_align(type));
+        // size_t loaded_variable_index = m_llvm_line_index;
+        // increase();
+        // m_code_lines.push_back(line);
 
-        if(type==BasicType::BOOL){
-            std::string line = fmt::format("%{} = trunc i8 %{} to i1",m_llvm_line_index,loaded_variable_index);
-            m_code_lines.push_back(line);
-            increase();
-            loaded_variable_index++;
-        }
-        return "%"+std::to_string(loaded_variable_index);
+        // if(type==BasicType::BOOL){
+        //     std::string line = fmt::format("%{} = trunc i8 %{} to i1",m_llvm_line_index,loaded_variable_index);
+        //     m_code_lines.push_back(line);
+        //     increase();
+        //     loaded_variable_index++;
+        // }
+        // return "%"+std::to_string(loaded_variable_index);
+
+        // std::string tirple_ref = fmt::format(,);
+        return fmt::format("%{}",m_triple_data.at(m_current_fn->m_var_arg_to_triple.at(op.m_var)->m_index).m_number);
     }
     case OperandCategory::ARGUMENT:
     {
@@ -605,7 +608,6 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
         m_triple_data[triple->m_index].m_number = m_llvm_line_index-1;
         break;
     }
-    // # TODO keep it seperated
     case Operation::LTH:
     case Operation::LE:
     case Operation::GTH:

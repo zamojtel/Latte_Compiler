@@ -9,7 +9,7 @@ std::ostream& operator<<(std::ostream &os,const Operand &op)
     {
     case OperandCategory::VARIABLE:
     {
-        os<<"Variable("<<op.m_var->m_ident<<")";
+        os<<"Variable("<<op.m_var->m_ident<<"."<<op.m_version<<")";
         break;
     }
     case OperandCategory::ARGUMENT:

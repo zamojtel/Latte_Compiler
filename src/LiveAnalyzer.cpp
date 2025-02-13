@@ -139,9 +139,6 @@ void LiveAnalyzer::analyze(Function *fn){
             }
           }
       }
-      if(changed==false){
-        int x =123;
-      }
     }
     print_live_variables(fn);
 }

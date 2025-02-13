@@ -1122,7 +1122,8 @@ int main(int argc, char ** argv)
   IntermediateProgramPrinter int_program_printer;
   int_program.create_basic_blocks();
   int_program.optimize();
-  // int_program_printer.print_program(int_program);
+  int_program_printer.print_program(int_program);
+
 
   // LiveAnalyzer analyzer{&int_program};
   // analyzer.run();

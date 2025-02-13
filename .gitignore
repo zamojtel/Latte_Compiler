@@ -1,3 +1,5 @@
 .vscode
 ./Tests/*
 Commands
+generate
+examples

@@ -1,0 +1,22 @@
+
+int g(int a,int b,int c,int d,int e,int f){
+
+    while(e){
+        a=b+c;
+        d=d-c;
+        e=a-f;
+        if(e){
+            f=a-d;
+        }else{
+            b=d+f;
+            e=a-c;
+        }
+        b=d+c;
+    }
+    return b;
+}
+
+int main(){
+
+    return 0;
+}

@@ -127,6 +127,7 @@ MyClass* IntermediateProgram::get_class(const std::string &name) const{
 
   return nullptr;
 }
+
 // this function checks if we can reach the end of the function without finding any return on the way
 bool IntermediateProgram::check_all_returns(Function *fn,size_t start){
   if(start >= fn->m_triples.size() || fn->m_triples[start]->m_visited){
@@ -221,9 +222,7 @@ void IntermediateProgram::optimize(Function *fn){
     if(second_greatest_blk){
       second_greatest_blk->m_dominator_tree_successors.push_back(blk);
     }
-
   }
-
   // set successors
   compute_dominance_frontiers(fn);
 
@@ -260,30 +259,7 @@ Triple* BasicBlock::get_last_triple(){
 
   return nullptr;
 }
-// enum class Operation{
-//     MUL,ADD,SUB,DIV, OK
-//     NEG,NOT,ASSIGN, OK
-//     MOD,LTH,LE,GTH,GE,EQU,NE,INIT, OK
-//     // Arrays
-//     NEW_ARRAY, OK
-//     ACCESS_ARRAY, OK
-//     ARRAY_LENGTH, OK
-//     // Classes
-//     NEW_INSTANCE, OK
-//     MEMEBER_ACCESS, OK
-//     // CASTING
-//     CAST, 1 op OK
-//     //Special Operations
-//     JT,JF, // jump if true ,jump if false OK
-//     MARKER, // It will indicate a special triple OK
-//     JMP, OK
-//     CALL, // Function Invocation
-//     PARAM, OK
-//     RETURN, OK
-//     INC, OK
-//     DEC OK
-// };
-// wektor wszystkich operandow odnoszacych sie do zmiennej lub argumentu
+
 std::vector<Operand> IntermediateProgram::collect_args_and_vars(Triple *triple){
   int operand_count;
   switch (triple->m_operation)

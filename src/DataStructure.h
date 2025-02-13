@@ -237,11 +237,10 @@ public:
             break;
         }
     }
-
+    // std::variant
     bool operator==(const Operand &other) const {
         if(m_category!=other.m_category)
             return false;
-
         switch (m_category)
         {
         case OperandCategory::VARIABLE:
@@ -254,13 +253,13 @@ public:
         }
     }
 
-    bool operator!=(const Operand &other) {
-       return *this==other;
-    }
+    // bool operator!=(const Operand &other) {
+    //    return *this==other;
+    // }
 
-    bool operator!=(const Operand &other) const {
-       return *this==other;
-    }
+    // bool operator!=(const Operand &other) const {
+    //    return *this==other;
+    // }
 
     Operand& operator=(const Operand &other){
         m_category=other.m_category;
@@ -273,15 +272,15 @@ public:
             this->m_var=other.m_var;
             this->m_version=other.m_version;
             break;
+        case OperandCategory::ARGUMENT:
+            this->m_argument=other.m_argument;
+            this->m_version=other.m_version;
+            break;
         case OperandCategory::TRIPLE:
             this->m_triple=other.m_triple;
             break;
         case OperandCategory::FUNCTION:
             this->m_function=other.m_function;
-            break;
-        case OperandCategory::ARGUMENT:
-            this->m_argument=other.m_argument;
-            this->m_version=other.m_version;
             break;
         case OperandCategory::LABEL:
             this->m_label=other.m_label;
@@ -299,16 +298,25 @@ public:
     }
 
     bool operator<(const Operand &other) const {
-        // m_category=other.m_category;
         if(m_category!=other.m_category){
             return m_category<other.m_category;
         }else{
             switch (m_category)
             {
-            case OperandCategory::ARGUMENT:
-                return m_argument<other.m_argument;
+            case OperandCategory::ARGUMENT:{
+                if(m_argument!=other.m_argument){
+                    return m_argument<other.m_argument;
+                }else{
+                    return m_version<other.m_version;
+                }
+            }
             case OperandCategory::VARIABLE:
-                return m_var<other.m_var;
+                // return m_var<other.m_var;
+                if(m_var!=other.m_var){
+                    return m_var<other.m_var;
+                }else{
+                    return m_version<other.m_version;
+                }
             case OperandCategory::EMPTY:
                 return false;
             default:
@@ -420,6 +428,7 @@ public:
 
 class Function{
 public:
+   std::map<Operand,Triple*> m_var_arg_to_triple;
     IntermediateProgram * m_int_program=nullptr;
     size_t m_vtable_index;
     MyClass * m_class = nullptr;

@@ -1,6 +1,6 @@
 #include "SSARenamer.h"
 
-int SSARenamer::new_name(const Operand &op){
+int SSARenamer::new_name(const ArgOrVar &op){
   int i = m_counter.at(op);
   m_counter.at(op)++;
   m_versioning_stack.at(op).push_back(i);
@@ -9,14 +9,21 @@ int SSARenamer::new_name(const Operand &op){
 
 void SSARenamer::rewrite(Operand &op){
     if(op.m_category==OperandCategory::ARGUMENT || op.m_category==OperandCategory::VARIABLE){
-        op.m_version = m_versioning_stack.at(op).back();
+        op.m_version = m_versioning_stack.at(get_arg_or_var(op)).back();
+    }
+}
+
+void SSARenamer::print_var_to_triple(){
+    for(auto &[key,val] : m_var_arg_to_triple){
+        // if(std::holds_alternative<Argument*>(key)){
+
+        // }
+        std::cout<<"Operand "<<key<<" TRIPLE INDEX: "<<val->m_index<<std::endl;
     }
 }
 
 void SSARenamer::assign_phi_to_variable(Variable *var){
-    // for(auto ){
 
-    // }
 }
 
 void SSARenamer::insert_phi(){
@@ -30,13 +37,25 @@ void SSARenamer::insert_phi(){
         }
     }
 }
+SSARenamer::ArgOrVar SSARenamer::get_arg_or_var(const Operand &op){
+    switch (op.m_category)
+    {
+    case OperandCategory::VARIABLE:
+        return op.m_var;
+    case OperandCategory::ARGUMENT:
+        return op.m_argument;
+    default:
+        throw std::runtime_error("WRONG OPERAND get_arg_or_var(const Operand &op)");
+    }
+}
 
 void SSARenamer::rename(BasicBlock* blk){
 
     for(auto triple : *blk){
         if(triple->m_operation==Operation::PHI){
-            int new_version = new_name(triple->m_op_1);
+            int new_version = new_name(get_arg_or_var(triple->m_op_1));
             triple->m_op_1.m_version = new_version;
+            m_var_arg_to_triple[triple->m_op_1]=triple;
         }
     }
 
@@ -47,8 +66,10 @@ void SSARenamer::rename(BasicBlock* blk){
 
         if (operation==Operation::ASSIGN || operation == Operation::INIT){
             if(op_1.m_category==OperandCategory::ARGUMENT || op_1.m_category==OperandCategory::VARIABLE){
-                int new_version = new_name(triple->m_op_1);
+                int new_version = new_name(get_arg_or_var(triple->m_op_1));
                 op_1.m_version = new_version;
+
+                m_var_arg_to_triple[triple->m_op_1]=triple;
             }
             rewrite(op_2);
         }else{
@@ -68,8 +89,9 @@ void SSARenamer::rename(BasicBlock* blk){
         for(Triple* triple : *successor){
             if(triple->m_operation==Operation::PHI){
                 Operand op = triple->m_op_1;
-                if(m_versioning_stack.at(triple->m_op_1).size()>0){
-                    op.m_version=m_versioning_stack.at(triple->m_op_1).back();
+                ArgOrVar arg_var = get_arg_or_var(triple->m_op_1);
+                if(m_versioning_stack.at(arg_var).size()>0){
+                    op.m_version=m_versioning_stack.at(arg_var).back();
                     triple->m_phi_arguments.push_back({blk,op});
                 }
             }
@@ -83,11 +105,11 @@ void SSARenamer::rename(BasicBlock* blk){
         if(triple->m_operation==Operation::ASSIGN || triple->m_operation==Operation::INIT){
             Operand &op_1 = triple->m_op_1;
             if(op_1.m_category==OperandCategory::ARGUMENT || op_1.m_category==OperandCategory::VARIABLE){
-                m_versioning_stack.at(op_1).pop_back();
+                m_versioning_stack.at(get_arg_or_var(op_1)).pop_back();
             }
         }
         else if(triple->m_operation==Operation::PHI){
-            m_versioning_stack.at(triple->m_op_1).pop_back();
+            m_versioning_stack.at(get_arg_or_var(triple->m_op_1)).pop_back();
         }
     }
 }
@@ -100,7 +122,6 @@ void SSARenamer::rename_ssa_function(Function* fn){
     insert_phi();
     fn->m_int_program->correct_labels(fn);
 
-
     for(auto var : fn->m_variables){
         m_counter[var]=0;
         m_versioning_stack[var];
@@ -111,9 +132,11 @@ void SSARenamer::rename_ssa_function(Function* fn){
         m_versioning_stack[arg];
         // add versions for arguments
         Operand op{arg};
-        new_name(op);
+        new_name(get_arg_or_var(op));
     }
 
     rename(fn->m_basic_blocks[0]);
 
+    fn->m_var_arg_to_triple=std::move(m_var_arg_to_triple);
+    print_var_to_triple();
 }

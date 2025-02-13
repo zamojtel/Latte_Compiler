@@ -7,11 +7,11 @@ FLEX_OPTS=-Platte_cpp_
 
 BISON=bison
 BISON_OPTS=-t -platte_cpp_
-OBJS = Absyn.o Buffer.o Lexer.o Parser.o Printer.o DataStructure.o IRCoder.o
-OBJS_FILES = ./build/Absyn.o ./build/Buffer.o ./build/Lexer.o ./build/Parser.o ./build/Printer.o ./build/DataStructure.o ./build/IRCoder.o
+OBJS = Absyn.o Buffer.o Lexer.o Parser.o Printer.o DataStructure.o IRCoder.o SSARenamer.o LiveAnalyzer.o
+OBJS_FILES = ./build/Absyn.o ./build/Buffer.o ./build/Lexer.o ./build/Parser.o ./build/Printer.o ./build/DataStructure.o ./build/IRCoder.o ./build/SSARenamer.o ./build/LiveAnalyzer.o
 
 INC = -I. -I./lib/fmt/include/
-DEP = -L./lib/fmt -lfmt 
+DEP = -L./lib/fmt -lfmt
 
 .PHONY : clean distclean
 
@@ -24,6 +24,11 @@ BackendTests:
 	python3 Tests/TestBackend.py
 
 testsClean: cleanArrays cleanExtensions cleanGood cleanMethods cleanMyTests cleanObjects cleanStruct cleanVirtual
+
+cleanMyBlocks:
+	rm -rf ./Tests/Blocks/*_intermediate.bc ./Tests/Blocks/*.ll ./Tests/Blocks/*.bc
+cleanFrontend:
+	rm -rf ./Tests/badOutputs/*
 
 cleanArrays:
 	rm -rf ./Tests/arrays/good/*.bc ./Tests/arrays/good/*_intermediate.bc ./Tests/arrays/good/*.ll  ./Tests/arrays/good/*.output \
@@ -47,10 +52,10 @@ cleanMethods:
 cleanMyTests:
 	rm -rf ./Tests/myTests/BooleanExpressions/*.bc ./Tests/myTests/BooleanExpressions/*.ll ./Tests/myTests/BooleanExpressions/*_intermediate.bc ./Tests/myTests/BooleanExpressions/*.output \
 	./Tests/myTests/PredifinedFunctions/*.bc ./Tests/myTests/PredifinedFunctions/*.ll ./Tests/myTests/PredifinedFunctions/*_intermediate.bc ./Tests/myTests/PredifinedFunctions/*.output \
-	./Tests/myTests/Tests/*.bc ./Tests/myTests/Tests/*.ll ./Tests/myTests/Tests/*_intermediate.bc ./Tests/myTests/Tests/*.output 
+	./Tests/myTests/Tests/*.bc ./Tests/myTests/Tests/*.ll ./Tests/myTests/Tests/*_intermediate.bc ./Tests/myTests/Tests/*.output
 
 cleanObjects:
-	rm -rf ./Tests/objects/*.bc ./Tests/objects/*.ll ./Tests/objects/*_intermediate.bc ./Tests/objects/*.output 
+	rm -rf ./Tests/objects/*.bc ./Tests/objects/*.ll ./Tests/objects/*_intermediate.bc ./Tests/objects/*.output
 
 cleanStruct:
 	rm -rf ./Tests/struct/*.bc ./Tests/struct/*.ll ./Tests/struct/*._intermediate.bc ./Tests/struct/*.output
@@ -66,7 +71,7 @@ CreateDirectory:
 	@mkdir -p build
 
 clean :
-	rm -rf ./build ./latc_llvm 
+	rm -rf ./build ./latc_llvm
 
 cleanBison:
 	rm -f ./src/Parser.C ./src/Bison.H
@@ -79,7 +84,7 @@ TestLatteCPP : ${OBJS} Test.o
 	${CC} ${CCFLAGS} ${OBJS_FILES} ./build/Test.o -o latc_llvm
 
 Absyn.o : ./src/Absyn.C ./src/Absyn.H
-	${CC} ${CCFLAGS} -c ./src/Absyn.C -o ./build/Absyn.o 
+	${CC} ${CCFLAGS} -c ./src/Absyn.C -o ./build/Absyn.o
 
 Buffer.o : ./src/Buffer.C ./src/Buffer.H
 	${CC} ${CCFLAGS} -c ./src/Buffer.C -o ./build/Buffer.o
@@ -95,7 +100,7 @@ Lexer.o : CCFLAGS+=-Wno-sign-conversion
 Lexer.o : ./src/Lexer.C ./src/Bison.H
 	${CC} ${CCFLAGS} -c ./src/Lexer.C -o ./build/Lexer.o
 
-Parser.o : 
+Parser.o :
 	${CC} ${CCFLAGS} -c ./src/Parser.C -o ./build/Parser.o
 
 Printer.o : ./src/Printer.C ./src/Printer.H ./src/Absyn.H
@@ -110,5 +115,11 @@ Test.o : ./src/Test.C ./src/Parser.H ./src/Printer.H ./src/Absyn.H
 IRCoder.o : ./src/IRCoder.cpp ./src/IRCoder.h
 	${CC} ${CCFLAGS} -c ./src/IRCoder.cpp -o ./build/IRCoder.o
 
-DataStructure.o : ./src/DataStructure.cpp ./src/DataStructure.h
+DataStructure.o : ./src/DataStructure.cpp ./src/DataStructure.h ./src/IntermediateProgram.h
 	${CC} ${CCFLAGS} -c ./src/DataStructure.cpp -o ./build/DataStructure.o
+
+SSARenamer.o : ./src/SSARenamer.cpp ./src/SSARenamer.h
+	${CC} ${CCFLAGS} -c ./src/SSARenamer.cpp -o ./build/SSARenamer.o
+
+LiveAnalyzer.o : ./src/LiveAnalyzer.cpp ./src/LiveAnalyzer.h
+	${CC} ${CCFLAGS} -c ./src/LiveAnalyzer.cpp -o ./build/LiveAnalyzer.o
