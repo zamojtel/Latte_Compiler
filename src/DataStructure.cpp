@@ -3,6 +3,21 @@
 // zrob to
 // uzupelnic wypisywanie
 // TODO Integrate it with print_operand
+
+std::ostream& operator<<(std::ostream &o,const ArgOrVar &arg)
+{
+  bool result = std::holds_alternative<Argument*>(arg);
+  if(result){
+    auto argument = std::get<Argument*>(arg);
+    o<<"Argument("<<argument->m_identifier<<")";
+  }else{
+    auto variable = std::get<Variable*>(arg);
+    o<<"Variable("<<variable->m_ident<<")";
+  }
+
+  return o;
+}
+
 std::ostream& operator<<(std::ostream &os,const Operand &op)
 {
     switch (op.m_category)

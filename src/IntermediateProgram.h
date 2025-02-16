@@ -1,10 +1,31 @@
 #ifndef INTERMEDIATE_PROGRAM_STRUCTURE_H
 #define INTERMEDIATE_PROGRAM_STRUCTURE_H
 #include <iterator>
+#include <iostream>
+
+// using ArgOrVar = std::variant<Argument*,Variable*>;
+// std::ostream& operator<<(std::ostream &o,const ArgOrVar &arg) {
+//   bool result = std::holds_alternative<Argument*>(arg);
+//   if(result){
+//     auto argument = std::get<Argument*>(arg);
+//     o<<"Argument("<<argument->m_identifier<<")";
+//   }else{
+//     auto variable = std::get<Variable*>(arg);
+//     o<<"Variable("<<variable->m_ident<<")";
+//   }
+
+//   return o;
+// }
+
 class BasicBlock{
 public:
   // czy dla danej zmiennej mamy phi
   // if operand in our case variable or argument is in the set then it has phi function
+  std::set<ArgOrVar> m_use;
+  std::set<ArgOrVar> m_def;
+  std::set<ArgOrVar> m_live_in;
+  std::set<ArgOrVar> m_live_out;
+
   std::set<Operand> m_variable_has_phi;
   Function* m_fn = nullptr;
   size_t m_index;
@@ -96,6 +117,8 @@ public:
   void create_vtable(MyClass *cl);
   void correct_labels(Function *fn);
   void optimize();
+  void substitute_vars_args(Function *fn);
+  void substitute_all_vars_and_args();
   ~IntermediateProgram(){
     for(auto *fn: m_functions)
       delete fn;

@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <iostream>
+#include <variant>
 
 class Variable;
 class Triple;
@@ -157,6 +158,9 @@ public:
     Variable(const std::string &ident,DataType type):m_ident{ident},m_type{type}{}
 };
 
+using ArgOrVar = std::variant<Argument*,Variable*>;
+std::ostream& operator<<(std::ostream &o,const ArgOrVar &arg);
+
 class Operand{
 public:
     OperandCategory m_category;
@@ -180,6 +184,18 @@ public:
     Operand(Argument *arg):m_category{OperandCategory::ARGUMENT},m_version{0},m_argument{arg}{}
     Operand(Field *f):m_category{OperandCategory::FIELD},m_field{f}{}
     Operand():m_category{OperandCategory::EMPTY}{}
+
+    ArgOrVar get_arg_or_var() const {
+        switch (m_category)
+        {
+        case OperandCategory::VARIABLE:
+            return m_var;
+        case OperandCategory::ARGUMENT:
+            return m_argument;
+        default:
+            throw std::runtime_error("WRONG OPERAND get_arg_or_var(const Operand &op)");
+        }
+    }
 
     Operand(const Operand &other){
         m_category=other.m_category;
@@ -219,6 +235,9 @@ public:
             throw("No Operand Category");
             break;
         }
+    }
+    bool is_arg_or_var() const {
+        return m_category==OperandCategory::ARGUMENT || m_category==OperandCategory::VARIABLE;
     }
 
     // dodane Obejrzec
@@ -428,7 +447,7 @@ public:
 
 class Function{
 public:
-   std::map<Operand,Triple*> m_var_arg_to_triple;
+    std::map<Operand,Operand> m_var_arg_to_triple;
     IntermediateProgram * m_int_program=nullptr;
     size_t m_vtable_index;
     MyClass * m_class = nullptr;

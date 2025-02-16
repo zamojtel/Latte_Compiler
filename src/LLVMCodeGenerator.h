@@ -41,6 +41,8 @@ private:
     bool scanf_added=false;
     bool printf_added=false;
     size_t m_last_marker_number;
+    // triple -> line where the phi should be inserted
+    std::map<Triple*,int> m_triple_to_phi;
     // to generate labels we'll naming convetion Label{number} where number 0 - n
     IntermediateProgram *m_intermediate_program;
     size_t m_llvm_line_index;
@@ -84,6 +86,7 @@ public:
     std::string process_argument(Argument * arg,size_t index);
     std::string process_argument_list(Triple *triple);
     std::string get_string_literal_name(int index);
+    void add_boolean_values();
     void initialize_variables(const Function *fn);
     std::string process_phi_argument(const PHIArgument &arg);
     LLVMCodeGenerator(IntermediateProgram *i_p):m_intermediate_program{i_p}{}

@@ -488,7 +488,7 @@ DataType IRCoder::deduce_type(Triple *triple){
   case Operation::MEMEBER_ACCESS:
     return op_2_type;
   case Operation::PHI:
-    return BasicType::VOID;
+    return triple->m_op_1.get_type();
   default:
     throw std::runtime_error("IRCoder::deduce_type(Triple *triple)");
   }

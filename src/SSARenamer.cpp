@@ -15,10 +15,7 @@ void SSARenamer::rewrite(Operand &op){
 
 void SSARenamer::print_var_to_triple(){
     for(auto &[key,val] : m_var_arg_to_triple){
-        // if(std::holds_alternative<Argument*>(key)){
-
-        // }
-        std::cout<<"Operand "<<key<<" TRIPLE INDEX: "<<val->m_index<<std::endl;
+        std::cout<<"Operand "<<key<<" TRIPLE INDEX: "<<val<<std::endl;
     }
 }
 
@@ -33,11 +30,16 @@ void SSARenamer::insert_phi(){
         if(blk->m_variable_has_phi.size()>0){
             ir_coder.set_position_before(m_current_fn,blk->m_first_triple);
             for(auto var : blk->m_variable_has_phi)
-                ir_coder.push(0,Operation::PHI,var);
+            {
+                if(blk->m_live_in.count(var.get_arg_or_var())>0){
+                    ir_coder.push(0,Operation::PHI,var);
+                }
+            }
         }
     }
 }
-SSARenamer::ArgOrVar SSARenamer::get_arg_or_var(const Operand &op){
+
+ArgOrVar SSARenamer::get_arg_or_var(const Operand &op){
     switch (op.m_category)
     {
     case OperandCategory::VARIABLE:
@@ -69,7 +71,7 @@ void SSARenamer::rename(BasicBlock* blk){
                 int new_version = new_name(get_arg_or_var(triple->m_op_1));
                 op_1.m_version = new_version;
 
-                m_var_arg_to_triple[triple->m_op_1]=triple;
+                m_var_arg_to_triple[triple->m_op_1]=triple->m_op_2;
             }
             rewrite(op_2);
         }else{
@@ -85,7 +87,6 @@ void SSARenamer::rename(BasicBlock* blk){
     }
 
     for(auto successor : blk->m_successors){
-
         for(Triple* triple : *successor){
             if(triple->m_operation==Operation::PHI){
                 Operand op = triple->m_op_1;
@@ -127,16 +128,53 @@ void SSARenamer::rename_ssa_function(Function* fn){
         m_versioning_stack[var];
     }
 
+    if(fn->m_name=="f"){
+        int x =123;
+    }
     for(auto arg : fn->m_arguments){
         m_counter[arg]=0;
         m_versioning_stack[arg];
         // add versions for arguments
         Operand op{arg};
-        new_name(get_arg_or_var(op));
+        // OBEJRZEC: 103 dorzucanie argumentu do mapy
+        int new_version = new_name(get_arg_or_var(op));
+        op.m_version=new_version;
+        m_var_arg_to_triple[arg]=op;
     }
 
     rename(fn->m_basic_blocks[0]);
 
+    // for(auto blk : m_current_fn->m_basic_blocks){
+    //     for(auto triple : *blk){
+    //         Operand &op_1 = triple->m_op_1;
+    //         Operand &op_2 = triple->m_op_2;
+    //         Operation operation = triple->m_operation;
+    //         if(operation != Operation::ASSIGN && operation!= Operation::INIT){
+    //             if(op_1.m_category==OperandCategory::ARGUMENT || op_1.m_category==OperandCategory::VARIABLE){
+    //                 op_1=m_var_arg_to_triple.at(op_1);
+    //             }
+
+    //             if(op_2.m_category==OperandCategory::ARGUMENT || op_2.m_category==OperandCategory::VARIABLE){
+    //                 op_2=m_var_arg_to_triple.at(op_2);
+    //             }
+    //         }
+
+    //         if(operation==Operation::CALL){
+    //             for(auto &op : triple->m_call_args){
+    //                 if(op.m_category==OperandCategory::ARGUMENT || op.m_category==OperandCategory::VARIABLE){
+    //                     op=m_var_arg_to_triple.at(op);
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+
+    // print_var_to_triple();
     fn->m_var_arg_to_triple=std::move(m_var_arg_to_triple);
-    print_var_to_triple();
+}
+
+void SSARenamer::copy_propagation(){
+    std::set<Operand> worklist;
+
+
 }

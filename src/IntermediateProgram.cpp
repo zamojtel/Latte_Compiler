@@ -409,6 +409,40 @@ void IntermediateProgram::connect_blocks(BasicBlock *source_block,BasicBlock *de
   destination_block->m_predecessors.push_back(source_block);
 }
 
+void IntermediateProgram::substitute_vars_args(Function *fn){
+  for(auto blk : fn->m_basic_blocks){
+    for(auto triple : *blk){
+      Operand &op_1 = triple->m_op_1;
+      Operand &op_2 = triple->m_op_2;
+      Operation operation = triple->m_operation;
+      if(operation != Operation::ASSIGN && operation!= Operation::INIT){
+        if(operation!=Operation::PHI){
+          if(op_1.m_category==OperandCategory::ARGUMENT || op_1.m_category==OperandCategory::VARIABLE){
+            op_1=fn->m_var_arg_to_triple.at(op_1);
+          }
+        }
+
+        if(op_2.m_category==OperandCategory::ARGUMENT || op_2.m_category==OperandCategory::VARIABLE){
+          op_2=fn->m_var_arg_to_triple.at(op_2);
+        }
+      }
+
+      if(operation==Operation::CALL){
+        for(auto &op : triple->m_call_args){
+          if(op.m_category==OperandCategory::ARGUMENT || op.m_category==OperandCategory::VARIABLE){
+            op=fn->m_var_arg_to_triple.at(op);
+          }
+        }
+      }
+    }
+  }
+}
+
+void IntermediateProgram::substitute_all_vars_and_args(){
+  for(auto *fn : m_functions)
+    substitute_vars_args(fn);
+}
+
 void IntermediateProgram::compute_dominator_sets(Function *fn){
   int n = fn->m_basic_blocks.size();
   fn->m_basic_blocks[0]->m_dominators.insert(fn->m_basic_blocks[0]);

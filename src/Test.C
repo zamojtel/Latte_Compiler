@@ -1121,12 +1121,16 @@ int main(int argc, char ** argv)
   // }
   IntermediateProgramPrinter int_program_printer;
   int_program.create_basic_blocks();
+  LiveAnalyzer analyzer{&int_program};
+  analyzer.run();
   int_program.optimize();
-  int_program_printer.print_program(int_program);
+  // int_program_printer.print_program(int_program);
+  int_program.substitute_all_vars_and_args();
 
-
-  // LiveAnalyzer analyzer{&int_program};
-  // analyzer.run();
+  // std::cout<<"-----------------------"<<std::endl;
+  // std::cout<<"After substituting: "<<std::endl;
+  // std::cout<<"-----------------------"<<std::endl;
+  // int_program_printer.print_program(int_program);
 
   // std::cout<<"After optimizations:"<<std::endl;
   // int_program_printer.print_program(int_program);

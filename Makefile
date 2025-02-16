@@ -67,6 +67,9 @@ cleanVirtual:
 cleanStrings:
 	rm -rf ./Tests/strings/*.bc ./Tests/strings/*.ll ./Tests/strings/*_intermediate.bc ./Tests/strings/*.output
 
+cleanAlive:
+	rm -rf ./Tests/ALiveAnalysis/*.bc ./Tests/ALiveAnalysis/*.ll ./Tests/ALiveAnalysis/*_intermediate.bc ./Tests/ALiveAnalysis/*.output
+
 CreateDirectory:
 	@mkdir -p build
 
