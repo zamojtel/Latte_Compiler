@@ -7,10 +7,11 @@ source_filename = "functions.cpp"
 %struct._IO_wide_data = type opaque
 
 @string_count = dso_local global i32 0, align 4
-@.str = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@.str.1 = private unnamed_addr constant [4 x i8] c"%s\0A\00", align 1
-@.str.2 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
-@.str.3 = private unnamed_addr constant [3 x i8] c"%d\00", align 1
+@.str = private unnamed_addr constant [15 x i8] c"runtime error\0A\00", align 1
+@.str.1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@.str.2 = private unnamed_addr constant [4 x i8] c"%s\0A\00", align 1
+@.str.3 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
+@.str.4 = private unnamed_addr constant [3 x i8] c"%d\00", align 1
 @stdin = external global %struct._IO_FILE*, align 8
 
 ; Function Attrs: mustprogress noinline nounwind optnone uwtable
@@ -41,7 +42,7 @@ define dso_local i8* @allocArray(i32 noundef %0, i32 noundef %1) #0 {
   %8 = mul nsw i32 %6, %7
   %9 = sext i32 %8 to i64
   %10 = add i64 %9, 4
-  %11 = call noalias i8* @malloc(i64 noundef %10) #7
+  %11 = call noalias i8* @malloc(i64 noundef %10) #8
   %12 = bitcast i8* %11 to i32*
   store i32* %12, i32** %5, align 8
   %13 = load i32, i32* %3, align 4
@@ -74,10 +75,17 @@ define dso_local i32 @getStringCount() #0 {
   ret i32 %1
 }
 
-; Function Attrs: mustprogress noinline nounwind optnone uwtable
-define dso_local void @error() #0 {
-  ret void
+; Function Attrs: mustprogress noinline optnone uwtable
+define dso_local void @error() #3 {
+  %1 = call i32 (i8*, ...) @printf(i8* noundef getelementptr inbounds ([15 x i8], [15 x i8]* @.str, i64 0, i64 0))
+  call void @exit(i32 noundef 1) #9
+  unreachable
 }
+
+declare i32 @printf(i8* noundef, ...) #4
+
+; Function Attrs: noreturn nounwind
+declare void @exit(i32 noundef) #5
 
 ; Function Attrs: mustprogress noinline optnone uwtable
 define dso_local void @printString(i8* noundef %0) #3 {
@@ -89,7 +97,7 @@ define dso_local void @printString(i8* noundef %0) #3 {
   br i1 %5, label %6, label %8
 
 6:                                                ; preds = %1
-  %7 = call i32 (i8*, ...) @printf(i8* noundef getelementptr inbounds ([2 x i8], [2 x i8]* @.str, i64 0, i64 0))
+  %7 = call i32 (i8*, ...) @printf(i8* noundef getelementptr inbounds ([2 x i8], [2 x i8]* @.str.1, i64 0, i64 0))
   br label %13
 
 8:                                                ; preds = %1
@@ -97,21 +105,19 @@ define dso_local void @printString(i8* noundef %0) #3 {
   store i8* %9, i8** %3, align 8
   %10 = load i8*, i8** %3, align 8
   %11 = getelementptr inbounds i8, i8* %10, i64 5
-  %12 = call i32 (i8*, ...) @printf(i8* noundef getelementptr inbounds ([4 x i8], [4 x i8]* @.str.1, i64 0, i64 0), i8* noundef %11)
+  %12 = call i32 (i8*, ...) @printf(i8* noundef getelementptr inbounds ([4 x i8], [4 x i8]* @.str.2, i64 0, i64 0), i8* noundef %11)
   br label %13
 
 13:                                               ; preds = %8, %6
   ret void
 }
 
-declare i32 @printf(i8* noundef, ...) #4
-
 ; Function Attrs: mustprogress noinline optnone uwtable
 define dso_local void @printInt(i32 noundef %0) #3 {
   %2 = alloca i32, align 4
   store i32 %0, i32* %2, align 4
   %3 = load i32, i32* %2, align 4
-  %4 = call i32 (i8*, ...) @printf(i8* noundef getelementptr inbounds ([4 x i8], [4 x i8]* @.str.2, i64 0, i64 0), i32 noundef %3)
+  %4 = call i32 (i8*, ...) @printf(i8* noundef getelementptr inbounds ([4 x i8], [4 x i8]* @.str.3, i64 0, i64 0), i32 noundef %3)
   ret void
 }
 
@@ -119,7 +125,7 @@ define dso_local void @printInt(i32 noundef %0) #3 {
 define dso_local i32 @readInt() #3 {
   %1 = alloca i32, align 4
   %2 = alloca i8, align 1
-  %3 = call i32 (i8*, ...) @__isoc99_scanf(i8* noundef getelementptr inbounds ([3 x i8], [3 x i8]* @.str.3, i64 0, i64 0), i32* noundef %1)
+  %3 = call i32 (i8*, ...) @__isoc99_scanf(i8* noundef getelementptr inbounds ([3 x i8], [3 x i8]* @.str.4, i64 0, i64 0), i32* noundef %1)
   br label %4
 
 4:                                                ; preds = %14, %0
@@ -209,7 +215,7 @@ define dso_local void @decreaseStringCounter(i8* noundef %0) #0 {
   %22 = add nsw i32 %21, -1
   store i32 %22, i32* @string_count, align 4
   %23 = load i8*, i8** %2, align 8
-  call void @free(i8* noundef %23) #7
+  call void @free(i8* noundef %23) #8
   br label %24
 
 24:                                               ; preds = %20, %9
@@ -283,7 +289,7 @@ define dso_local i8* @allocString(i32 noundef %0) #0 {
   %7 = add nsw i32 %6, 1
   %8 = sext i32 %7 to i64
   %9 = mul i64 1, %8
-  %10 = call noalias i8* @malloc(i64 noundef %9) #7
+  %10 = call noalias i8* @malloc(i64 noundef %9) #8
   store i8* %10, i8** %3, align 8
   %11 = load i8*, i8** %3, align 8
   %12 = getelementptr inbounds i8, i8* %11, i64 0
@@ -300,7 +306,7 @@ define dso_local i8* @allocString(i32 noundef %0) #0 {
 }
 
 ; Function Attrs: argmemonly nofree nounwind willreturn
-declare void @llvm.memcpy.p0i8.p0i8.i64(i8* noalias nocapture writeonly, i8* noalias nocapture readonly, i64, i1 immarg) #5
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* noalias nocapture writeonly, i8* noalias nocapture readonly, i64, i1 immarg) #6
 
 ; Function Attrs: mustprogress noinline optnone uwtable
 define dso_local i8* @addStrings(i8* noundef %0, i8* noundef %1) #3 {
@@ -319,7 +325,7 @@ define dso_local i8* @addStrings(i8* noundef %0, i8* noundef %1) #3 {
   %11 = load i8*, i8** %3, align 8
   %12 = getelementptr inbounds i8, i8* %11, i64 4
   %13 = getelementptr inbounds i8, i8* %12, i64 1
-  %14 = call i64 @strlen(i8* noundef %13) #8
+  %14 = call i64 @strlen(i8* noundef %13) #10
   br label %16
 
 15:                                               ; preds = %2
@@ -337,7 +343,7 @@ define dso_local i8* @addStrings(i8* noundef %0, i8* noundef %1) #3 {
   %22 = load i8*, i8** %4, align 8
   %23 = getelementptr inbounds i8, i8* %22, i64 4
   %24 = getelementptr inbounds i8, i8* %23, i64 1
-  %25 = call i64 @strlen(i8* noundef %24) #8
+  %25 = call i64 @strlen(i8* noundef %24) #10
   br label %27
 
 26:                                               ; preds = %16
@@ -404,10 +410,10 @@ define dso_local i8* @addStrings(i8* noundef %0, i8* noundef %1) #3 {
 }
 
 ; Function Attrs: nounwind readonly willreturn
-declare i64 @strlen(i8* noundef) #6
+declare i64 @strlen(i8* noundef) #7
 
 ; Function Attrs: mustprogress noinline nounwind optnone uwtable
-define dso_local zeroext i1 @compareStrings(i8* noundef %0, i8* noundef %1) #0 {
+define dso_local zeroext i1 @stringsEqual(i8* noundef %0, i8* noundef %1) #0 {
   %3 = alloca i1, align 1
   %4 = alloca i8*, align 8
   %5 = alloca i8*, align 8
@@ -443,7 +449,7 @@ define dso_local zeroext i1 @compareStrings(i8* noundef %0, i8* noundef %1) #0 {
   %21 = load i8*, i8** %5, align 8
   %22 = getelementptr inbounds i8, i8* %21, i64 4
   %23 = getelementptr inbounds i8, i8* %22, i64 1
-  %24 = call i32 @strcmp(i8* noundef %20, i8* noundef %23) #8
+  %24 = call i32 @strcmp(i8* noundef %20, i8* noundef %23) #10
   %25 = icmp eq i32 %24, 0
   store i1 %25, i1* %3, align 1
   br label %26
@@ -454,7 +460,20 @@ define dso_local zeroext i1 @compareStrings(i8* noundef %0, i8* noundef %1) #0 {
 }
 
 ; Function Attrs: nounwind readonly willreturn
-declare i32 @strcmp(i8* noundef, i8* noundef) #6
+declare i32 @strcmp(i8* noundef, i8* noundef) #7
+
+; Function Attrs: mustprogress noinline nounwind optnone uwtable
+define dso_local zeroext i1 @stringsNotEqual(i8* noundef %0, i8* noundef %1) #0 {
+  %3 = alloca i8*, align 8
+  %4 = alloca i8*, align 8
+  store i8* %0, i8** %3, align 8
+  store i8* %1, i8** %4, align 8
+  %5 = load i8*, i8** %3, align 8
+  %6 = load i8*, i8** %4, align 8
+  %7 = call zeroext i1 @stringsEqual(i8* noundef %5, i8* noundef %6)
+  %8 = xor i1 %7, true
+  ret i1 %8
+}
 
 ; Function Attrs: mustprogress noinline nounwind optnone uwtable
 define dso_local zeroext i1 @isConstant(i8* noundef %0) #0 {
@@ -496,7 +515,7 @@ define dso_local void @freeString(i8* noundef %0) #0 {
   %2 = alloca i8*, align 8
   store i8* %0, i8** %2, align 8
   %3 = load i8*, i8** %2, align 8
-  call void @free(i8* noundef %3) #7
+  call void @free(i8* noundef %3) #8
   ret void
 }
 
@@ -509,7 +528,7 @@ define dso_local i32 @myFunc(i32* noundef %0, i32 noundef %1) #3 {
   %5 = load i32*, i32** %3, align 8
   %6 = getelementptr inbounds i32, i32* %5, i64 0
   %7 = load i32, i32* %6, align 4
-  %8 = call i32 (i8*, ...) @printf(i8* noundef getelementptr inbounds ([3 x i8], [3 x i8]* @.str.3, i64 0, i64 0), i32 noundef %7)
+  %8 = call i32 (i8*, ...) @printf(i8* noundef getelementptr inbounds ([3 x i8], [3 x i8]* @.str.4, i64 0, i64 0), i32 noundef %7)
   ret i32 1
 }
 
@@ -523,7 +542,7 @@ define dso_local i8* @allocateInstance(i8** noundef %0, i32 noundef %1) #0 {
   %6 = load i32, i32* %4, align 4
   %7 = add nsw i32 8, %6
   %8 = sext i32 %7 to i64
-  %9 = call noalias i8* @malloc(i64 noundef %8) #7
+  %9 = call noalias i8* @malloc(i64 noundef %8) #8
   store i8* %9, i8** %5, align 8
   %10 = load i8*, i8** %5, align 8
   %11 = getelementptr inbounds i8, i8* %10, i64 8
@@ -568,10 +587,12 @@ attributes #1 = { nounwind "frame-pointer"="all" "no-trapping-math"="true" "stac
 attributes #2 = { argmemonly nofree nounwind willreturn writeonly }
 attributes #3 = { mustprogress noinline optnone uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
 attributes #4 = { "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
-attributes #5 = { argmemonly nofree nounwind willreturn }
-attributes #6 = { nounwind readonly willreturn "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
-attributes #7 = { nounwind }
-attributes #8 = { nounwind readonly willreturn }
+attributes #5 = { noreturn nounwind "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #6 = { argmemonly nofree nounwind willreturn }
+attributes #7 = { nounwind readonly willreturn "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #8 = { nounwind }
+attributes #9 = { noreturn nounwind }
+attributes #10 = { nounwind readonly willreturn }
 
 !llvm.module.flags = !{!0, !1, !2, !3, !4}
 !llvm.ident = !{!5}

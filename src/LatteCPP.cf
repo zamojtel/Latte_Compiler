@@ -26,7 +26,7 @@ MethodDef. ClassDecl ::= Type Ident "(" [Arg] ")" Block ;
 
 FieldDef. ClassDecl ::= Type Ident ";" ;
 
-separator nonempty ClassDecl "" ;
+separator ClassDecl "" ;
 
 -- statements ----------------------------------------------
 

@@ -10,7 +10,7 @@ int string_count = 0;
 
 // Arrays
 // tablica na dane, a na jej poczatku licznik/rozmiar
-// rozmiar jako int 4 bajtowy 
+// rozmiar jako int 4 bajtowy
 int getArrayLength(void *arr){
     int *size = (int*)(arr);
     // krok wstecz do rozmiaru
@@ -42,10 +42,11 @@ void * allocString(int size);
 // reszta str literal
 
 void error(){
-
+    printf("runtime error\n");
+    exit(1);
 }
 
-// first 4 bytes -- a counter 
+// first 4 bytes -- a counter
 void printString(void * str){
     if(str==nullptr)
     {
@@ -68,9 +69,9 @@ int readInt(){
     while((ch=getchar())!=EOF)
     {
         if (ch == '\n')
-            break; 
+            break;
     }
-    
+
     return value;
 }
 
@@ -109,37 +110,38 @@ void * readString(){
 }
 
 // string jest ustawiany na null
-// 2 stringi sa rowne jak nie sa nullami i sa rowne albo jak oba sa nullami 
-// w printString i konkatencacji string null jest tak samo trakowany jak pusty string 
+// 2 stringi sa rowne jak nie sa nullami i sa rowne albo jak oba sa nullami
+// w printString i konkatenacji string null jest tak samo trakowany jak pusty string
 void * addStrings(void *str_1,void *str_2){
     // lengths without counters
     int n_1=(str_1 ? strlen((char*)(str_1)+4+1) : 0);
     int n_2=(str_2 ? strlen((char*)(str_2)+4+1) : 0);
 
     uint8_t * str = (uint8_t *)allocString(n_1+n_2);
-    
+
     if(n_1)
         memcpy(str+4+1,(char*)(str_1)+4+1,n_1);
     if(n_2)
         memcpy(str+4+1+n_1,(char*)(str_2)+4+1,n_2);
-    
+
     *(str+n_1+n_2+4+1)=0;
 
     return str;
 }
 
-// compare_strings
-// return 1 if there are equal
-// return 0 if there are not equal
-bool compareStrings(int8_t *str_1,int8_t *str_2){
+bool stringsEqual(int8_t *str_1,int8_t *str_2){
     if(str_1==str_2)
         return true;
     if(str_1==nullptr || str_2==nullptr)
         return false;
 
-    // return strcmp((char *)(str_1+4+1),(char *)(str_2+4+1));
     return strcmp((char *)(str_1+4+1),(char *)(str_2+4+1))==0;
 }
+
+bool stringsNotEqual(int8_t *str_1,int8_t *str_2){
+    return !stringsEqual(str_1,str_2);
+}
+
 
 void * allocString(int size){
     // 1 -> \0 , 4-> counter, 1 -> flaga
@@ -148,7 +150,7 @@ void * allocString(int size){
     // ustawienie flagi
     str[0]=1;
     // ustawienie licznika
-    *(int*)(str+1)=0; // first 4 bytes are set to 0 
+    *(int*)(str+1)=0; // first 4 bytes are set to 0
     string_count++;
     return str;
 }
@@ -185,7 +187,7 @@ int8_t * allocateInstance(int8_t **vtable,int data_size){
     int8_t *ptr = (int8_t *)malloc(8+data_size);
     memset(ptr+8,0,data_size);
     (*(int8_t***)ptr)=vtable;
-    
+
     return ptr+8;
 }
 
@@ -196,5 +198,4 @@ int8_t ** get_vtable(int8_t *instance){
 int8_t * getField(int8_t *object,int offset){
     return (object+offset);
 }
-
 }

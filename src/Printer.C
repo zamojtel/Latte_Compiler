@@ -286,11 +286,6 @@ void PrintAbsyn::visitListClassDecl(ListClassDecl *listclassdecl)
 void PrintAbsyn::iterListClassDecl(ListClassDecl::const_iterator i, ListClassDecl::const_iterator j)
 {
   if (i == j) return;
-  if (i == j-1)
-  { /* last */
-    (*i)->accept(this);
-  }
-  else
   { /* cons */
     (*i)->accept(this); iterListClassDecl(i+1, j);
   }

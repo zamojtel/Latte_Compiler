@@ -10,6 +10,7 @@
 #include "IRCoderListener.h"
 #include <stdexcept>
 #include <algorithm>
+#include "Libraries.h"
 #include <iostream>
 #include <variant>
 
@@ -21,6 +22,34 @@ class Field;
 class BasicBlock;
 class IntermediateProgram;
 
+class Error{
+public:
+    size_t m_code=0;
+    size_t m_line;
+    std::string m_msg;
+    Error(size_t l,const std::string &msg):m_line{l},m_msg{msg}{}
+};
+
+
+class ErrorList {
+public:
+  std::vector<Error*> m_errors;
+  void add_error(int l,const std::string &msg){
+    m_errors.push_back(new Error{(size_t)l,msg});
+  }
+  void print_errors(){
+    for(auto *err : m_errors){
+      std::string error = err->m_line !=0 ? fmt::format("Line {}: {}",err->m_line,err->m_msg) : fmt::format("{}",err->m_msg);
+      std::cout<<error<<std::endl;
+    }
+  }
+
+  bool errors_occured(){return m_errors.size()>0;}
+  ~ErrorList(){
+    for(auto *err : m_errors)
+      delete err;
+  }
+};
 
 enum class BasicType{
     INT,BOOL,STRING,VOID,ERROR,NULLPTR
@@ -348,14 +377,6 @@ public:
     Triple(int line_number,size_t index,Operation operation,const Operand &op_1={},const Operand &op_2={}):m_code_line_number{line_number},m_visited{false}, m_index{index},m_operation{operation},m_op_1{op_1},m_op_2{op_2}{}
 };
 
-class Error{
-public:
-    size_t m_code=0;
-    size_t m_line;
-    std::string m_msg;
-    Error(size_t l,const std::string &msg):m_line{l},m_msg{msg}{}
-};
-
 enum class SymbolTableCategory{
     ARGUMENT,VARIABLE,FUNCTION,EMPTY,FIELD
 };
@@ -408,6 +429,7 @@ enum class PredefinedFunction{
 
 class Function{
 public:
+    int m_decl_line;
     std::map<Operand,Operand> m_var_arg_to_triple;
     IntermediateProgram * m_int_program=nullptr;
     size_t m_vtable_index;

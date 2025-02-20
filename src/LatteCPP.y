@@ -166,8 +166,8 @@ extern int yylex(YYSTYPE *lvalp, YYLTYPE *llocp, yyscan_t scanner);
 Program : ListTopDef { std::reverse($1->begin(),$1->end()) ;$$ = new Prog($1); $$->line_number = @$.first_line; $$->char_number = @$.first_column; result->program_ = $$; }
 ;
 TopDef : Type _IDENT_ _LPAREN ListArg _RPAREN Block { std::reverse($4->begin(),$4->end()) ;$$ = new FnDef($1, $2, $4, $6); $$->line_number = @$.first_line; $$->char_number = @$.first_column; }
-  | _KW_class _IDENT_ _LBRACE ListClassDecl _RBRACE { std::reverse($4->begin(),$4->end()) ;$$ = new ClassDef($2, $4); $$->line_number = @$.first_line; $$->char_number = @$.first_column; }
-  | _KW_class _IDENT_ _KW_extends _IDENT_ _LBRACE ListClassDecl _RBRACE { std::reverse($6->begin(),$6->end()) ;$$ = new ClassExtDef($2, $4, $6); $$->line_number = @$.first_line; $$->char_number = @$.first_column; }
+  | _KW_class _IDENT_ _LBRACE ListClassDecl _RBRACE { $$ = new ClassDef($2, $4); $$->line_number = @$.first_line; $$->char_number = @$.first_column; }
+  | _KW_class _IDENT_ _KW_extends _IDENT_ _LBRACE ListClassDecl _RBRACE { $$ = new ClassExtDef($2, $4, $6); $$->line_number = @$.first_line; $$->char_number = @$.first_column; }
 ;
 ListTopDef : TopDef { $$ = new ListTopDef(); $$->push_back($1); }
   | TopDef ListTopDef { $2->push_back($1); $$ = $2; }
@@ -181,8 +181,8 @@ ListArg : /* empty */ { $$ = new ListArg(); }
 ClassDecl : Type _IDENT_ _LPAREN ListArg _RPAREN Block { std::reverse($4->begin(),$4->end()) ;$$ = new MethodDef($1, $2, $4, $6); $$->line_number = @$.first_line; $$->char_number = @$.first_column; }
   | Type _IDENT_ _SEMI { $$ = new FieldDef($1, $2); $$->line_number = @$.first_line; $$->char_number = @$.first_column; }
 ;
-ListClassDecl : ClassDecl { $$ = new ListClassDecl(); $$->push_back($1); }
-  | ClassDecl ListClassDecl { $2->push_back($1); $$ = $2; }
+ListClassDecl : /* empty */ { $$ = new ListClassDecl(); }
+  | ListClassDecl ClassDecl { $1->push_back($2); $$ = $1; }
 ;
 Block : _LBRACE ListStmt _RBRACE { $$ = new Blk($2); $$->line_number = @$.first_line; $$->char_number = @$.first_column; }
 ;

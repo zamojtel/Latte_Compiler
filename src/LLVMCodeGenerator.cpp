@@ -197,7 +197,7 @@ std::string LLVMCodeGenerator::process_argument_list(Triple *triple){
         case OperandCategory::CONSTANT:
         {
             if(arg.get_type()!=BasicType::STRING){
-                argument = fmt::format("{} noundef {}",get_data_type_name(arg.get_type()),arg.m_constant.get_value_as_string());
+                argument = fmt::format("{} noundef {}",get_data_type_name(triple->m_op_1.m_function->m_arguments[i]->m_type),arg.m_constant.get_value_as_string());
             }else{
                 // + 4 for counter +1 \0
                 // DOPRZEJRZENIA
@@ -731,12 +731,14 @@ void LLVMCodeGenerator::process_triple(Triple * triple){
             m_code_lines.push_back(fmt::format("%{} = icmp {} {} {}, {}",m_llvm_line_index,operation,get_data_type_name(type),op_1_val,op_2_val));
             increase();
         }else{
+            std::string function_name = triple->m_operation == Operation::EQU ? "stringsEqual" : "stringsNotEqual";
             std::string op_1_val = get_operand_value_with_load(triple->m_op_1);
             std::string op_2_val = get_operand_value_with_load(triple->m_op_2);
             m_triple_data[triple->m_index].m_number = m_llvm_line_index;
-            std::string line = fmt::format("%{} = call zeroext i1 @compareStrings(i8* noundef {}, i8* noundef {})",m_llvm_line_index,op_1_val,op_2_val);
+            std::string line = fmt::format("%{} = call zeroext i1 @{}(i8* noundef {}, i8* noundef {})",m_llvm_line_index,function_name,op_1_val,op_2_val);
             m_code_lines.push_back(line);
             increase();
+            break;
         }
 
         break;
@@ -1093,10 +1095,12 @@ void LLVMCodeGenerator::add_used_predefined_functions(){
     m_code_lines.push_back("declare dso_local i8* @allocArray(i32 noundef %0, i32 noundef %1)");
     m_code_lines.push_back("declare dso_local zeroext i1 @isConstant(i8* noundef %0)");
     m_code_lines.push_back("declare dso_local i32 @getReferenceCount(i8* noundef %0)");
-    m_code_lines.push_back("declare dso_local zeroext i1 @compareStrings(i8* noundef %0, i8* noundef %1)");
+    m_code_lines.push_back("declare dso_local zeroext i1 @stringsEqual(i8* noundef %0, i8* noundef %1)");
+    m_code_lines.push_back("declare dso_local zeroext i1 @stringsNotEqual(i8* noundef %0, i8* noundef %1)");
     m_code_lines.push_back("declare dso_local i8* @allocateInstance(i8** noundef %0, i32 noundef %1)");
     m_code_lines.push_back("declare dso_local i8* @getField(i8* noundef %0, i32 noundef %1)");
     m_code_lines.push_back("declare dso_local i8** @get_vtable(i8* noundef %0)");
+    m_code_lines.push_back("declare dso_local void @error()");
 }
 
 void LLVMCodeGenerator::enumerate_all_markers(Function *fn){

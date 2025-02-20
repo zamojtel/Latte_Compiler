@@ -119,6 +119,51 @@ Function* IntermediateProgram::get_function(const std::string &name) const{
   return nullptr;
 }
 
+void IntermediateProgram::check_difference_between_methods(Function *method,MyClass *base_cl,ErrorList &error_list){
+  if(base_cl==nullptr)
+    return;
+  Function *base_method = base_cl->get_method(method->m_name);
+  if(base_method!=nullptr){
+    if(method->m_arguments.size()!=base_method->m_arguments.size()){
+      std::string msg=fmt::format("Number of arguments between methods differ base: {} current: {}",base_method->m_arguments.size(),method->m_arguments.size());
+      error_list.add_error(method->m_decl_line,msg);
+      return;
+    }
+
+    for(size_t i=0;i<method->m_arguments.size();i++){
+      if(i==0)
+        continue;
+
+      if(method->m_arguments[i]->m_type != base_method->m_arguments[i]->m_type){
+        error_list.add_error(method->m_decl_line,"Types of arguments between inherited methods don't match");
+        return;
+      }
+    }
+
+    if(method->m_return_type!=base_method->m_return_type){
+      std::string msg=fmt::format("Return type of overriden methods should be the same");
+      error_list.add_error(method->m_decl_line,"Return type of overriden methods should be the same");
+      return;
+    }
+
+  }
+
+  return check_difference_between_methods(method,base_cl->m_base_class,error_list);
+}
+
+void IntermediateProgram::check_all_methods(ErrorList &error_list){
+  for(auto cl : m_classes){
+    for(auto meth : cl->m_methods){
+      check_difference_between_methods(meth,cl->m_base_class,error_list);
+
+      // if(dm.m_error_detected){
+      //   error_list.add_error(meth->m_decl_line,dm.m_msg);
+      // }
+    }
+  }
+}
+
+
 MyClass* IntermediateProgram::get_class(const std::string &name) const{
   for(size_t i=0;i<m_classes.size();i++){
     if(m_classes[i]->m_name==name)

@@ -3,6 +3,8 @@
 #include <iterator>
 #include <iostream>
 
+class ErrorList;
+
 class BasicBlock{
 public:
   // czy dla danej zmiennej mamy phi
@@ -46,6 +48,8 @@ public:
   bool has_class(const std::string & cl_name) const;
   Function* get_function(const std::string &name) const;
   MyClass* get_class(const std::string &name) const;
+  void check_all_methods(ErrorList &error_list);
+  void check_difference_between_methods(Function *method,MyClass *base_cl,ErrorList &error_list);
   void create_basic_blocks(Function *fn);
   void create_basic_blocks();
   void print_blocks();

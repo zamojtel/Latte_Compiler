@@ -23,28 +23,6 @@
 #include <cctype>
 #include "LiveAnalyzer.h"
 
-class ErrorList {
-public:
-  std::vector<Error*> m_errors;
-  void add_error(int l,const std::string &msg){
-    m_errors.push_back(new Error{(size_t)l,msg});
-  }
-
-  void print_errors(){
-    for(auto *err : m_errors){
-      std::string error = err->m_line !=0 ? fmt::format("Line {}: {}",err->m_line,err->m_msg) : fmt::format("{}",err->m_msg);
-      std::cout<<error<<std::endl;
-    }
-  }
-
-  bool errors_occured(){return m_errors.size()>0;}
-
-  ~ErrorList(){
-    for(auto *err : m_errors)
-      delete err;
-  }
-};
-
 class TrueFalseLabel{
 public:
   Label *m_false_label;
@@ -133,7 +111,6 @@ public:
 
     p->stmt_->accept(this);
 
-    // m_IRCoder.push(0,Operation::INC,index_var);
     Triple *triple = m_IRCoder.push(0,Operation::ADD,index_var,Constant{1});
     m_IRCoder.push(0,Operation::ASSIGN,index_var,triple);
 
@@ -146,8 +123,6 @@ public:
     m_symbol_table.pop();
   }
 
-  // --Arrays
-  // declaration
   void visitArray(Array *p) override {
     p->type_->accept(this);
 
@@ -162,7 +137,6 @@ public:
 
     if(m_last_visited_type!=BasicType::ERROR)
       m_last_visited_type.dimensions++;
-
   }
 
   void visitArrAcc(ArrAcc *p) override{
@@ -176,8 +150,7 @@ public:
     if(!m_program->has_class(p->ident_)){
       MyClass * new_class = new MyClass{p->ident_,m_program};
       m_program->m_classes.push_back(new_class);
-      // we rememeber the line where an error might occur
-      new_class->m_implicit_declaration_line= p->line_number;
+      new_class->m_implicit_declaration_line = p->line_number;
     }
 
     m_last_visited_type = m_program->get_class(p->ident_);
@@ -212,23 +185,22 @@ public:
       }
     }
   }
-//--End of Arrays
 
   void ircoder_error(int line,const std::string &msg) override {
     m_error_list.add_error(line,msg);
   }
 
-  bool check_predifined_function(const std::string &name){
-    if(
-      name == "printInt" || name == "printString" ||
-      name == "readInt"  || name == "readString"  ||
-      name == "error"    || name == "error"
-      ){
-        return true;
-      }
+  // bool check_predifined_function(const std::string &name){
+  //   if(
+  //     name == "printInt" || name == "printString" ||
+  //     name == "readInt"  || name == "readString"  ||
+  //     name == "error"    || name == "error"
+  //     ){
+  //       return true;
+  //     }
 
-    return false;
-  }
+  //   return false;
+  // }
 
   Variable* create_special_boolean_variable(){
     Variable *variable = new Variable{fmt::format("${}",m_special_variable_index),BasicType::BOOL};
@@ -263,7 +235,7 @@ public:
           switch (variable->m_type.basic_type)
           {
           case BasicType::STRING:
-            m_IRCoder.push(line,Operation::INIT,variable,Constant{std::string{}});
+            m_IRCoder.push(line,Operation::INIT,variable,Constant{nullptr});
             break;
           case BasicType::INT:
             m_IRCoder.push(line,Operation::INIT,variable,Constant{0});
@@ -305,10 +277,8 @@ public:
     else
     {
       auto *main = m_program->get_function("main");
-
-      if(main->m_return_type != BasicType::INT || main->m_arguments.size()>0){
+      if(main->m_return_type != BasicType::INT || main->m_arguments.size()>0)
         m_error_list.add_error(parse_tree->line_number,"Invalid 'main' function definition.");
-      }
     }
 
     if(errors_occured())
@@ -374,7 +344,7 @@ public:
     p->listtopdef_->accept(this);
     LOG_DEBUG("End Program");
   }
-  // here
+
   void visitFnDef(FnDef *p) override {
     if(m_pass_number==1){
       LOG_DEBUG("Begin function definition");
@@ -435,7 +405,6 @@ public:
     listclassdecl_->accept(this);
   }
 
-  // classes ----------------------------
   void visitClassDef(ClassDef *p) override {
     if(m_pass_number==1){
       processClassDef(p->line_number,p->ident_,p->listclassdecl_);
@@ -460,7 +429,7 @@ public:
       m_current_class = m_program->get_class(p->ident_1);
       m_current_class->m_base_class = m_program->get_class(p->ident_2);
 
-      // Cycle detection in the inheritence line
+      // Cycle detection in an inheritence line
       if(m_program->get_class(p->ident_2)==nullptr){
         m_error_list.add_error(p->line_number,fmt::format("Class '{}' does not exits",p->ident_2));
         return;
@@ -504,7 +473,6 @@ public:
 
   void visitMethodDef(MethodDef *p) override {
     if(m_pass_number==1){
-      // Przejrzec 2
       if(contains_special_symbols(p->ident_)){
         m_error_list.add_error(p->line_number,fmt::format("The method name {} can't contain special sybmols",p->ident_));
         return;
@@ -518,6 +486,7 @@ public:
       m_current_fn = new Function{m_program};
       m_current_fn->m_name=p->ident_;
       m_current_fn->m_class=m_current_class;
+      m_current_fn->m_decl_line=p->line_number;
 
       p->type_->accept(this);
       m_current_fn->m_return_type=m_last_visited_type;
@@ -612,6 +581,9 @@ public:
     m_current_fn->m_used=true;
 
     m_nodes_to_operands[p] = m_IRCoder.push_no_check(p->line_number,Operation::CALL,m_symbol_table.get_function(p->ident_));
+
+    if(fn->m_class)
+      m_nodes_to_operands.at(p).m_triple->m_call_args.push_back(m_current_fn->m_arguments[0]);
 
     for(auto *expr: *p->listexpr_){
       Operand op = m_nodes_to_operands.at(expr);
@@ -792,7 +764,7 @@ public:
 
     bind_label(end_label,end_marker);
   }
-  // Obejrzec 1
+
   void visitAss(Ass *ass) override {
     ass->expr_1->accept(this);
     ass->expr_2->accept(this);
@@ -1044,7 +1016,6 @@ public:
   }
 
   void print_operand(const Operand &operand){
-
     switch (operand.m_category)
       {
       case OperandCategory::CONSTANT:
@@ -1143,40 +1114,6 @@ int main(int argc, char ** argv)
   // std::cout<<"-----------------------"<<std::endl;
   // int_program_printer.print_program(int_program);
 
-  // std::cout<<"After optimizations:"<<std::endl;
-  // int_program_printer.print_program(int_program);
-  // std::cout<<std::endl;
-  // std::cout<<std::endl;
-  // std::cout<<std::endl;
-  // int_program_printer.
-  // int_program.print_blocks();
-  // int_program.print_predecessors();
-  // int_program.print_dominator_sets();
-
-  // for(auto *fn : int_program.m_functions){
-  //   if(fn->m_type!=PredefinedFunction::USERDEFINED)
-  //     continue;
-  //   std::cout<<"Printing idoms for the function: "<<fn->m_name<<std::endl;
-  //   int_program.print_idoms_for_function(fn);
-  // }
-
-  // dominance frontiers
-  // for(auto *fn : int_program.m_functions){
-  //   if(fn->m_type!=PredefinedFunction::USERDEFINED)
-  //     continue;
-
-  //   int_program_printer.print_dominance_frontiers(fn);
-  // }
-
-  // for(auto *fn : int_program.m_functions){
-  //   if(fn->m_type!=PredefinedFunction::USERDEFINED)
-  //     continue;
-
-  //   int_program_printer.print_blocks_with_phi(fn);
-  // }
-  // --------------------OPTYMALIZACJE-----------------------
-
-
   for(auto *fn : int_program.m_functions){
     if(fn->m_return_type==BasicType::VOID)
       continue;
@@ -1186,6 +1123,8 @@ int main(int argc, char ** argv)
         my_visitor.m_error_list.add_error(0,msg);
     }
   }
+
+  int_program.check_all_methods(my_visitor.m_error_list);
 
   if(my_visitor.errors_occured()){
     std::cout<<"ERROR"<<std::endl;

@@ -149,14 +149,14 @@ void LiveAnalyzer::print_live_variables(Function *fn){
   std::cout<<"Printing live variables for "<<fn->m_name<<std::endl;
   for(auto *blk : fn->m_basic_blocks){
     std::cout<<"Block"<<blk->m_index<<std::endl;
-    std::cout<<"Printing IN["<<blk->m_index<<"](";
+    std::cout<<"Printing IN["<<blk->m_index<<"] ( ";
     for(auto in : blk->m_live_in){
       std::cout<<in<<" ";
     }
     std::cout<<")";
     std::cout<<std::endl;
 
-    std::cout<<"Printing OUT["<<blk->m_index<<"](";
+    std::cout<<"Printing OUT["<<blk->m_index<<"] ( ";
     for(auto out : blk->m_live_out){
       std::cout<<out<<" ";
     }
