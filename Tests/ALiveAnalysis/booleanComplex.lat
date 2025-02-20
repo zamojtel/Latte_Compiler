@@ -1,0 +1,21 @@
+void printBool(boolean b) {
+  if (b) {
+    printString("true");
+  } else {
+    printString("false");
+ }
+ return;
+}
+
+int main(){
+    int x = 10;
+    boolean a=true;
+    if(x>10){
+        a=false;
+    }else{
+        a=true;
+    }
+
+    printBool(a);
+    return 0;
+}

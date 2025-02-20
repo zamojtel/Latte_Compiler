@@ -40,7 +40,6 @@ def check_tests(input_file_names : List[str],input_dir : str,output_dir : str):
             run_lli = f'lli-14 {final_bc} < {stdinfile} > {output_test}'
         else:
             run_lli = f'lli-14 {final_bc} > {output_test}'
-
         os.system(run_lli)
 
     compare_results(input_file_names,input_dir,output_dir)
@@ -74,7 +73,7 @@ if __name__ == '__main__':
     output_dir_basic = f'{cwd}/Tests/goodOutputs/basic'
     check_tests(input_file_names_basic,input_dir_basic,output_dir_basic)
 
-    ##TODO Testowanie Predefiniowanych funkcji: OK
+    ## TODO Testowanie Predefiniowanych funkcji: OK
     print("BasicPredifinedFunctions: ")
     input_file_names_func = collect_all_files(f'{cwd}/Tests/myTests/PredifinedFunctions')
     input_dir_func = f'{cwd}/Tests/myTests/PredifinedFunctions'
@@ -88,21 +87,22 @@ if __name__ == '__main__':
     output_dir_newtests = f'{cwd}/Tests/myTests/TestsOutputs'
     check_tests(input_file_names_newtests,input_dir_newtests,output_dir_newtests)
 
-    ## TODO Testowanie Wyrazen Boolowskich: OK
+    ### TODO Testowanie Wyrazen Boolowskich: OK
     print("BooleanExpressions: ")
     input_file_names_booleans = collect_all_files(f'{cwd}/Tests/myTests/BooleanExpressions')
     input_dir_booleans = f'{cwd}/Tests/myTests/BooleanExpressions'
     output_dir_booleans = f'{cwd}/Tests/myTests/BooleanExpressionsOutputs'
     check_tests(input_file_names_booleans,input_dir_booleans,output_dir_booleans)
+    ###TODO jest GIT
 
-    #TODO For testing Arrays: OK
+    ###TODO For testing Arrays: OK
     print("Test Arrays: ")
     input_dir_arrays = f'{cwd}/Tests/extensions/arrays1'
     output_dir_arrays = f'{cwd}/Tests/extensionsOutputs/arrays1'
     input_file_names_arrays = collect_all_files(f'{cwd}/Tests/extensions/arrays1')
     check_tests(input_file_names_arrays,input_dir_arrays,output_dir_arrays)
 
-    # #TODO Testowanie Tablic: OK
+    ###TODO Testowanie Tablic: OK
     print("Test Arrays: ")
     input_dir_goodArrays = f'{cwd}/Tests/arrays/good'
     output_dir_goodArrays = f'{cwd}/Tests/arraysOutputs/good'
@@ -116,7 +116,7 @@ if __name__ == '__main__':
     input_file_names_goodStructs = collect_all_files(f'{cwd}/Tests/struct')
     check_tests(input_file_names_goodStructs,input_dir_goodStructs,output_dir_goodStructs)
 
-    # ###TODO Podstawowe testy do struktur TESTY BENKE: OK 2 dorzucone dodatkowo all
+    ###TODO Podstawowe testy do struktur TESTY BENKE: OK 2 dorzucone dodatkowo all
     print("Test Structs Required")
     input_dir_structs = f'{cwd}/Tests/extensions/struct'
     output_dir_structs = f'{cwd}/Tests/extensionsOutputs/struct'
@@ -124,35 +124,35 @@ if __name__ == '__main__':
     input_file_names_structs = collect_all_files(input_dir_structs)
     check_tests(input_file_names_structs,input_dir_structs,output_dir_structs)
 
-    # ##TODO Moje testy do tablic: OK all
+    ###TODO Moje testy do tablic: OK all
     print("Test myArraysGood: ")
     input_dir_myArrays = f'{cwd}/Tests/arrays/myArraysGood'
     output_dir_myArrays = f'{cwd}/Tests/arraysOutputs/myArraysGood'
     input_file_names_myArrays = collect_all_files(f'{cwd}/Tests/arrays/myArraysGood')
     check_tests(input_file_names_myArrays,input_dir_myArrays,output_dir_myArrays)
 
-    # # #TODO Dodatkowe testy do tablic: OK all
+    ###TODO Dodatkowe testy do tablic: OK all
     print("Test additionalArrays: ")
     input_dir_myArrays = f'{cwd}/Tests/arrays/arraysAdditional'
     output_dir_myArrays = f'{cwd}/Tests/arraysOutputs/arraysAdditional'
     input_file_names_myArrays = collect_all_files(f'{cwd}/Tests/arrays/arraysAdditional')
     check_tests(input_file_names_myArrays,input_dir_myArrays,output_dir_myArrays)
 
-    # # # TODO [MOJE TESTY] TESTOWANIE OBIEKTOW: OK 9/10 -> 10/10
+    ###TODO [MOJE TESTY] TESTOWANIE OBIEKTOW: OK 9/10 -> 10/10
     print("Test Objects with methods : ")
     input_dir_objects = f'{cwd}/Tests/objects'
     output_dir_objects = f'{cwd}/Tests/objectsOutputs'
     input_file_names_objects = collect_all_files(f'{cwd}/Tests/objects')
     check_tests(input_file_names_objects,input_dir_objects,output_dir_objects)
 
-    # #####TODO TESTS STRINGS: OK
+    ###TODO TESTS STRINGS: OK
     print("Test strings : ")
     input_dir_objects = f'{cwd}/Tests/strings'
     output_dir_objects = f'{cwd}/Tests/stringsOutputs'
     input_file_names_objects = collect_all_files(f'{cwd}/Tests/strings')
     check_tests(input_file_names_objects,input_dir_objects,output_dir_objects)
 
-    #TODO TESTY OD BENKE OBJECTS1: OK ale nie wszystko przechodzi 2/4 -> Po poprawkach 4/4
+    ###TODO TESTY OD BENKE OBJECTS1: OK ale nie wszystko przechodzi 2/4 -> Po poprawkach 4/4
     print("Test objects1 : ")
     input_dir_objects = f'{cwd}/Tests/extensions/objects1'
     output_dir_objects = f'{cwd}/Tests/extensionsOutputs/objects1'
@@ -160,14 +160,14 @@ if __name__ == '__main__':
     check_tests(input_file_names_objects,input_dir_objects,output_dir_objects)
 
 
-    # TODO TESTY OD BENKE OBJECTS2: 0/1 nie przechodzi
+    ###TODO TESTY OD BENKE OBJECTS2: 0/1 nie przechodzi
     print("Test objects2  : ")
     input_dir_objects2 = f'{cwd}/Tests/extensions/objects2'
     output_dir_objects2 = f'{cwd}/Tests/extensionsOutputs/objects2'
     input_file_names_objects2 = collect_all_files(input_dir_objects2)
     check_tests(input_file_names_objects2,input_dir_objects2,output_dir_objects2)
 
-    # #TODO DODATKOWE TESTY ZE STRONY DO METOD WIRTUALNYCH: 0/1
+    ###TODO DODATKOWE TESTY ZE STRONY DO METOD WIRTUALNYCH: 0/1
     print("Test virtual:")
     input_dir_virtual = f'{cwd}/Tests/virtual'
     output_dir_virtual = f'{cwd}/Tests/virtualOutputs'

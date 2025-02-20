@@ -1,0 +1,9 @@
+int main(){
+    int []t = new int [2];
+    t[0]=readInt();
+    t[1]=readInt();
+    printInt(t[0]);
+    printInt(t[1]);
+
+    return 0;
+}

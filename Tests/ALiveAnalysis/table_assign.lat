@@ -1,0 +1,32 @@
+
+class A{
+    int x;
+    int y;
+}
+
+int main(){
+    int x =5;
+    int []t = new int[2];
+    A obj = new A;
+    obj.x=21;
+
+    t[0]=10;
+    t[1]=20;
+
+    if(x>0)
+    {
+        x=1;
+        t[0]=123;
+        obj.x=90;
+    }else{
+        x=2;
+        t[1]=333;
+        obj.x=90;
+    }
+
+    printInt(x);
+    printInt(t[0]);
+    printInt(t[1]);
+    printInt(t[2]);
+    return 0;
+}

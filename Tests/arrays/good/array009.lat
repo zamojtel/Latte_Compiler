@@ -22,9 +22,9 @@ int main(){
     people[2].adult = true;
 
     for(Person p : people){
-        printString(p.name);
-        printInt(p.age);
-        printBool(p.adult);
+      printString(p.name);
+      printInt(p.age);
+      printBool(p.adult);
     }
 
     return 0;

@@ -1,0 +1,10 @@
+// blad z przypisaniem tablica zmienna
+int main () {
+  int [] a = new int [5];
+
+  int x = a[0];
+  a[0]=1234;
+  printInt(x);
+
+  return 0 ;
+}

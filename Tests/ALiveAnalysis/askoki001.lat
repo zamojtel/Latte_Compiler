@@ -1,0 +1,11 @@
+/* Test boolean operators */
+
+int main () {
+  int x = 4;
+  if (3 <= x && 4 != 2 && true) {
+    printString("asd");
+  } else {
+    printString("bad");
+  }
+  return 0;
+}

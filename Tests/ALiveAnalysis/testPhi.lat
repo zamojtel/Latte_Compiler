@@ -1,0 +1,12 @@
+int main(){
+    int x =123;
+    if(x>0)
+    {
+        x=10;
+    }else{
+        x=5*x;
+    }
+
+    printInt(x);
+    return 0;
+}

@@ -1,0 +1,11 @@
+int main(){
+
+    boolean a = true;
+    if(a){
+        printString("True");
+    }else{
+        printString("False");
+    }
+
+    return 0;
+}
