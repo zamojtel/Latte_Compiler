@@ -13,4 +13,4 @@ public:
     virtual ~IRCoderListener()=default;
 };
 
-#endif 
+#endif

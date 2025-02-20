@@ -1,9 +1,9 @@
 class C {
-    	string s;
+  string s;
 
-    	boolean empty() {
-            	return s == "";
-    	}
+  boolean empty() {
+    return s == "";
+  }
 }
 
 int main(){
@@ -12,7 +12,7 @@ int main(){
   if(s==""){
     printString("String s is empty");
   }
-  
+
   if(c.s==""){
     printString("String c.s is empty");
   }

@@ -3,20 +3,6 @@
 #include <iterator>
 #include <iostream>
 
-// using ArgOrVar = std::variant<Argument*,Variable*>;
-// std::ostream& operator<<(std::ostream &o,const ArgOrVar &arg) {
-//   bool result = std::holds_alternative<Argument*>(arg);
-//   if(result){
-//     auto argument = std::get<Argument*>(arg);
-//     o<<"Argument("<<argument->m_identifier<<")";
-//   }else{
-//     auto variable = std::get<Variable*>(arg);
-//     o<<"Variable("<<variable->m_ident<<")";
-//   }
-
-//   return o;
-// }
-
 class BasicBlock{
 public:
   // czy dla danej zmiennej mamy phi
@@ -25,7 +11,6 @@ public:
   std::set<ArgOrVar> m_def;
   std::set<ArgOrVar> m_live_in;
   std::set<ArgOrVar> m_live_out;
-
   std::set<Operand> m_variable_has_phi;
   Function* m_fn = nullptr;
   size_t m_index;
@@ -42,47 +27,14 @@ public:
   using iterator = std::vector<Triple*>::iterator;
   using const_iterator= std::vector<Triple*>::const_iterator;
   // TODO pierwsz i ostatnia trojka w funkcji
-  iterator begin(){
-    if(m_first_triple)
-      return m_fn->m_triples.begin()+m_first_triple->m_index;
-    else
-      return m_fn->m_triples.begin();
-  }
-
-  const_iterator begin() const{
-    // return m_fn->m_triples.begin()+m_first_triple->m_index;
-    if(m_first_triple)
-      return m_fn->m_triples.begin()+m_first_triple->m_index;
-    else
-      return m_fn->m_triples.begin();
-  }
-
-  iterator end(){
-    // Obejrzec 1
-    size_t next_blk_index = m_index+1;
-    if(next_blk_index >= m_fn->m_basic_blocks.size())
-      return m_fn->m_triples.end();
-
-    BasicBlock* next_blk = m_fn->m_basic_blocks[next_blk_index];
-    return m_fn->m_triples.begin()+next_blk->m_first_triple->m_index;
-  }
-
-  const_iterator end() const {
-    size_t next_blk_index = m_index+1;
-    if(next_blk_index >= m_fn->m_basic_blocks.size())
-      return m_fn->m_triples.end();
-
-    BasicBlock* next_blk = m_fn->m_basic_blocks[next_blk_index];
-    return m_fn->m_triples.begin()+next_blk->m_first_triple->m_index;
-  }
-
+  iterator begin();
+  const_iterator begin() const;
+  iterator end();
+  const_iterator end() const;
 };
-
-int get_operation_operand_count(Operation op);
 
 class IntermediateProgram{
 public:
-  // variable/argument versioning
   std::map<Operand,int> m_counter;
   std::vector<Operand> m_versioning_stack;
   std::vector<Function*> m_functions;
@@ -101,6 +53,7 @@ public:
   void print_predecessors_blk(BasicBlock *blk);
   void print_dominator_sets();
   void connect_blocks(BasicBlock *source,BasicBlock *destination);
+  void disconnect_blocks(BasicBlock *source_block,BasicBlock *destination_block);
   void compute_dominator_sets(Function *fn);
   void compute_dominance_frontiers(Function *fn);
   void create_virtual_tables();
@@ -119,16 +72,16 @@ public:
   void optimize();
   void substitute_vars_args(Function *fn);
   void substitute_all_vars_and_args();
-  ~IntermediateProgram(){
-    for(auto *fn: m_functions)
-      delete fn;
-  }
+  void analyze_array_accesses();
+  void analyze_member_accesses();
+  void analyze_member_accesses(Triple *triple);
+  void analyze_array_accesses(Triple * triple);
+  void remove_all_triples_from_block(BasicBlock *blk);
+  ~IntermediateProgram();
 };
 
-// przeniesc do cpp
 class IntermediateProgramPrinter{
 public:
-
   void print_constant(const Constant &constant){
     std::cout<<data_type_to_string(constant.m_type)+"("+constant.get_value_as_string()+")";
   }
@@ -209,8 +162,6 @@ public:
         return "JUMP";
       case Operation::CALL:
         return "CALL";
-      case Operation::PARAM:
-        return "PARAM";
       case Operation::RETURN:
         return "RETURN";
       case Operation::NEG:
@@ -223,16 +174,26 @@ public:
         return "NEW_ARRAY";
       case Operation::ACCESS_ARRAY:
         return "ACCESS_ARRAY";
+      case Operation::ACCESS_ARRAY_FOR_READ:
+        return "ACCESS_ARRAY_FOR_READ";
+      case Operation::ACCESS_ARRAY_FOR_WRITE:
+        return "ACCESS_ARRAY_FOR_WRITE";
       case Operation::ARRAY_LENGTH:
         return "ARRAY_LENGTH";
       case Operation::NEW_INSTANCE:
         return "NEW_INSTANCE";
       case Operation::MEMEBER_ACCESS:
         return "MEMEBER_ACCESS";
+      case Operation::MEMBER_FOR_READ:
+        return "MEMBER_FOR_READ";
+      case Operation::MEMBER_FOR_WRITE:
+        return "MEMBER_FOR_WRITE";
       case Operation::MOD:
         return "MOD";
       case Operation::PHI:
         return "PHI";
+      case Operation::START:
+        return "START";
       default:
         throw 1;
       }
@@ -274,21 +235,8 @@ public:
           std::cout<<predecessor->m_index<<" ";
         std::cout<<std::endl;
       }
-      print_triple(triple);
-      // std::cout<<"t"<<triple->m_index<<": "<<operation_to_string(triple->m_operation)<<" ";
-      // print_operand(triple->m_op_1);
-      // print_operand(triple->m_op_2);
 
-      // std::cout<<"Type: "<<data_type_to_string(triple->m_data_type)<<" ";
-      // if(triple->m_operation==Operation::CALL)
-      //   print_arguments(triple);
-      // else if(triple->m_operation==Operation::PHI){
-      //   for(auto phi_arg : triple->m_phi_arguments){
-      //     std::cout<<"Block: "<<phi_arg.m_basic_block->m_index<<" ";
-      //     print_operand(phi_arg.m_operand);
-      //   }
-      // }
-      // std::cout<<std::endl;
+      print_triple(triple);
     }
   }
 
@@ -310,10 +258,11 @@ public:
         std::cout<<"Block: "<<blk->m_index<<" (";
         print_predecessors_blk(blk);
         std::cout<<")";
+
         std::cout<<std::endl;
-        for(auto triple : *blk){
+        for(auto triple : *blk)
           print_triple(triple);
-        }
+
         std::cout<<std::endl;
       }
     }
@@ -326,22 +275,16 @@ public:
         print_function(fn);
       }
     }
+
+    for(auto cl : ip.m_classes){
+      for(auto fn : cl->m_methods){
+        if(fn->m_type==PredefinedFunction::USERDEFINED){
+          std::cout<<"Method Name: "<<fn->m_name<<std::endl;
+          print_function(fn);
+        }
+      }
+    }
   }
-
-  // void print_program_blocks(const IntermediateProgram& ip){
-  //   for(auto fn : ip.m_functions){
-  //     if(fn->m_type==PredefinedFunction::USERDEFINED){
-  //       std::cout<<"Function Name: "<<fn->m_name<<std::endl;
-  //       print_function(fn);
-  //     }
-  //   }
-  // }
-
-  // void print_function_blocks(Fucntion *fn){
-  //   for(){
-
-  //   }
-  // }
 
   void print_dominance_frontiers(Function *fn){
     for(auto *blk : fn->m_basic_blocks){
@@ -358,6 +301,7 @@ public:
       std::cout<<"{"<<all_blocks_indexes<<"}\n";
     }
   }
+
   void print_blocks_with_phi(Function *fn){
     std::cout<<"Printing Blocks with phi "<<std::endl;
     for(auto *blk : fn->m_basic_blocks){
@@ -367,5 +311,7 @@ public:
     }
   }
 };
+
+int get_operation_operand_count(Operation op);
 
 #endif

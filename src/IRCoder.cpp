@@ -26,7 +26,6 @@ IRCoder::TypeCompatibility IRCoder::equal_data_types_or_error(DataType t1,DataTy
   return TypeCompatibility::INCOMPATIBLE;
 }
 
-
 // Todo handle in case of a null value
 void IRCoder::set_listener(IRCoderListener *listener){
   m_listener = listener;
@@ -65,65 +64,63 @@ void IRCoder::set_position_before(Triple * triple ){
 };
 
 void IRCoder::insert_cast_and_replace_op(Triple *triple,Operand &op, DataType type){
-    size_t p = m_position;
-    set_position_before(triple);
-    bool add_one = m_position<=p;
-    Triple * t = push_no_check(triple->m_code_line_number,Operation::CAST,op);
-    t->m_cast_type = type;
-    analyze_triple(t);
-    if(add_one)
-      m_position=p+1;
-    else
-      m_position=p;
+  size_t p = m_position;
+  set_position_before(triple);
+  bool add_one = m_position<=p;
+  Triple * t = push_no_check(triple->m_code_line_number,Operation::CAST,op);
+  t->m_cast_type = type;
+  analyze_triple(t);
+  if(add_one)
+    m_position=p+1;
+  else
+    m_position=p;
 
-    op=t;
+  op=t;
 }
 
 std::string IRCoder::operation_to_string(Operation operation){
-    switch (operation)
-    {
-      case Operation::ADD:{
-        return "ADD";
-      case Operation::ASSIGN:
-        return "ASSIGN";
-      case Operation::INIT:
-        return "INIT";
-      case Operation::MUL:
-        return "MUL";
-      case Operation::SUB:
-        return "SUB";
-      case Operation::DIV:
-        return "DIV";
-      case Operation::LTH:
-        return "LTH";
-      case Operation::LE:
-        return "LE";
-      case Operation::GTH:
-        return "GTH";
-      case Operation::GE:
-        return "GE";
-      case Operation::EQU:
-        return "EQU";
-      case Operation::NE:
-        return "NE";
-      case Operation::JT:
-        return "JT";
-      case Operation::JF:
-        return "JF";
-      case Operation::MARKER:
-        return "MARKER";
-      case Operation::JMP:
-        return "JUMP";
-      case Operation::CALL:
-        return "CALL";
-      case Operation::PARAM:
-        return "PARAM";
-      case Operation::RETURN:
-        return "RETURN";
-      default:
-        return " ";
-      }
+  switch (operation)
+  {
+    case Operation::ADD:{
+      return "ADD";
+    case Operation::ASSIGN:
+      return "ASSIGN";
+    case Operation::INIT:
+      return "INIT";
+    case Operation::MUL:
+      return "MUL";
+    case Operation::SUB:
+      return "SUB";
+    case Operation::DIV:
+      return "DIV";
+    case Operation::LTH:
+      return "LTH";
+    case Operation::LE:
+      return "LE";
+    case Operation::GTH:
+      return "GTH";
+    case Operation::GE:
+      return "GE";
+    case Operation::EQU:
+      return "EQU";
+    case Operation::NE:
+      return "NE";
+    case Operation::JT:
+      return "JT";
+    case Operation::JF:
+      return "JF";
+    case Operation::MARKER:
+      return "MARKER";
+    case Operation::JMP:
+      return "JUMP";
+    case Operation::CALL:
+      return "CALL";
+    case Operation::RETURN:
+      return "RETURN";
+    default:
+      return " ";
     }
+  }
 }
 
 void IRCoder::analyze_triple(Triple *triple){
@@ -192,7 +189,6 @@ void IRCoder::check_triple(Triple * triple){
     }
     case Operation::RETURN:
     {
-      // Obejrzec
       DataType type = triple->m_op_1.get_type();
 
       switch (equal_data_types_or_error(m_current_fn->m_return_type,type))
@@ -214,11 +210,7 @@ void IRCoder::check_triple(Triple * triple){
     case Operation::ADD:{
       DataType t1 = triple->m_op_1.get_type();
       DataType t2 = triple->m_op_2.get_type();
-      // Przejrzec #1
-      //  if(equal_data_types_or_error(t1,t2)==TypeCompatibility::COMPATIBLE){
-       if(equal_data_types_or_error(t1,t2)==TypeCompatibility::INCOMPATIBLE){
-        // if(t1 == BasicType::INT || t1 == BasicType::STRING || (t1 == BasicType::ERROR && t2 == BasicType::ERROR))
-        //   break;
+      if(equal_data_types_or_error(t1,t2)==TypeCompatibility::INCOMPATIBLE){
 
         std::string op_1 =data_type_to_string(triple->m_op_1.get_type());
         std::string op_2 =data_type_to_string(triple->m_op_2.get_type());
@@ -229,7 +221,6 @@ void IRCoder::check_triple(Triple * triple){
         }else
           msg = fmt::format("Incompatible types");
 
-        // std::string msg = fmt::format("Incompatible type | op1 type {} op2 type {} triple index = {}",op_1,op_2,index);
         m_listener->ircoder_error(triple->m_code_line_number,msg);
       }
       break;
@@ -432,7 +423,6 @@ DataType IRCoder::deduce_arithmetic_type_one_argument(DataType op_1_type){
 DataType IRCoder::deduce_type(Triple *triple){
   DataType op_1_type=triple->m_op_1.get_type();
   DataType op_2_type=triple->m_op_2.get_type();
-  // obejrzec
   switch (triple->m_operation)
   {
   case Operation::CAST:
@@ -464,8 +454,6 @@ DataType IRCoder::deduce_type(Triple *triple){
     return BasicType::VOID;
   case Operation::CALL:
     return op_1_type;
-  case Operation::PARAM:
-    return BasicType::VOID;
   case Operation::RETURN:
     return BasicType::VOID;
   case Operation::MARKER:
@@ -473,11 +461,11 @@ DataType IRCoder::deduce_type(Triple *triple){
   case Operation::INC:
   case Operation::DEC:
     return deduce_arithmetic_type_one_argument(op_1_type);
-  case Operation::NEW_ARRAY: // int [] t
+  case Operation::NEW_ARRAY:
     return triple->m_data_type_for_new.increment_dimensions();
   case Operation::ACCESS_ARRAY:{
     if(op_1_type.dimensions>0)
-      return op_1_type.decrement_dimensions(); // okreslanie typu elementu do ktorego uzyskujemy dostep
+      return op_1_type.decrement_dimensions();
     else
       return BasicType::ERROR;
   }
@@ -489,6 +477,8 @@ DataType IRCoder::deduce_type(Triple *triple){
     return op_2_type;
   case Operation::PHI:
     return triple->m_op_1.get_type();
+  case Operation::START:
+    return BasicType::VOID;
   default:
     throw std::runtime_error("IRCoder::deduce_type(Triple *triple)");
   }
@@ -510,7 +500,7 @@ Triple* IRCoder::push_no_check(int line_number,Operation operation,const Operand
       m_current_fn->m_triples[i]->m_index=i;
 
     m_position++;
-    // setting a new first triple of a block
+
     if(m_current_blk!=nullptr && triple->m_index < m_current_blk->m_first_triple->m_index){
       m_current_blk->m_first_triple=triple;
     }

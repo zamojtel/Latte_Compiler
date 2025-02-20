@@ -28,11 +28,6 @@ public:
     size_t m_marker_index;
 };
 
-class FunctionData{
-public:
-
-};
-
 class LLVMCodeGenerator{
 private:
     int COUNTER_SIZE=4;
@@ -41,15 +36,14 @@ private:
     bool scanf_added=false;
     bool printf_added=false;
     size_t m_last_marker_number;
-    // triple -> line where the phi should be inserted
     std::map<Triple*,int> m_triple_to_phi;
-    // to generate labels we'll naming convetion Label{number} where number 0 - n
     IntermediateProgram *m_intermediate_program;
     size_t m_llvm_line_index;
     std::vector<std::string> m_code_lines;
     std::vector<std::string> m_code_lines_after;
     std::map<Variable*,VariableData> m_variable_data;
     std::map<Argument*,ArgumentData> m_argument_data;
+    std::map<int,std::string> m_string_literal_to_line;
     std::vector<TripleData> m_triple_data;
     std::vector<std::string> m_string_literals;
     Function * m_current_fn = nullptr;
@@ -69,8 +63,10 @@ public:
     void add_classes_declarations();
     void enumerate_all_markers(Function *fn);
     void add_virtual_tables();
+    void initialize_variables(const Function *fn);
     int calculate_instance_size(MyClass *cl);
     int get_string_length(const std::string str);
+    int get_storage_size(DataType type);
     std::string generate_llvm_function_to_vtable(Function *fn);
     std::string generate_llvm_vtable(MyClass * cl);
     std::string get_all_data_types(MyClass *cl);
@@ -79,23 +75,13 @@ public:
     std::string get_align(DataType type);
     std::string get_data_type_name(DataType type,bool for_storage=false);
     std::string get_operand_value(const Operand &op);
-    int get_storage_size(DataType type);
     std::string get_operand_value_with_load(const Operand &op);
     std::string ir_op_to_llvm_op(Operation op); // intermediate operation to llvm operation
     std::string process_program();
     std::string process_argument(Argument * arg,size_t index);
     std::string process_argument_list(Triple *triple);
     std::string get_string_literal_name(int index);
-    void add_boolean_values();
-    void initialize_variables(const Function *fn);
     std::string process_phi_argument(const PHIArgument &arg);
     LLVMCodeGenerator(IntermediateProgram *i_p):m_intermediate_program{i_p}{}
 };
-
-std::string struct_decl =R"abc(
-%struct._IO_FILE = type { i32, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, %struct._IO_marker*, %struct._IO_FILE*, i32, i32, i64, i16, i8, [1 x i8], i8*, i64, %struct._IO_codecvt*, %struct._IO_wide_data*, %struct._IO_FILE*, i8*, i64, i32, [20 x i8] }
-%struct._IO_marker = type opaque
-%struct._IO_codecvt = type opaque
-%struct._IO_wide_data = type opaque)abc";
-
 #endif

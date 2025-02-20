@@ -18,5 +18,4 @@ int main() {
 }
 // -----
 // * KŁOPOTY Z NULL:
-
 // To powinno być albo dobrze, albo zwrócić sensowny komunikat o błędzie...

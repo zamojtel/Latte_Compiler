@@ -1,0 +1,12 @@
+
+class A{
+    int x;
+}
+
+int main(){
+    A obj = new A;
+    obj.x=10;
+    printInt(obj.x);
+
+    return 0;
+}

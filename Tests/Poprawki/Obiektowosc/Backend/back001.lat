@@ -1,10 +1,10 @@
 // * KŁOPOTY Z INICJALIZACJĄ:
 class C {
-    	string s;
+  string s;
 
-    	boolean empty() {
-            	return s == "";
-    	}
+  boolean empty() {
+    return s == "";
+  }
 }
 
 

@@ -70,6 +70,12 @@ cleanStrings:
 cleanAlive:
 	rm -rf ./Tests/ALiveAnalysis/*.bc ./Tests/ALiveAnalysis/*.ll ./Tests/ALiveAnalysis/*_intermediate.bc ./Tests/ALiveAnalysis/*.output
 
+cleanPoprawki:
+	rm -rf ./Tests/Poprawki/*.bc ./Tests/Poprawki/*.ll ./Tests/Poprawki/*_intermediate.bc ./Tests/Poprawki/*.output \
+	rm -rf ./Tests/Poprawki/Obiektowosc/Backend/*.bc ./Tests/Poprawki/Obiektowosc/Backend/*.ll ./Tests/Poprawki/Obiektowosc/Backend/*_intermediate.bc ./Tests/Poprawki/Obiektowosc/Backend/*.output \
+	rm -rf ./Tests/Poprawki/strings/*.bc ./Tests/Poprawki/strings/*.ll ./Tests/Poprawki/strings/*_intermediate.bc ./Tests/Poprawki/strings/*.output \
+	rm -rf ./Tests/Poprawki/ArraysOfArrays/*.bc ./Tests/Poprawki/ArraysOfArrays/*.ll ./Tests/Poprawki/ArraysOfArrays/*_intermediate.bc ./Tests/Poprawki/ArraysOfArrays/*.output
+
 CreateDirectory:
 	@mkdir -p build
 

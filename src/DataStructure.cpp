@@ -1,21 +1,62 @@
 #include "DataStructure.h"
+#include "IRCoder.h"
 
-// zrob to
-// uzupelnic wypisywanie
-// TODO Integrate it with print_operand
+Function::Function(IntermediateProgram *ip,PredefinedFunction p):m_int_program{ip},m_type{p},m_used{false}{
+    IRCoder coder;
+    coder.set_function(this);
+    coder.push(0,Operation::START);
+}
+Function::~Function(){
+    for(auto *arg: m_arguments)
+        delete arg;
+}
 
-std::ostream& operator<<(std::ostream &o,const ArgOrVar &arg)
+bool DataType::operator==(const DataType &other) const{
+    if(category==other.category && dimensions==other.dimensions){
+        if(category==DataTypeCategory::BASIC)
+            return basic_type==other.basic_type;
+        else
+            return class_type == other.class_type;
+    }else
+        return false;
+}
+
+bool DataType::operator==(BasicType other) const {
+    return category==DataTypeCategory::BASIC && basic_type==other && dimensions == 0;
+}
+
+bool DataType::operator!=(const DataType &other) const {
+    return !(*this==other);
+}
+
+bool DataType::operator!=(BasicType other) const {
+    return !(*this==other);
+}
+
+bool DataType::isNullable() const {
+    return category==DataTypeCategory::CLASS || dimensions>=1 || (*this)==BasicType::STRING;
+}
+
+DataType DataType::decrement_dimensions() const {
+    return category==DataTypeCategory::BASIC ? DataType{basic_type,dimensions-1} : DataType{class_type,dimensions-1};
+}
+
+DataType DataType::increment_dimensions() const {
+    return category==DataTypeCategory::BASIC ? DataType{basic_type,dimensions+1} : DataType{class_type,dimensions+1};
+}
+
+std::ostream& operator<<(std::ostream &os,const ArgOrVar &arg)
 {
   bool result = std::holds_alternative<Argument*>(arg);
   if(result){
     auto argument = std::get<Argument*>(arg);
-    o<<"Argument("<<argument->m_identifier<<")";
+    os<<"Argument("<<argument->m_identifier<<")";
   }else{
     auto variable = std::get<Variable*>(arg);
-    o<<"Variable("<<variable->m_ident<<")";
+    os<<"Variable("<<variable->m_ident<<")";
   }
 
-  return o;
+  return os;
 }
 
 std::ostream& operator<<(std::ostream &os,const Operand &op)
@@ -57,6 +98,7 @@ std::ostream& operator<<(std::ostream &os,const Operand &op)
     }
     case OperandCategory::TRIPLE:
         os<<"Triple"<<op.m_triple->m_index<<" op_1: "<<op.m_triple->m_op_1;
+        break;
     default:
         os<<"Default Brak"<<std::endl;
         break;
@@ -128,64 +170,68 @@ void MyClass::add_field(DataType type,const std::string &name){
     m_fields.push_back(new Field {type,name,this,m_fields.size()});
 }
 
+int Triple::get_operand_count(){
+    switch (m_operation)
+    {
+    case Operation::MUL:
+    case Operation::ADD:
+    case Operation::SUB:
+    case Operation::DIV:
+    case Operation::MOD:
+    case Operation::LTH:
+    case Operation::LE:
+    case Operation::GTH:
+    case Operation::GE:
+    case Operation::EQU:
+    case Operation::NE:
+    case Operation::INIT:
+    case Operation::ASSIGN:
+    case Operation::ACCESS_ARRAY:
+    case Operation::ACCESS_ARRAY_FOR_READ:
+    case Operation::ACCESS_ARRAY_FOR_WRITE:
+    case Operation::MEMEBER_ACCESS:
+    case Operation::MEMBER_FOR_WRITE:
+    case Operation::MEMBER_FOR_READ:
+    case Operation::JF:
+    case Operation::JT:
+        return 2;
+    case Operation::NEG:
+    case Operation::NOT:
+    case Operation::NEW_ARRAY:
+    case Operation::ARRAY_LENGTH:
+    case Operation::CAST:
+    case Operation::JMP:
+    case Operation::RETURN:
+    case Operation::INC:
+    case Operation::DEC:
+    case Operation::CALL:
+        return 1;
+    case Operation::START:
+    case Operation::NEW_INSTANCE:
+    case Operation::MARKER:
+    case Operation::PHI:
+        return 0;
+    default:
+        throw std::runtime_error("Triple::get_operand_count()");
+    }
+}
+
 std::vector<Operand> Triple::collect_args_and_vars(){
-  int operand_count;
-  switch (m_operation)
-  {
-  case Operation::MUL:
-  case Operation::ADD:
-  case Operation::SUB:
-  case Operation::DIV:
-  case Operation::MOD:
-  case Operation::LTH:
-  case Operation::LE:
-  case Operation::GTH:
-  case Operation::GE:
-  case Operation::EQU:
-  case Operation::NE:
-  case Operation::INIT:
-  case Operation::ASSIGN:
-  case Operation::ACCESS_ARRAY:
-  case Operation::MEMEBER_ACCESS:
-  case Operation::JF:
-  case Operation::JT:
-    operand_count=2;
-    break;
-  case Operation::NEG:
-  case Operation::NOT:
-  case Operation::NEW_ARRAY:
-  case Operation::ARRAY_LENGTH:
-  case Operation::CAST:
-  case Operation::JMP:
-  case Operation::RETURN:
-  case Operation::INC:
-  case Operation::DEC:
-  case Operation::CALL:
-    operand_count=1;
-    break;
-  case Operation::NEW_INSTANCE:
-  case Operation::MARKER:
-    operand_count=0;
-    break;
-  default:
-    break;
-  }
+  int operand_count = get_operand_count();
+
   std::vector<Operand> op_refs;
   if(operand_count==1){
     OperandCategory op1_cat = m_op_1.m_category;
-    if(op1_cat==OperandCategory::ARGUMENT || op1_cat==OperandCategory::VARIABLE){
+    if(op1_cat==OperandCategory::ARGUMENT || op1_cat==OperandCategory::VARIABLE)
       op_refs.push_back(m_op_1);
-    }
   }else if(operand_count==2){
     OperandCategory op1_cat = m_op_1.m_category;
     OperandCategory op2_cat = m_op_2.m_category;
-    if(op1_cat==OperandCategory::ARGUMENT || op1_cat==OperandCategory::VARIABLE){
+    if(op1_cat==OperandCategory::ARGUMENT || op1_cat==OperandCategory::VARIABLE)
       op_refs.push_back(m_op_1);
-    }
 
-    if(op2_cat==OperandCategory::ARGUMENT || op2_cat==OperandCategory::VARIABLE){
+    if(op2_cat==OperandCategory::ARGUMENT || op2_cat==OperandCategory::VARIABLE)
       op_refs.push_back(m_op_2);
-    }
   }
 
   if(m_operation==Operation::CALL){
@@ -236,8 +282,7 @@ std::string data_type_to_string(const DataType &type){
     }
 }
 
-Constant::Constant(nullptr_t ptr):m_type{BasicType::NULLPTR}{
-}
+Constant::Constant(nullptr_t ptr):m_type{BasicType::NULLPTR}{}
 
 Constant::Constant(int value):m_type{BasicType::INT}{
     u.integer=value;
@@ -281,25 +326,24 @@ Constant& Constant::operator=(const Constant &other){
 }
 
 std::string Constant::get_value_as_string() const {
-        switch (m_type)
-        {
-        case BasicType::INT:
-            return std::to_string(u.integer);
-        case BasicType::BOOL:
-            return std::to_string(u.boolean);
-        case BasicType::STRING:
-            return u.str;
-        case BasicType::NULLPTR:
-            return "null";
-        default:
-            return "error";
-        }
+    switch (m_type)
+    {
+    case BasicType::INT:
+        return std::to_string(u.integer);
+    case BasicType::BOOL:
+        return std::to_string(u.boolean);
+    case BasicType::STRING:
+        return u.str;
+    case BasicType::NULLPTR:
+        return "null";
+    default:
+        return "error";
+    }
 }
 
 Constant::~Constant(){
-    if(m_type==BasicType::STRING){
+    if(m_type==BasicType::STRING)
         call_destructor(&u.str);
-    }
 }
 
 Constant::Constant(const Constant &constant){
@@ -314,6 +358,7 @@ Constant::Constant(const Constant &constant){
         break;
     case BasicType::STRING:{
         new (&u.str) std::string(constant.u.str);
+        break;
     }
     default:
         break;
@@ -323,9 +368,8 @@ Constant::Constant(const Constant &constant){
 
 bool Function::contains_argument(const std::string &name) const{
     for(size_t i=0;i<m_arguments.size();i++){
-        if(name==m_arguments[i]->m_identifier){
+        if(name==m_arguments[i]->m_identifier)
             return true;
-        }
     }
 
     return false;
@@ -336,7 +380,6 @@ void Function::add_label(Label *label){
 }
 
 DataType Operand::get_type() const{
-
     switch (m_category)
     {
     case OperandCategory::CONSTANT:
@@ -393,9 +436,8 @@ void SymbolTable::pop(){
 }
 
 bool SymbolTable::add(const std::string &entry_name,const SymbolTableEntry &entry){
-    if(m_entries.back().count(entry_name)>0){
+    if(m_entries.back().count(entry_name)>0)
         return false;
-    }
 
     m_entries.back()[entry_name]=entry;
     return true;
@@ -405,8 +447,6 @@ void SymbolTable::add_override(const std::string &entry_name,const SymbolTableEn
     m_entries.back()[entry_name]=entry;
 }
 
-// todo
-// std::optional
 const SymbolTableEntry* SymbolTable::get_entry(const std::string &name){
     for(size_t i=m_entries.size();i-->0;){
         if(m_entries[i].count(name))

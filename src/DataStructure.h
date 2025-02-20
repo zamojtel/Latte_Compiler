@@ -40,35 +40,13 @@ struct DataType {
  DataType(BasicType t):basic_type{t},dimensions{0},category{DataTypeCategory::BASIC}{}
  DataType(BasicType b_t,int d):basic_type{b_t},dimensions{d},category{DataTypeCategory::BASIC}{}
  DataType(){}
- bool operator==(const DataType &other) const{
-    if(category==other.category && dimensions==other.dimensions){
-        if(category==DataTypeCategory::BASIC)
-            return basic_type==other.basic_type;
-        else
-            return class_type == other.class_type;
-    }else{
-        return false;
-    }
- };
-
- bool operator==(BasicType other) const {
-    return category==DataTypeCategory::BASIC && basic_type==other && dimensions == 0;
- };
-
- bool operator!=(const DataType &other) const {
-    return !(*this==other);
- };
-
- bool operator!=(BasicType other) const {
-    return !(*this==other);
- };
-
-  bool isNullable() const {
-    return category==DataTypeCategory::CLASS || dimensions>=1 || (*this)==BasicType::STRING;
-  }
-
- DataType decrement_dimensions() const { return category==DataTypeCategory::BASIC ? DataType{basic_type,dimensions-1} : DataType{class_type,dimensions-1};}
- DataType increment_dimensions() const { return category==DataTypeCategory::BASIC ? DataType{basic_type,dimensions+1} : DataType{class_type,dimensions+1};}
+ bool operator==(const DataType &other) const;
+ bool operator==(BasicType other) const;
+ bool operator!=(const DataType &other) const;
+ bool operator!=(BasicType other) const;
+ bool isNullable() const;
+ DataType decrement_dimensions() const;
+ DataType increment_dimensions() const;
 };
 
 class Argument{
@@ -88,18 +66,21 @@ enum class Operation{
     // Arrays
     NEW_ARRAY,
     ACCESS_ARRAY,
+    ACCESS_ARRAY_FOR_READ,
+    ACCESS_ARRAY_FOR_WRITE,
     ARRAY_LENGTH,
     // Classes
     NEW_INSTANCE,
     MEMEBER_ACCESS,
-    // CASTING
+    MEMBER_FOR_READ,
+    MEMBER_FOR_WRITE,
+    // Casting
     CAST,
-    //Special Operations
-    JT,JF, // jump if true ,jump if false
-    MARKER, // It will indicate a special triple
-    JMP,
-    CALL, // Function Invocation
-    PARAM,
+    // -------------------------------------
+    JT,JF,JMP,
+    START, // this is a special triple at the begginging of every function
+    MARKER,
+    CALL,
     RETURN,
     INC,
     DEC,
@@ -131,15 +112,10 @@ public:
     Constant(int value);
     Constant(bool value);
     Constant(const std::string &s);
-
     Constant(nullptr_t ptr);
-
     Constant(const Constant &constant);
-
     Constant& operator=(const Constant &other);
-
     std::string get_value_as_string()const;
-
     ~Constant();
 };
 
@@ -147,7 +123,6 @@ class Label{
 public:
     size_t m_index;  // index in the llvm
     Triple *m_jump_to;
-
     Label(size_t index,Triple* jump_to=nullptr):m_index{index},m_jump_to{jump_to}{}
 };
 
@@ -236,11 +211,11 @@ public:
             break;
         }
     }
+
     bool is_arg_or_var() const {
         return m_category==OperandCategory::ARGUMENT || m_category==OperandCategory::VARIABLE;
     }
 
-    // dodane Obejrzec
     bool operator==(const Operand &other){
         if(m_category!=other.m_category)
             return false;
@@ -252,11 +227,11 @@ public:
         case OperandCategory::ARGUMENT:
             return m_argument==other.m_argument;
         default:
-            throw std::runtime_error("asd");
+            throw std::runtime_error("bool operator==(const Operand &other)");
             break;
         }
     }
-    // std::variant
+
     bool operator==(const Operand &other) const {
         if(m_category!=other.m_category)
             return false;
@@ -271,14 +246,6 @@ public:
             break;
         }
     }
-
-    // bool operator!=(const Operand &other) {
-    //    return *this==other;
-    // }
-
-    // bool operator!=(const Operand &other) const {
-    //    return *this==other;
-    // }
 
     Operand& operator=(const Operand &other){
         m_category=other.m_category;
@@ -322,20 +289,16 @@ public:
         }else{
             switch (m_category)
             {
-            case OperandCategory::ARGUMENT:{
-                if(m_argument!=other.m_argument){
+            case OperandCategory::ARGUMENT:
+                if(m_argument!=other.m_argument)
                     return m_argument<other.m_argument;
-                }else{
+                else
                     return m_version<other.m_version;
-                }
-            }
             case OperandCategory::VARIABLE:
-                // return m_var<other.m_var;
-                if(m_var!=other.m_var){
+                if(m_var!=other.m_var)
                     return m_var<other.m_var;
-                }else{
+                else
                     return m_version<other.m_version;
-                }
             case OperandCategory::EMPTY:
                 return false;
             default:
@@ -353,8 +316,7 @@ public:
 
     DataType get_type() const;
     std::string get_category_as_string() const;
-    ~Operand(){
-    }
+    ~Operand(){}
 };
 
 std::ostream& operator<<(std::ostream &os,const Operand &op);
@@ -382,6 +344,7 @@ public:
     std::vector<Label*> m_pointing_labels;
     std::vector<Operand> m_call_args;
     std::vector<Operand> collect_args_and_vars();
+    int get_operand_count();
     Triple(int line_number,size_t index,Operation operation,const Operand &op_1={},const Operand &op_2={}):m_code_line_number{line_number},m_visited{false}, m_index{index},m_operation{operation},m_op_1{op_1},m_op_2{op_2}{}
 };
 
@@ -391,15 +354,6 @@ public:
     size_t m_line;
     std::string m_msg;
     Error(size_t l,const std::string &msg):m_line{l},m_msg{msg}{}
-};
-
-enum class PredefinedFunction{
-    PRINTINT,
-    PRINTSTRING,
-    ERROR,
-    READINT,
-    READSTRING,
-    USERDEFINED
 };
 
 enum class SymbolTableCategory{
@@ -436,13 +390,20 @@ public:
     Function * get_method(const std::string &name) const;
     Field *get_field_considering_inheritance(const std::string &name) const;
     Function *get_method_considering_inheritance(const std::string &name) const;
-    // Obejrzec 2
-    // MyClass(const std::string name,IntermediateProgram *ip):m_int_program{m_int_program},m_name{name}{};
     MyClass(const std::string name,IntermediateProgram *ip):m_int_program{ip},m_name{name}{};
     ~MyClass(){
         for(auto *f : m_fields)
             delete f;
     }
+};
+
+enum class PredefinedFunction{
+    PRINTINT,
+    PRINTSTRING,
+    ERROR,
+    READINT,
+    READSTRING,
+    USERDEFINED
 };
 
 class Function{
@@ -460,13 +421,14 @@ public:
     std::vector<Triple*> m_triples;
     std::vector<Argument*> m_arguments;
     std::vector<Label*> m_labels;
-    Function(IntermediateProgram *ip,PredefinedFunction p=PredefinedFunction::USERDEFINED):m_int_program{ip},m_type{p},m_used{false}{}
     void add_label(Label *label);
-    ~Function(){
-        for(auto *arg: m_arguments)
-            delete arg;
-    }
     bool contains_argument(const std::string &name) const;
+    Function(IntermediateProgram *ip,PredefinedFunction p=PredefinedFunction::USERDEFINED);
+    ~Function();
+    // ~Function(){
+    //     for(auto *arg: m_arguments)
+    //         delete arg;
+    // }
 };
 
 class SymbolTableEntry{
@@ -496,8 +458,6 @@ public:
     bool add(const std::string &entry_name,const SymbolTableEntry &entry);
     void add_override(const std::string &entry_name,const SymbolTableEntry &entry);
     void set_listener(IRCoderListener *listener);
-    // todo
-    // std::optional
     const SymbolTableEntry* get_entry(const std::string &name);
     Variable* get_variable(const std::string &name);
     Argument* get_argument(const std::string &name);

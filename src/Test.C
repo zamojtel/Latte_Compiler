@@ -133,7 +133,9 @@ public:
 
     p->stmt_->accept(this);
 
-    m_IRCoder.push(0,Operation::INC,index_var);
+    // m_IRCoder.push(0,Operation::INC,index_var);
+    Triple *triple = m_IRCoder.push(0,Operation::ADD,index_var,Constant{1});
+    m_IRCoder.push(0,Operation::ASSIGN,index_var,triple);
 
     m_IRCoder.push(0,Operation::JMP,{cond_label});
 
@@ -744,14 +746,29 @@ public:
 
     Operand op = m_nodes_to_operands.at(incr->expr_);
 
-    m_IRCoder.push(incr->line_number,Operation::INC,op);
+    if(op.m_category==OperandCategory::TRIPLE){
+      Triple *copy = m_IRCoder.push(incr->line_number,op.m_triple->m_operation,op.m_triple->m_op_1,op.m_triple->m_op_2);
+      Triple *triple = m_IRCoder.push(incr->line_number,Operation::ADD,copy,Constant{1});
+      m_IRCoder.push(incr->line_number,Operation::ASSIGN,op,triple);
+    }else{
+      Triple *triple = m_IRCoder.push(incr->line_number,Operation::ADD,op,Constant{1});
+      m_IRCoder.push(incr->line_number,Operation::ASSIGN,op,triple);
+    }
   }
 
   void visitDecr(Decr *decr){
     decr->expr_->accept(this);
 
     Operand op = m_nodes_to_operands.at(decr->expr_);
-    m_nodes_to_operands[decr] = m_IRCoder.push(decr->line_number,Operation::DEC,op);
+
+    if(op.m_category==OperandCategory::TRIPLE){
+      Triple *copy = m_IRCoder.push(decr->line_number,op.m_triple->m_operation,op.m_triple->m_op_1,op.m_triple->m_op_2);
+      Triple *triple = m_IRCoder.push(decr->line_number,Operation::ADD,copy,Constant{-1});
+      m_IRCoder.push(decr->line_number,Operation::ASSIGN,op,triple);
+    }else{
+      Triple *triple = m_IRCoder.push(decr->line_number,Operation::ADD,op,Constant{-1});
+      m_IRCoder.push(decr->line_number,Operation::ASSIGN,op,triple);
+    }
   }
 
   void visitWhile(While *p) override {
@@ -1110,21 +1127,15 @@ int main(int argc, char ** argv)
   my_visitor.pass(parse_tree);
   int_program.create_virtual_tables();
 
-
-  // --------------------OPTYMALIZACJE-----------------------
-  // std::cout<<std::endl;
-
-  // for(auto *fn : int_program.m_functions){
-  //   if(fn->m_type!=PredefinedFunction::USERDEFINED)
-  //     continue;
-  //   int_program.optimize(fn);
-  // }
-  IntermediateProgramPrinter int_program_printer;
+  // IntermediateProgramPrinter int_program_printer;
   int_program.create_basic_blocks();
+  // int_program_printer.print_program(int_program);
   LiveAnalyzer analyzer{&int_program};
   analyzer.run();
+  // analyzer.print_live_variables();
+  int_program.analyze_array_accesses();
+  int_program.analyze_member_accesses();
   int_program.optimize();
-  // int_program_printer.print_program(int_program);
   int_program.substitute_all_vars_and_args();
 
   // std::cout<<"-----------------------"<<std::endl;

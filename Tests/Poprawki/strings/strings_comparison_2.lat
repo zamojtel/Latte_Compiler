@@ -4,7 +4,7 @@ int main(){
     string str1 ="abcxyz";
     string str2 ="something";
 
-    if(str1+str2 == "abc"+"xyz"+"somethin"){
+    if(str1+str2 == "abc"+"xyz"+"something"){
         printString("Strings are equal");
     }else{
         printString("Strings are not equal");

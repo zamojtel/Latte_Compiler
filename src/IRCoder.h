@@ -32,6 +32,7 @@ public:
     void set_position_after(Triple * triple);
     void check_triple(Triple * triple);
     void analyze_triple(Triple *triple);
+    void analyze_array_accesses(Triple * triple);
     void insert_cast_and_replace_op(Triple *triple,Operand &op, DataType type);
     DataType deduce_type(Triple *triple);
     DataType deduce_bool_type_one_argument(DataType op_1_type);

@@ -1,0 +1,13 @@
+class A{
+    int y;
+}
+
+int main(){
+    int x;
+    A obj = new A;
+    x=obj.y;
+    obj.y=123;
+
+    printInt(x);
+    return 0;
+}
